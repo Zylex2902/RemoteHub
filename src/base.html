@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#ffffff" id="themeColor">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Hub Remote</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<!--
+  Hub Remote - onafhankelijk project, niet verbonden aan de LEGO Group.
+  De berichtindeling en framing in het blok "proto" volgen de openbare protocoldocumentatie
+  van de LEGO Group (https://github.com/LEGO/spike-prime-docs, Copyright 2024 The LEGO Group,
+  Apache License 2.0 met aangepaste merkenclausule). cobsEncode/cobsDecode zijn naar JavaScript
+  overgezet uit de voorbeeldcode in die repository.
+  Het blok "qr" bevat qrcode-generator, Copyright (c) 2009 Kazuhiko Arase, MIT-licentie.
+  De lettertypes Fredoka en Nunito vallen onder de SIL Open Font License 1.1.
+  Zie LICENSE-NOTICES.txt.
+-->
+<style>
+{{CSS}}</style>
+</head>
+<body data-phase="idle">
+
+<header id="header">
+  <div class="brand">
+    <div class="logo" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="8" width="16" height="12" rx="4"/><path d="M12 8V4"/><circle cx="12" cy="3.2" r="1.2" fill="currentColor"/><circle cx="9" cy="13" r="1.3" fill="currentColor" stroke="none"/><circle cx="15" cy="13" r="1.3" fill="currentColor" stroke="none"/><path d="M9.5 16.6c1.5 1 3.5 1 5 0"/></svg></div>
+    <div class="txt">
+      <b>Hub Remote</b>
+      <span data-i18n="app.tagline">Afstandsbediening voor je robothub</span>
+    </div>
+  </div>
+  <div class="spacer"></div>
+  <div class="batt" id="batt" data-i18n-title="hub.battTitle" title="Batterij van de hub">
+    <div class="cell"><b id="battFill"></b></div>
+    <span class="swap" id="battPct">--%</span>
+  </div>
+  <div class="pill" id="pill" data-phase="idle"><i></i><span class="swap" id="pillText">Niet verbonden</span></div>
+</header>
+
+<main id="main">
+  <section class="view active" id="viewDrive">
+    <div class="card notice" id="noBle"></div>
+
+    <div class="card conn">
+      <div class="connect">
+        <button class="btn primary" id="btnConnect">
+          <svg class="ico" viewBox="0 0 24 24"><path d="m7 7 10 10-5 5V2l5 5L7 17"/></svg>
+          <span class="swap" id="btnConnectText">Verbind met hub</span>
+        </button>
+        <button class="btn hide" id="btnDisconnect" data-i18n="btn.disconnect">Verbreek</button>
+        <div class="bar" id="bar"><b id="barFill"></b></div>
+        <div class="hint swap" id="hint"></div>
+      </div>
+    </div>
+
+    <div class="card drive idle" id="drive">
+      <div class="padwrap">
+        <div class="modes" id="modes" role="tablist">
+          <button data-mode="joy" data-i18n-title="mode.joy" data-i18n-aria="mode.joy">
+            <svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg>
+          </button>
+          <button data-mode="tank" data-i18n-title="mode.tank" data-i18n-aria="mode.tank">
+            <svg class="ico" viewBox="0 0 24 24"><rect x="5" y="3" width="5" height="18" rx="2.5"/><rect x="14" y="3" width="5" height="18" rx="2.5"/></svg>
+          </button>
+          <button data-mode="tilt" data-i18n-title="mode.tilt" data-i18n-aria="mode.tilt">
+            <svg class="ico" viewBox="0 0 24 24"><rect x="8" y="3" width="8" height="18" rx="2" transform="rotate(24 12 12)"/><path d="M3 9a9 9 0 0 1 3-4M21 15a9 9 0 0 1-3 4"/></svg>
+          </button>
+        </div>
+        <div class="pad ctrl on" id="pad" aria-label="Joystick">
+          <div class="knob" id="knob"><svg class="face" viewBox="0 0 100 100" aria-hidden="true"><circle cx="36" cy="43" r="7" fill="currentColor"/><circle cx="64" cy="43" r="7" fill="currentColor"/><path d="M34 62c9 9 23 9 32 0" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round"/></svg></div>
+          <div class="padlabel" data-i18n="tilt.hold">Houd vast en kantel</div>
+        </div>
+        <div class="tank ctrl" id="tank">
+          <div class="vstick" data-side="l"><span>L</span><div class="vknob"></div></div>
+          <div class="vstick" data-side="r"><span>R</span><div class="vknob"></div></div>
+        </div>
+      </div>
+      <div class="ctl">
+        <div class="keyrow">
+          <div class="keys" aria-hidden="true">
+            <div class="key k-w" data-k="up">W</div>
+            <div class="key k-a" data-k="left">A</div>
+            <div class="key k-s" data-k="down">S</div>
+            <div class="key k-d" data-k="right">D</div>
+          </div>
+          <div class="keynote" data-i18n="keys.note"></div>
+        </div>
+        <div class="ctltop">
+          <div class="meters">
+            <div class="meter"><span>L</span><div class="track"><div class="fill" id="fillL"></div></div><output id="outL">0</output></div>
+            <div class="meter"><span>R</span><div class="track"><div class="fill" id="fillR"></div></div><output id="outR">0</output></div>
+          </div>
+          <button class="btn horn" id="btnHorn" data-i18n-title="horn.title" data-i18n-aria="horn.aria">
+            <svg class="ico" viewBox="0 0 24 24"><path d="M3 10v4h3l6 4V6l-6 4z"/><path d="M16 9a4 4 0 0 1 0 6"/><path d="M19 6a8 8 0 0 1 0 12"/></svg>
+          </button>
+        </div>
+        <label class="f"><span><span data-i18n="speed">Snelheid</span> <span class="turbo" id="turbo">TURBO</span></span>
+          <div class="range"><input type="range" id="rngSpeed" min="10" max="100" step="5"><output id="outSpeed"></output></div>
+        </label>
+        <div class="sensors" id="sensors"></div>
+        <div class="aux" id="aux"></div>
+        <button class="stop" id="btnStop">
+          <svg class="ico" viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="2" fill="currentColor"/></svg>
+          STOP <small data-i18n="stop.space">spatie</small>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <section class="view" id="viewSettings">
+    <div class="card">
+      <h2 data-i18n="set.robot">Robot</h2>
+      <div class="grid2">
+        <label class="f span2"><span data-i18n="set.profile">Profiel</span>
+          <select id="selProfile"></select>
+        </label>
+        <label class="f span2"><span data-i18n="set.name">Naam</span>
+          <input type="text" id="inpName" maxlength="30" autocomplete="off" spellcheck="false">
+        </label>
+        <div class="rowbtns span2">
+          <button class="btn sm" id="btnNew" data-i18n="set.new">Nieuw</button>
+          <button class="btn sm" id="btnShare" data-i18n="set.share">Delen</button>
+          <button class="btn sm danger" id="btnDelete" data-i18n="set.delete">Verwijderen</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 data-i18n="set.drive">Aandrijving</h2>
+      <div class="grid2">
+        <label class="f"><span data-i18n="set.left">Motor links</span>
+          <div class="with-btn"><select id="selLeft"></select><button class="btn sm" id="btnTestL" data-i18n="set.test">Test</button></div>
+        </label>
+        <label class="f"><span data-i18n="set.right">Motor rechts</span>
+          <div class="with-btn"><select id="selRight"></select><button class="btn sm" id="btnTestR" data-i18n="set.test">Test</button></div>
+        </label>
+        <label class="check"><input type="checkbox" id="chkInvL"><span></span><em data-i18n="set.invL" style="font-style:normal">Links omkeren</em></label>
+        <label class="check"><input type="checkbox" id="chkInvR"><span></span><em data-i18n="set.invR" style="font-style:normal">Rechts omkeren</em></label>
+        <label class="f"><span data-i18n="set.turn">Draaisnelheid</span>
+          <div class="range"><input type="range" id="rngTurn" min="20" max="100" step="5"><output id="outTurn"></output></div>
+        </label>
+        <label class="f"><span data-i18n="set.trim">Rechtuit-correctie</span>
+          <div class="range"><input type="range" id="rngTrim" min="-20" max="20" step="1"><output id="outTrim"></output></div>
+        </label>
+        <div class="f span2"><span data-i18n="set.found">Gevonden motoren</span>
+          <div class="chips" id="chips"></div>
+        </div>
+      </div>
+      <div class="warnline" id="warnPorts" data-i18n="set.samePort">Links en rechts staan op dezelfde poort.</div>
+      <p class="small" style="margin:12px 0 0" data-i18n="set.driveHelp"></p>
+    </div>
+
+    <div class="card">
+      <h2 data-i18n="aux.title">Extra motoren</h2>
+      <div id="auxSettings"></div>
+    </div>
+
+    <div class="card">
+      <h2 data-i18n="sens.title">Sensoren</h2>
+      <div class="grid2">
+        <label class="check"><input type="checkbox" id="chkGuard"><span></span><em data-i18n="sens.guard" style="font-style:normal">Stop voor obstakels</em></label>
+        <label class="f"><span data-i18n="sens.guardDist">Stopafstand</span>
+          <div class="range"><input type="range" id="rngGuard" min="5" max="60" step="1"><output id="outGuard"></output></div>
+        </label>
+      </div>
+      <p class="small" style="margin:12px 0 0" data-i18n="sens.help"></p>
+    </div>
+
+    <div class="card">
+      <h2 data-i18n="app.title">App</h2>
+      <div class="grid2">
+        <label class="f"><span data-i18n="app.lang">Taal</span>
+          <select id="selLang"></select>
+        </label>
+        <label class="f"><span data-i18n="app.theme">Thema</span>
+          <select id="selTheme"></select>
+        </label>
+        <label class="f span2"><span data-i18n="app.slot">Programmaslot op de hub</span>
+          <select id="selSlot"></select>
+        </label>
+        <label class="check"><input type="checkbox" id="chkSound"><span></span><em data-i18n="app.sound" style="font-style:normal">Geluid</em></label>
+        <label class="check"><input type="checkbox" id="chkHaptic"><span></span><em data-i18n="app.haptic" style="font-style:normal">Trillen</em></label>
+      </div>
+      <p class="small" style="margin:12px 0 0" data-i18n="app.slotHelp"></p>
+    </div>
+
+    <div class="card">
+      <h2 data-i18n="hub.title">Hub</h2>
+      <div class="hubinfo">
+        <span data-i18n="hub.name">Naam</span><b id="infoName">-</b>
+        <span data-i18n="hub.batt">Batterij</span><b id="infoBatt">-</b>
+        <span data-i18n="hub.fw">Firmware</span><b id="infoFw">-</b>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 data-i18n="about.title">Over</h2>
+      <p class="small" style="margin:0" data-i18n="about.text"></p>
+      <p class="small" style="margin:8px 0 0">Hub Remote 3.0</p>
+    </div>
+  </section>
+
+  <section class="view" id="viewLog">
+    <div class="card logcard">
+      <div class="loghead"><h2 data-i18n="log.title">Logboek</h2><button class="linkbtn" id="btnClear" data-i18n="log.clear">Wissen</button></div>
+      <div id="log" aria-live="polite"></div>
+    </div>
+  </section>
+</main>
+
+<nav class="tabbar" id="tabbar" style="--i:0">
+  <button class="tab on" data-view="viewDrive">
+    <svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg><span data-i18n="tab.drive">Rijden</span>
+  </button>
+  <button class="tab" data-view="viewSettings">
+    <svg class="ico" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg><span data-i18n="tab.settings">Instellingen</span>
+  </button>
+  <button class="tab" data-view="viewLog">
+    <svg class="ico" viewBox="0 0 24 24"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg><span data-i18n="tab.log">Logboek</span><i class="dot" id="logDot"></i>
+  </button>
+</nav>
+
+<div class="sheet" id="sheet" aria-hidden="true">
+  <div class="card box">
+    <h2 id="shareTitle"></h2>
+    <div class="qr" id="qr"></div>
+    <p class="small" id="shareNote" style="margin:0"></p>
+    <input type="text" id="shareLink" readonly>
+    <div class="rowbtns">
+      <button class="btn sm primary" id="btnCopy" data-i18n="share.copy">Kopieer link</button>
+      <button class="btn sm" id="btnNativeShare" data-i18n="share.share">Delen</button>
+      <button class="btn sm" id="btnCloseShare" data-i18n="share.close">Sluiten</button>
+    </div>
+  </div>
+</div>
+
+<div id="toasts" aria-live="assertive"></div>
+
+<!-- Python-programma dat naar de hub wordt gestuurd (draait op de standaardfirmware). -->
+<script type="text/plain" id="hub-program">
+{{HUB}}</script>
+
+<!-- Protocol (COBS-framing, CRC32, berichten). Geen DOM-afhankelijkheden. Zie de licentieopmerking bovenaan. -->
+<script id="proto">
+{{PROTO}}</script>
+
+<!-- qrcode-generator, Copyright (c) 2009 Kazuhiko Arase, MIT-licentie. -->
+<script id="qr-lib">
+{{QR}}
+</script>
+
+<script id="i18n">
+{{I18N}}</script>
+
+<script id="app">
+{{APP}}</script>
+</body>
+</html>

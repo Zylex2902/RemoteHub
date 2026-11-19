@@ -1,0 +1,420 @@
+// End-to-end test: runs the built page in headless Chrome against a simulated hub.
+// ONLY=AB node tests/test_page.js runs just those sections.
+const { chromium } = require('playwright');
+const jsQR = require('jsqr');
+const assert = require('assert');
+const path = require('path');
+const { SITE, OUT, serve, launchOptions } = require('./helpers');
+const FILE = 'file://' + path.join(SITE, 'index.html');
+let HTTP = '';
+
+const fakeHub = (opts) => {
+  const H = (window.__hub = { tunnel: [], file: [], announced: null, started: false, events: [], writes: 0, maxWrite: 0, battery: 87, connects: 0, dist: 350, color: 9, force: 40 });
+  const listeners = { tx: new Set(), dev: new Set() };
+  let df = null, timer = null, running = 0;
+  const notify = (payload) => {
+    const frame = Proto.pack(payload);
+    for (let i = 0; i < frame.length; i += 20) {
+      const part = frame.slice(i, i + 20);
+      setTimeout(() => listeners.tx.forEach((f) => f({ target: { value: new DataView(part.buffer) } })), 1 + i / 20);
+    }
+  };
+  const status = (id, ok) => notify(Uint8Array.of(id, ok ? 0 : 1));
+  const tun = (t) => notify(Proto.tunnel(new TextEncoder().encode(t)));
+  const onMsg = (m) => {
+    const v = new DataView(m.buffer, m.byteOffset, m.byteLength);
+    switch (m[0]) {
+      case 0x00: { const r = new Uint8Array(17); const d = new DataView(r.buffer); r[0] = 1; r[1] = 1; r[2] = 4; d.setUint16(3, 9, true); r[5] = 3; r[6] = 4; d.setUint16(7, 2, true);
+        d.setUint16(9, opts.maxPacket, true); d.setUint16(11, 2048, true); d.setUint16(13, 102, true); notify(r); break; }
+      case 0x1e: if (m[1] === 1) { H.events.push('stop'); status(0x1f, H.started); if (H.started) notify(Uint8Array.of(0x20, 1)); H.started = false; }
+        else { H.events.push('start:' + m[2]);
+          const all = Uint8Array.from(H.file); H.fileOk = !!H.announced && Proto.crc(all) === H.announced.crc; H.program = new TextDecoder().decode(all);
+          status(0x1f, H.fileOk); H.started = H.fileOk; notify(Uint8Array.of(0x20, 0));
+          if (H.fileOk) setTimeout(() => tun('rdy 3'), 30); }
+        break;
+      case 0x46: H.events.push('clear:' + m[1]); status(0x47, false); break;
+      case 0x0c: { let e = m.indexOf(0, 1); H.announced = { name: new TextDecoder().decode(m.subarray(1, e)), slot: m[e + 1], crc: v.getUint32(e + 2, true) };
+        H.events.push('upload:' + H.announced.name + ':' + H.announced.slot); H.file = []; running = 0; status(0x0d, true); break; }
+      case 0x10: { if (m.length < 7) { status(0x11, false); break; }
+        const crc = v.getUint32(1, true), size = v.getUint16(5, true), chunk = m.subarray(7, 7 + size);
+        const next = Proto.crc(chunk, running); const ok = next === crc && size === m.length - 7 && size <= 102;
+        if (ok) { running = next; H.file.push(...chunk); } H.events.push('chunk:' + size + ':' + ok); status(0x11, ok); break; }
+      case 0x28: { status(0x29, true); const iv = v.getUint16(1, true); H.events.push('devnot:' + iv);
+        clearInterval(timer); timer = setInterval(() => {
+          const d = H.dist < 0 ? 0xffff : H.dist;
+          const pay = [0, H.battery, 10, 2, 48, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 3, 48, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+          if (opts.sensors) pay.push(13, 0, d & 255, d >> 8, 12, 1, H.color, 0, 2, 16, 0, 32, 0, 11, 5, H.force, 1);
+          notify(Uint8Array.from([0x3c, pay.length, 0, ...pay])); }, Math.max(50, iv)); break; }
+      case 0x32: { const text = new TextDecoder().decode(Proto.parseTunnel(m));
+        H.tunnel.push({ t: performance.now(), text });
+        if (H.started && text === '?') tun('rdy 3'); break; }
+    }
+  };
+  const ch = (name) => ({
+    properties: {}, addEventListener: (n, f) => listeners[name].add(f), removeEventListener: (n, f) => listeners[name].delete(f),
+    startNotifications: async () => {},
+    writeValueWithoutResponse: async (buf) => {
+      let b = new Uint8Array(buf.buffer ? buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength) : buf);
+      H.writes++; H.maxWrite = Math.max(H.maxWrite, b.length);
+      if (opts.truncate && b.length > opts.truncate) b = b.slice(0, opts.truncate);
+      df = df || new Proto.Deframer(); for (const m of df.push(b)) onMsg(m);
+    },
+  });
+  const rx = ch('rx'), tx = ch('tx');
+  const device = { name: 'Testhub', addEventListener: (n, f) => listeners.dev.add(f), removeEventListener: (n, f) => listeners.dev.delete(f),
+    gatt: { connected: false,
+      connect: async () => { if (H.offline) throw new Error('unreachable'); device.gatt.connected = true; H.connects++; df = null;
+        return { getPrimaryService: async () => ({ getCharacteristic: async (c) => (c.endsWith('0001-1000-8000-00805f9b34fb') ? rx : tx) }) }; },
+      disconnect: () => { if (device.gatt.connected) H.events.push('gatt-disconnect'); device.gatt.connected = false; clearInterval(timer); } } };
+  H.drop = () => { device.gatt.connected = false; clearInterval(timer); listeners.dev.forEach((f) => f({})); };
+  H.hubStop = () => { H.started = false; notify(Uint8Array.of(0x20, 1)); };
+  Object.defineProperty(navigator, 'bluetooth', { value: { requestDevice: async () => { H.choosers = (H.choosers || 0) + 1; return device; } }, configurable: true });
+};
+
+(async () => {
+  const server = await serve(); HTTP = server.url;
+  const browser = await chromium.launch(launchOptions());
+  const errors = [];
+  const open = async (ctxOpts, hubOpts, url, init) => {
+    const ctx = await browser.newContext(Object.assign({ locale: 'nl-NL' }, ctxOpts));
+    const page = await ctx.newPage();
+    page.on('pageerror', (e) => errors.push(String(e)));
+    page.on('console', (m) => { if (m.type() === 'error' && !/fonts\.g|ERR_|net::|manifest/i.test(m.text())) errors.push(m.text()); });
+    await page.addInitScript(fakeHub, Object.assign({ maxPacket: 509, truncate: 0, sensors: true }, hubOpts || {}));
+    if (init) await page.addInitScript(init);
+    await page.goto(url || FILE);
+    return page;
+  };
+  const waitPhase = (page, p, timeout = 15000) => page.waitForFunction((p) => document.getElementById('pill').dataset.phase === p, p, { timeout });
+  const tunnelOf = (page) => page.evaluate(() => window.__hub.tunnel.map((x) => x.text));
+  const isDrive = (x) => /^[A-F]:-?\d+( [A-F]:-?\d+)*$/.test(x);
+  const last = async (page) => { const t = (await tunnelOf(page)).filter(isDrive); return t[t.length - 1]; };
+  const cmds = async (page) => (await tunnelOf(page)).filter((x) => !isDrive(x) && x !== '?');
+  const ptr = (page, sel, type, x, y, id) => page.evaluate(([sel, type, x, y, id]) => {
+    const el = document.querySelector(sel);
+    el.dispatchEvent(new PointerEvent(type, { bubbles: true, cancelable: true, clientX: x, clientY: y, pointerId: id, pointerType: 'touch', isPrimary: id === 1 }));
+  }, [sel, type, x, y, id]);
+  const rect = (page, sel) => page.$eval(sel, (e) => { const b = e.getBoundingClientRect(); return { x: b.left, y: b.top, w: b.width, h: b.height, cx: b.left + b.width / 2, cy: b.top + b.height / 2 }; });
+  const setRange = (page, sel, v) => page.$eval(sel, (e, v) => { e.value = v; e.dispatchEvent(new Event('input', { bubbles: true })); }, v);
+  const AUX1 = '#auxSettings .auxwrap:nth-child(1) ';
+  const ONLY = process.env.ONLY || '', RUN = (x) => !ONLY || ONLY.includes(x);
+  let page, H, before, expected;
+
+  // ---------- A. desktop, Dutch ----------
+  if (RUN('A')) {
+  page = await open({ viewport: { width: 1366, height: 900 } });
+  assert.strictEqual(await page.$eval('html', (e) => e.lang), 'nl');
+  assert.strictEqual(await page.$eval('#btnConnectText', (e) => e.textContent), 'Verbind met hub');
+  // motor test and gripper refuse politely when not connected
+  await page.click('#btnTestL');
+  await page.waitForFunction(() => /Verbind eerst/.test(document.getElementById('toasts').textContent));
+  await page.click('#btnConnect'); await waitPhase(page, 'ready');
+  H = await page.evaluate(() => ({ ok: window.__hub.fileOk, program: window.__hub.program, ev: window.__hub.events, slot: window.__hub.announced.slot, maxWrite: window.__hub.maxWrite }));
+  expected = await page.$eval('#hub-program', (e) => e.textContent.replace(/^\s*\n/, ''));
+  assert.strictEqual(H.ok, true); assert.strictEqual(H.program, expected); assert.ok(H.program.startsWith('import hub')); assert.strictEqual(H.slot, 19);
+  assert.ok(H.maxWrite <= 180); assert.ok(H.ev.includes('devnot:200'));
+  await page.waitForFunction(() => document.getElementById('selLeft').value === 'C');
+  assert.strictEqual(await page.$eval('#battPct', (e) => e.dataset.t), '87%');
+  // --- 7. sensors live
+  await page.waitForFunction(() => document.querySelectorAll('#sensors .schip').length === 3);
+  let chips = await page.$$eval('#sensors .schip', (els) => els.map((e) => e.textContent));
+  assert.deepStrictEqual(chips, ['A35 cm', 'Brood', 'F40%'], chips.join('|'));
+  await page.evaluate(() => { window.__hub.color = 3; window.__hub.dist = -1; });
+  await page.waitForFunction(() => /blauw/.test(document.getElementById('sensors').textContent) && /vrij/.test(document.getElementById('sensors').textContent));
+  await page.evaluate(() => { window.__hub.dist = 350; });
+  // drive
+  await page.evaluate(() => (window.__hub.tunnel.length = 0));
+  await page.keyboard.down('KeyW'); await page.waitForTimeout(500);
+  assert.strictEqual(await last(page), 'C:-60 D:60');
+  // --- 7. obstacle stop: forward blocked, reverse and turning still work
+  await page.click('#chkGuard + span'); await setRange(page, '#rngGuard', 20);
+  await page.waitForTimeout(300); assert.strictEqual(await last(page), 'C:-60 D:60', 'far away: still driving');
+  await page.evaluate(() => { window.__hub.dist = 150; });
+  await page.waitForFunction(() => /Obstakel op 15 cm/.test(document.getElementById('toasts').textContent));
+  await page.waitForTimeout(250); assert.strictEqual(await last(page), 'C:0 D:0', 'blocked');
+  assert.ok(await page.$eval('#sensors .schip[data-id="distanceA"]', (e) => e.classList.contains('alert')));
+  await page.keyboard.up('KeyW'); await page.keyboard.down('KeyS'); await page.waitForTimeout(450);
+  assert.strictEqual(await last(page), 'C:60 D:-60', 'reverse allowed'); await page.keyboard.up('KeyS');
+  await page.keyboard.down('KeyD'); await page.waitForTimeout(450);
+  assert.strictEqual(await last(page), 'C:-36 D:-36', 'turn allowed'); await page.keyboard.up('KeyD');
+  await page.evaluate(() => { window.__hub.dist = 500; });
+  await page.keyboard.down('KeyW'); await page.waitForTimeout(600);
+  assert.strictEqual(await last(page), 'C:-60 D:60', 'free again'); await page.keyboard.up('KeyW'); await page.waitForTimeout(350);
+  await page.click('#chkGuard + span');
+  // --- 3. motor test: one side pulses forward briefly
+  await page.evaluate(() => (window.__hub.tunnel.length = 0));
+  await page.click('#btnTestL'); await page.waitForTimeout(450);
+  assert.strictEqual(await last(page), 'C:-40 D:0', 'test left');
+  await page.waitForTimeout(700); assert.strictEqual(await last(page), 'C:0 D:0');
+  await page.click('#btnTestR'); await page.waitForTimeout(450);
+  assert.strictEqual(await last(page), 'C:0 D:40', 'test right'); await page.waitForTimeout(700);
+  // --- 6. extra motor: name, own speed, hold mode
+  await page.selectOption(AUX1 + '[data-k="port"]', 'E'); await page.fill(AUX1 + '[data-k="name"]', 'Arm'); await setRange(page, AUX1 + '[data-k="speed"]', 80);
+  assert.strictEqual(await page.$eval('#aux .auxrow span', (e) => e.textContent), 'Arm (E)');
+  await page.click('#viewLog h2');   // leave the text field
+  await page.keyboard.down('KeyE'); await page.waitForTimeout(250);
+  assert.strictEqual(await last(page), 'C:0 D:0 E:80'); await page.keyboard.up('KeyE'); await page.waitForTimeout(250);
+  assert.strictEqual(await last(page), 'C:0 D:0 E:0');
+  // --- 6. gripper mode: open/close to fixed positions, zero point, slow jog
+  await page.selectOption(AUX1 + '[data-k="mode"]', 'grip'); await setRange(page, AUX1 + '[data-k="travel"]', 120);
+  assert.ok(await page.$eval(AUX1 + '.fold', (e) => e.classList.contains('on')));
+  assert.deepStrictEqual(await page.$$eval('#aux .hold', (els) => els.map((e) => e.textContent.trim())), ['Q Dicht', 'E Open']);
+  await page.keyboard.press('KeyE'); await page.keyboard.press('KeyQ');
+  await page.dispatchEvent('#aux .hold[data-dir="1"]', 'pointerdown');
+  await page.click(AUX1 + '.zero'); await page.waitForTimeout(200);
+  assert.deepStrictEqual(await cmds(page), ['pos E 120 80', 'pos E 0 80', 'pos E 120 80', 'zero E']);
+  await page.waitForTimeout(300); assert.strictEqual(await last(page), 'C:0 D:0', 'gripper port not in drive messages');
+  await page.dispatchEvent(AUX1 + '.jog[data-dir="1"]', 'pointerdown'); await page.waitForTimeout(250);
+  assert.strictEqual(await last(page), 'C:0 D:0 E:30', 'jog');
+  await page.dispatchEvent(AUX1 + '.jog[data-dir="1"]', 'pointerup'); await page.waitForTimeout(400);
+  { const t = (await tunnelOf(page)).filter(isDrive); const i = t.lastIndexOf('C:0 D:0 E:30');
+    assert.strictEqual(t[i + 1], 'C:0 D:0 E:0', 'jog release stops the motor once'); assert.strictEqual(t[t.length - 1], 'C:0 D:0'); }
+  await page.screenshot({ path: OUT + '/desktop.png' });
+  // --- 5. tank mode: two sticks, each drives one side (two pointers at once)
+  assert.strictEqual(await page.$eval('#modes [data-mode="tilt"]', (e) => getComputedStyle(e).display), 'none', 'no tilt on a mouse-only device');
+  await page.click('#modes [data-mode="tank"]'); await page.waitForTimeout(300);
+  assert.strictEqual(await page.$eval('#pad', (e) => getComputedStyle(e).display), 'none');
+  const L = await rect(page, '.vstick[data-side="l"]'), R = await rect(page, '.vstick[data-side="r"]');
+  await ptr(page, '.vstick[data-side="l"]', 'pointerdown', L.cx, L.cy, 1); await ptr(page, '.vstick[data-side="l"]', 'pointermove', L.cx, L.y + 2, 1);
+  await ptr(page, '.vstick[data-side="r"]', 'pointerdown', R.cx, R.cy, 2); await ptr(page, '.vstick[data-side="r"]', 'pointermove', R.cx, R.y + R.h - 2, 2);
+  await page.waitForTimeout(450);
+  assert.strictEqual(await last(page), 'C:-60 D:-60', 'tank: left forward, right backward');
+  await ptr(page, '.vstick[data-side="r"]', 'pointerup', R.cx, R.cy, 2); await page.waitForTimeout(350);
+  assert.strictEqual(await last(page), 'C:-60 D:0', 'right released');
+  await ptr(page, '.vstick[data-side="l"]', 'pointerup', L.cx, L.cy, 1); await page.waitForTimeout(350);
+  assert.strictEqual(await last(page), 'C:0 D:0');
+  await page.keyboard.down('KeyW'); await page.waitForTimeout(400); assert.strictEqual(await last(page), 'C:-60 D:60', 'keyboard still works in tank mode'); await page.keyboard.up('KeyW');
+  await page.screenshot({ path: OUT + '/desktop-tank.png' });
+  await page.click('#modes [data-mode="joy"]'); await page.waitForTimeout(300);
+  // --- 4. profiles: new, rename, independent settings, switch back, delete in two taps
+  await page.click('#btnNew');
+  assert.strictEqual(await page.$eval('#inpName', (e) => e.value), 'Mijn robot 2');
+  assert.strictEqual(await page.$eval('#selLeft', (e) => e.value), 'A');
+  assert.strictEqual(await page.$$eval('#aux .auxrow', (e) => e.length), 0);
+  await page.fill('#inpName', 'Kraan'); await page.selectOption('#selLeft', 'F'); await page.click('#viewLog h2');
+  await page.keyboard.down('KeyW'); await page.waitForTimeout(450);
+  assert.strictEqual(await last(page), 'B:60 F:-60', 'new profile drives its own ports');
+  assert.deepStrictEqual(await page.$$eval('#selProfile option', (o) => o.map((x) => x.textContent)), ['Mijn robot', 'Kraan']);
+  const first = await page.$eval('#selProfile option', (o) => o.value);
+  await page.selectOption('#selProfile', first); await page.waitForTimeout(400);   // switch while still driving
+  await page.keyboard.up('KeyW');
+  assert.strictEqual(await page.$eval('#selLeft', (e) => e.value), 'C');
+  assert.strictEqual(await page.$eval('#aux .auxrow span', (e) => e.textContent), 'Arm (E)');
+  { const t = (await tunnelOf(page)).filter(isDrive); const i = t.lastIndexOf('B:60 F:-60');
+    assert.strictEqual(t[i + 1], 'B:0 C:0 D:0 F:0', 'ports of the previous profile are stopped on switch: ' + t.slice(i, i + 3).join(' | ')); }
+  let stored = await page.evaluate(() => JSON.parse(localStorage.getItem('hubremote3')));
+  assert.strictEqual(stored.profiles.length, 2); assert.strictEqual(stored.profiles[0].aux[0].mode, 'grip'); assert.strictEqual(stored.profiles[1].name, 'Kraan');
+  await page.selectOption('#selProfile', stored.profiles[1].id);
+  await page.click('#btnDelete'); assert.strictEqual((await page.$$eval('#selProfile option', (o) => o.length)), 2, 'first tap only asks');
+  await page.waitForTimeout(200); await page.click('#btnDelete');
+  assert.deepStrictEqual(await page.$$eval('#selProfile option', (o) => o.map((x) => x.textContent)), ['Mijn robot']);
+  // share sheet from a local file: link shown, QR hidden with explanation
+  await page.click('#btnShare'); await page.waitForTimeout(350);
+  assert.ok(await page.$eval('#sheet', (e) => e.classList.contains('on')));
+  assert.ok(/lokaal geopend/.test(await page.$eval('#shareNote', (e) => e.textContent)));
+  assert.ok(await page.$eval('#qr', (e) => e.classList.contains('off')));
+  await page.keyboard.press('Escape'); await page.waitForTimeout(350);
+  assert.ok(!(await page.$eval('#sheet', (e) => e.classList.contains('on'))));
+  // theme: light by default, dark on request
+  assert.strictEqual(await page.$eval('html', (e) => e.dataset.theme), 'light');
+  const lightBg = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+  await page.selectOption('#selTheme', 'dark'); await page.waitForTimeout(200);
+  assert.notStrictEqual(await page.evaluate(() => getComputedStyle(document.body).backgroundColor), lightBg);
+  assert.strictEqual(await page.evaluate(() => JSON.parse(localStorage.getItem('hubremote3')).theme), 'dark');
+  await page.screenshot({ path: OUT + '/desktop-dark.png' });
+  await page.selectOption('#selTheme', 'light'); await page.waitForTimeout(200);
+  // --- 8. language switch at runtime
+  await page.selectOption('#selLang', 'en'); await page.waitForTimeout(300);
+  assert.strictEqual(await page.$eval('html', (e) => e.lang), 'en');
+  assert.strictEqual(await page.$eval('#pillText', (e) => e.textContent), 'Ready');
+  assert.strictEqual(await page.$eval('.tab[data-view="viewSettings"] span', (e) => e.textContent), 'Settings');
+  assert.ok(/independent project/.test(await page.$eval('[data-i18n="about.text"]', (e) => e.textContent)));
+  assert.ok(/LEGO®/.test(await page.$eval('[data-i18n="about.text"]', (e) => e.textContent)));
+  assert.strictEqual(await page.$eval('#hint', (e) => e.textContent), 'Ready to drive. If the connection drops, the robot stops by itself.');
+  assert.deepStrictEqual(await page.$$eval('#aux .hold', (els) => els.map((e) => e.textContent.trim())), ['Q Close', 'E Open']);
+  assert.ok(/blue|red/.test(await page.$eval('#sensors', (e) => e.textContent)));
+  assert.strictEqual(await page.$eval('#selLeft option', (e) => e.textContent), 'Port A');
+  await page.selectOption('#selLang', 'nl'); await page.waitForTimeout(300);
+  assert.strictEqual(await page.$eval('#pillText', (e) => e.textContent), 'Klaar');
+  // --- regression: battery warning, reconnect without re-upload, hub restart, cancel, stop/restart, disconnect
+  await page.evaluate(() => (window.__hub.battery = 18));
+  await page.waitForFunction(() => /bijna leeg \(18%\)/.test(document.getElementById('toasts').textContent));
+  await page.evaluate(() => (window.__hub.battery = 60));
+  before = await page.evaluate(() => window.__hub.events.length);
+  await page.evaluate(() => window.__hub.drop());
+  await waitPhase(page, 'reconnecting'); await waitPhase(page, 'ready');
+  H = await page.evaluate(() => ({ ev: window.__hub.events.slice(), choosers: window.__hub.choosers }));
+  assert.deepStrictEqual(H.ev.slice(before), ['devnot:200'], H.ev.slice(before).join(',')); assert.strictEqual(H.choosers, 1);
+  before = H.ev.length;
+  await page.evaluate(() => { window.__hub.started = false; window.__hub.drop(); });
+  await waitPhase(page, 'reconnecting'); await waitPhase(page, 'ready', 20000);
+  H = await page.evaluate((b) => window.__hub.events.slice(b), before);
+  assert.ok(H.includes('upload:program.py:19') && H.includes('start:19'), H.join(','));
+  await page.evaluate(() => { window.__hub.offline = true; window.__hub.drop(); });
+  await waitPhase(page, 'reconnecting'); await page.waitForTimeout(700);
+  await page.click('#btnDisconnect'); await waitPhase(page, 'idle');
+  await page.waitForTimeout(2500); assert.strictEqual(await page.$eval('#pill', (e) => e.dataset.phase), 'idle');
+  assert.strictEqual(await page.$$eval('#sensors .schip', (e) => e.length), 0, 'sensors cleared when idle');
+  await page.evaluate(() => { window.__hub.offline = false; });
+  await page.click('#btnConnect'); await waitPhase(page, 'ready', 20000);
+  await page.evaluate(() => window.__hub.hubStop()); await waitPhase(page, 'stopped');
+  await page.evaluate(() => { window.__hub.started = true; });
+  await page.click('#btnConnect'); await waitPhase(page, 'ready');
+  await page.click('#btnDisconnect'); await waitPhase(page, 'idle');
+  assert.deepStrictEqual(await page.evaluate(() => window.__hub.events.slice(-2)), ['stop', 'gatt-disconnect']);
+  await page.context().close();
+  console.log('A ok: sensors, obstacle stop, motor test, extra motors, gripper, tank, profiles, language, regression');
+
+  }
+  // ---------- B. sharing over http: QR decodes to the link, link imports the profile on another device ----------
+  if (RUN('B')) {
+  page = await open({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true }, {}, HTTP);
+  await page.click('.tab[data-view="viewSettings"]'); await page.waitForTimeout(400);
+  await page.fill('#inpName', 'Grijpbot één'); await page.selectOption('#selLeft', 'E'); await page.selectOption('#selRight', 'F'); await page.click('#chkInvR + span');
+  await setRange(page, '#rngTrim', -7); await page.click('#chkGuard + span'); await setRange(page, '#rngGuard', 33);
+  await page.selectOption(AUX1 + '[data-k="port"]', 'B'); await page.fill(AUX1 + '[data-k="name"]', 'Klauw'); await page.selectOption(AUX1 + '[data-k="mode"]', 'grip'); await setRange(page, AUX1 + '[data-k="travel"]', -200);
+  await page.click('#btnShare'); await page.waitForTimeout(400);
+  const link = await page.$eval('#shareLink', (e) => e.value);
+  assert.ok(link.startsWith(HTTP + '#p='), link);
+  const mods = await page.$eval('#qr svg', (svg) => { const n = +svg.dataset.modules; const dark = new Set(); const re = /M(\d+) (\d+)h1v1h-1z/g; let m; const d = svg.querySelector('path').getAttribute('d'); while ((m = re.exec(d))) dark.add(m[2] + ',' + m[1]); return { n, dark: [...dark] }; });
+  const scale = 6, quiet = 4, size = (mods.n + quiet * 2) * scale, img = new Uint8ClampedArray(size * size * 4).fill(255), dark = new Set(mods.dark);
+  for (let r = 0; r < mods.n; r++) for (let c = 0; c < mods.n; c++) if (dark.has(r + ',' + c)) for (let y = 0; y < scale; y++) for (let x = 0; x < scale; x++) { const i = (((r + quiet) * scale + y) * size + (c + quiet) * scale + x) * 4; img[i] = img[i + 1] = img[i + 2] = 0; }
+  const decoded = jsQR(img, size, size);
+  assert.ok(decoded && decoded.data === link, 'QR decodes to the share link');
+  await page.screenshot({ path: OUT + '/share.png' });
+  const shareBox = await rect(page, '#sheet .box'); assert.ok(shareBox.x >= 0 && shareBox.x + shareBox.w <= 390 && shareBox.y >= 0 && shareBox.y + shareBox.h <= 844, 'share sheet fits');
+  await page.context().close();
+  page = await open({ viewport: { width: 1280, height: 800 }, locale: 'en-US' }, {}, link);     // another device, English
+  await page.waitForFunction(() => /Profile Grijpbot .* added/.test(document.getElementById('toasts').textContent));
+  assert.strictEqual(await page.evaluate(() => location.hash), '', 'hash cleared after import');
+  const imp = await page.evaluate(() => { const g = JSON.parse(localStorage.getItem('hubremote3')); return g.profiles.find((p) => p.id === g.active); });
+  assert.deepStrictEqual({ name: imp.name, left: imp.left, right: imp.right, invL: imp.invL, invR: imp.invR, trim: imp.trim, guard: imp.guard, guardCm: imp.guardCm, aux0: imp.aux[0] },
+    { name: 'Grijpbot één', left: 'E', right: 'F', invL: true, invR: true, trim: -7, guard: true, guardCm: 33, aux0: { port: 'B', name: 'Klauw', speed: 60, mode: 'grip', travel: -200 } });
+  assert.strictEqual(await page.$eval('html', (e) => e.lang), 'en');
+  assert.strictEqual(await page.$eval('#btnConnectText', (e) => e.textContent), 'Connect to hub');
+  assert.strictEqual(await page.$$eval('#selProfile option', (o) => o.length), 2);
+  await page.goto(link); await page.waitForTimeout(600);       // same link again: no duplicate
+  assert.strictEqual(await page.$$eval('#selProfile option', (o) => o.length), 2, 'no duplicate on second import');
+  await page.goto(HTTP + '#p=AAAA'); await page.waitForFunction(() => /not valid/.test(document.getElementById('toasts').textContent));
+  await page.context().close();
+  console.log('B ok: share link, QR, import, English default');
+
+  }
+  // ---------- C. tilt steering on a touch device ----------
+  if (RUN('C')) {
+  page = await open({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+  await page.click('#btnConnect'); await waitPhase(page, 'ready');
+  assert.notStrictEqual(await page.$eval('#modes [data-mode="tilt"]', (e) => getComputedStyle(e).display), 'none');
+  const tiltEv = (b, g) => page.evaluate(([b, g]) => window.dispatchEvent(new DeviceOrientationEvent('deviceorientation', { alpha: 0, beta: b, gamma: g })), [b, g]);
+  await page.click('#modes [data-mode="tilt"]'); await page.waitForTimeout(300);
+  const P = await rect(page, '#pad');
+  await ptr(page, '#pad', 'pointerdown', P.cx, P.cy, 1);
+  await page.waitForFunction(() => /geen kantelgegevens/.test(document.getElementById('toasts').textContent));   // no sensor data yet
+  await tiltEv(45, 0);
+  await page.evaluate(() => (window.__hub.tunnel.length = 0));
+  await ptr(page, '#pad', 'pointerdown', P.cx, P.cy, 1); await page.waitForTimeout(300);
+  assert.strictEqual(await last(page), 'C:0 D:0', 'neutral at the angle you grab it');
+  await tiltEv(20, 0); await page.waitForTimeout(450);
+  assert.strictEqual(await last(page), 'C:-60 D:60', 'tilt forward drives forward');
+  await tiltEv(45, 25); await page.waitForTimeout(450);
+  assert.strictEqual(await last(page), 'C:-36 D:-36', 'tilt right turns right');
+  await tiltEv(70, 0); await page.waitForTimeout(450);
+  assert.strictEqual(await last(page), 'C:60 D:-60', 'tilt back reverses');
+  await page.screenshot({ path: OUT + '/tilt.png' });
+  await ptr(page, '#pad', 'pointerup', P.cx, P.cy, 1); await page.waitForTimeout(350);
+  assert.strictEqual(await last(page), 'C:0 D:0', 'release stops');
+  await tiltEv(10, 0); await page.waitForTimeout(300); assert.strictEqual(await last(page), 'C:0 D:0', 'no driving unless held');
+  assert.strictEqual(await page.evaluate(() => JSON.parse(localStorage.getItem('hubremote3')).mode), 'tilt');
+  await page.context().close();
+  console.log('C ok: tilt');
+
+  }
+  // ---------- D. small-packet fallback, 20-byte hub, v2 settings migration ----------
+  if (RUN('D')) {
+  page = await open({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true }, { truncate: 100 });
+  await page.click('#btnConnect'); await waitPhase(page, 'ready', 30000);
+  assert.strictEqual(await page.evaluate(() => window.__hub.fileOk), true);
+  assert.ok(/opnieuw met 20 bytes/.test(await page.$eval('#log', (e) => e.textContent)));
+  await page.context().close();
+  page = await open({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true }, { maxPacket: 20 });
+  await page.click('#btnConnect'); await waitPhase(page, 'ready');
+  assert.ok((await page.evaluate(() => window.__hub.maxWrite)) <= 20);
+  await page.context().close();
+  page = await open({ viewport: { width: 1280, height: 800 } }, {}, FILE, () => { if (!localStorage.getItem('hubremote3')) localStorage.setItem('hubremote', JSON.stringify({ left: 'E', right: 'F', invL: false, invR: true, speed: 85, turn: 40, trim: 5, aux1: 'B', aux2: '-', slot: 7, sound: false, haptic: true, userPorts: true })); });
+  const mig = await page.evaluate(() => JSON.parse(localStorage.getItem('hubremote3')));
+  assert.deepStrictEqual([mig.slot, mig.sound, mig.profiles.length, mig.profiles[0].left, mig.profiles[0].right, mig.profiles[0].invL, mig.profiles[0].invR, mig.profiles[0].speed, mig.profiles[0].trim, mig.profiles[0].aux[0].port, mig.profiles[0].aux[0].speed],
+    [7, false, 1, 'E', 'F', false, true, 85, 5, 'B', 85]);
+  await page.context().close();
+  console.log('D ok: fallback, 20-byte hub, migration');
+
+  }
+  // ---------- E. layouts with sensors and an extra motor showing ----------
+  if (RUN('E')) {
+  const sizes = [
+    ['fold-cover-280', 280, 653, true], ['fold-cover-344', 344, 882, true], ['iphone-se', 375, 667, true], ['iphone', 390, 844, true],
+    ['iphone-land', 844, 390, true], ['fold-open', 768, 884, true], ['fold-open-land', 884, 768, true], ['ipad', 820, 1180, true], ['ipad-land', 1180, 820, true], ['laptop', 1366, 700, false],
+  ];
+  for (const [name, w, h, touch] of sizes) {
+    page = await open({ viewport: { width: w, height: h }, hasTouch: touch, isMobile: touch });
+    await page.click('#btnConnect'); await waitPhase(page, 'ready');
+    await page.waitForFunction(() => document.querySelectorAll('#sensors .schip').length === 3);
+    await page.waitForTimeout(700);
+    const measure = () => page.evaluate(() => {
+      const r = (id) => document.getElementById(id).getBoundingClientRect();
+      const vis = (el) => getComputedStyle(el).display !== 'none';
+      const over = [...document.querySelectorAll('body *')].filter((e) => { const b = e.getBoundingClientRect(); return b.width > 0 && (b.right > innerWidth + 0.5 || b.left < -0.5) && !e.closest('#log') && !e.closest('#toasts') && !e.closest('#sheet'); }).map((e) => e.tagName + '#' + e.id + '.' + e.className).slice(0, 4);
+      const pad = r('pad'), modes = r('modes'); const cx = pad.left + pad.width / 2, cy = pad.top + pad.height / 2;
+      const near = Math.hypot(Math.max(modes.left - cx, 0, cx - modes.right), Math.max(modes.top - cy, 0, cy - modes.bottom));
+      return { stopBottom: r('btnStop').bottom, padW: pad.width, tabbar: vis(document.getElementById('tabbar')), tabTop: r('tabbar').top, vh: innerHeight, over,
+        modesGap: near - pad.width / 2, scroll: document.getElementById('viewDrive').scrollHeight - document.getElementById('viewDrive').clientHeight, mainScroll: document.getElementById('main').scrollHeight - document.getElementById('main').clientHeight };
+    });
+    let m = await measure();
+    assert.deepStrictEqual(m.over, [], name + ' outside viewport: ' + m.over.join(' | '));
+    const limit = m.tabbar ? m.tabTop : m.vh;
+    assert.ok(m.stopBottom <= limit + 0.5, name + ': STOP not fully visible (' + Math.round(m.stopBottom) + ' > ' + Math.round(limit) + ')');
+    assert.ok(m.padW >= 120, name + ': joystick too small ' + m.padW);
+    assert.ok(m.modesGap >= -6, name + ': mode switch overlaps joystick by ' + (-m.modesGap).toFixed(1));
+    assert.strictEqual(m.tabbar, w < 900, name + ' tabbar');
+    await page.screenshot({ path: OUT + '/' + name + '.png' });
+    if (m.tabbar) {
+      await page.click('#modes [data-mode="tank"]'); await page.waitForTimeout(350);
+      const m2 = await measure(); assert.deepStrictEqual(m2.over, [], name + ' tank outside viewport');
+      assert.ok(m2.stopBottom <= limit + 0.5, name + ': STOP hidden in tank mode');
+      if (name === 'iphone') await page.screenshot({ path: OUT + '/iphone-tank.png' });
+      await page.click('#modes [data-mode="joy"]');
+      await page.click('.tab[data-view="viewSettings"]'); await page.waitForTimeout(450);
+      await page.selectOption(AUX1 + '[data-k="port"]', 'E'); await page.selectOption(AUX1 + '[data-k="mode"]', 'grip'); await page.waitForTimeout(450);
+      const so = await page.evaluate(() => [...document.querySelectorAll('#viewSettings *')].filter((e) => { const b = e.getBoundingClientRect(); return b.width > 0 && (b.right > innerWidth + 0.5 || b.left < -0.5); }).map((e) => e.tagName + '.' + e.className).slice(0, 4));
+      assert.deepStrictEqual(so, [], name + ' settings overflow: ' + so.join(' | '));
+      await page.screenshot({ path: OUT + '/' + name + '-settings.png', fullPage: false });
+      await page.click('.tab[data-view="viewDrive"]'); await page.waitForTimeout(450);
+      const m3 = await measure(); assert.deepStrictEqual(m3.over, [], name + ' with aux row');
+    }
+    if (!m.tabbar) {
+      // wide layout: the page itself never scrolls; the settings column scrolls on its own and its last card is reachable
+      const w2 = await page.evaluate(() => { const s = document.getElementById('viewSettings'), mn = document.getElementById('main'); s.scrollTop = 1e6;
+        const lastCard = s.lastElementChild.getBoundingClientRect(); return { main: mn.scrollHeight - mn.clientHeight, settings: s.scrollHeight - s.clientHeight, lastBottom: lastCard.bottom, vh: innerHeight, logH: document.getElementById('log').getBoundingClientRect().height }; });
+      assert.ok(w2.main <= 1, name + ': page scrolls by ' + w2.main); assert.ok(m.scroll <= 2, name + ': drive column is clipped by ' + m.scroll); assert.ok(w2.settings > 50, name + ': settings column should scroll');
+      assert.ok(w2.lastBottom <= w2.vh + 1, name + ': last settings card not reachable'); assert.ok(w2.logH >= 60, name + ': log too small ' + w2.logH);
+      await page.screenshot({ path: OUT + '/' + name + '-scrolled.png' });
+    }
+    console.log('E', name.padEnd(16), w + 'x' + h, 'pad', Math.round(m.padW), 'stop', Math.round(m.stopBottom), '/', Math.round(limit), 'modes gap', Math.round(m.modesGap), 'scroll', m.scroll, m.mainScroll);
+    await page.context().close();
+  }
+
+  }
+  // ---------- F. no Web Bluetooth notices in both languages ----------
+  if (RUN('F')) {
+  for (const [loc, re] of [['nl-NL', /Bluefy uit de App Store/], ['en-GB', /free Bluefy app/]]) {
+    const ctx = await browser.newContext({ locale: loc, viewport: { width: 390, height: 844 }, userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1' });
+    const p = await ctx.newPage(); p.on('pageerror', (e) => errors.push(String(e)));
+    await p.addInitScript(() => Object.defineProperty(navigator, 'bluetooth', { value: undefined, configurable: true })); await p.goto(FILE);
+    assert.ok(re.test(await p.$eval('#noBle', (e) => e.textContent)), loc);
+    assert.strictEqual(await p.$eval('#btnConnect', (e) => e.disabled), true);
+    await ctx.close();
+  }
+  }
+  await browser.close(); server.close();
+  assert.deepStrictEqual(errors, [], 'page errors: ' + errors.join('\n'));
+  console.log('OK all');
+})().catch((e) => { console.error('FAIL', e.message || e, (e.stack || '').split('\n').filter((l) => /test_page/.test(l)).slice(0, 2).join(' ')); process.exit(1); });

@@ -1,0 +1,6 @@
+node_modules/
+tests/out/
+dist/
+.DS_Store
+*.log
+CLAUDE.local.md
