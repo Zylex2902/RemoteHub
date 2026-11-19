@@ -43,6 +43,14 @@ eq([s.drive.left, s.drive.right, s.aux.length, Object.keys(s.sens).join(''), s.n
 s = LDraw.suggest({ motorL: 2 }); eq([s.hub, s.noHub, s.model], ['big', true, '']);
 s = LDraw.suggest({ otherHub: 1, motorL: 2 }); eq(s.otherHub, true);
 
+// our own example designs: the import suggests the ports their cable notes give
+const fs = require('fs'), path = require('path');
+const ex = (f) => LDraw.parse(fs.readFileSync(path.join(__dirname, '..', 'site', 'app', 'bricks', f), 'utf8'));
+r = ex('rover.ldr'); s = LDraw.suggest(r.counts);
+eq([r.title, r.counts, s.drive.left, s.drive.right, s.sens], ['Rover', { hub6: 1, motorM: 2, distance: 1 }, 'A', 'B', { C: 'distance' }]);
+r = ex('veegbot.ldr'); s = LDraw.suggest(r.counts);
+eq([r.counts, s.drive.left + s.drive.right, s.aux, s.sens], [{ hub6: 1, motorM: 2, motorL: 1, color: 1, force: 1 }, 'AB', [{ port: 'C', type: 'motorL' }], { D: 'color', E: 'force' }]);
+
 // files without parts, and anything else, are refused
 for (const bad of ['', 'hello', '0 just a comment\n0 STEP', 'PK\u0003\u0004binary']) {
   assert.throws(() => LDraw.parse(bad)); checks++;

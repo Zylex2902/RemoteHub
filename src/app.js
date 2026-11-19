@@ -2293,6 +2293,7 @@
   };
   $('btnBuildDemo').addEventListener('click', () => openExample('demo.ldr', 'build.demoName'));
   $('btnBuildRover').addEventListener('click', () => openExample('rover.ldr', 'build.roverName'));
+  $('btnBuildVeegbot').addEventListener('click', () => openExample('veegbot.ldr', 'build.veegbotName'));
   $('btnBuild').addEventListener('click', () => { const b = buildOf(S.id); if (b) openBuild(b.text, b.title); else toast(t('build.none'), 'warn'); });
   const showBuildBtn = () => $('btnBuild').classList.toggle('hide2', !buildOf(S.id));
   /* ---------- instellingen-UI ---------- */

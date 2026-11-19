@@ -980,6 +980,14 @@ let HTTP = '';
   await page.click('#btnBuildClose');
   await page.waitForFunction(() => !document.getElementById('buildSheet').classList.contains('on'));
   assert.strictEqual(await page.$$eval('#buildView canvas', (c) => c.length), 0, 'viewer cleaned up');
+  // the Veegbot: all three motors, colour and force sensor; every part in the brick pack
+  await page.click('#btnBuildVeegbot');
+  await page.waitForFunction(() => /Stap 1 van 12/.test(document.getElementById('buildStep').textContent), null, { timeout: 30000 });
+  assert.ok(!/grijs blok/.test(await page.$eval('#buildNote', (e) => e.textContent)), 'no missing parts');
+  await settle(); await page.$eval('#buildRange', (e) => { e.value = '12'; e.dispatchEvent(new Event('input', { bubbles: true })); });
+  assert.deepStrictEqual(await chips(), ['2×Technic Pin with Friction and Slots · zwart', '1×Electric Powered Up Force Sensor · wit']);
+  await page.click('#btnBuildClose');
+  await page.waitForFunction(() => !document.getElementById('buildSheet').classList.contains('on'));
   // an own file without steps, with a part that is not in the pack: steps made bottom-up, a grey block
   const at = (file, y, c = 4) => `1 ${c} 0 ${y} 0 1 0 0 0 1 0 0 0 1 ${file}`;
   const tower = ['0 Toren', at('3001.dat', -48), at('3001.dat', 0), at('3001.dat', -24), at('99999.dat', -72, 1), at('45601c01.dat', -200, 16)].join('\n');

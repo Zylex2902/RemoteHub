@@ -1,0 +1,65 @@
+0 Veegbot
+0 Name: veegbot.ldr
+0 Author: Hub Remote (own design, free to use)
+0 !LICENSE Licensed under CC BY 4.0
+0 // A sweeper robot, built only from parts of the LEGO Education SPIKE Prime set (45678).
+0 // Cables (not drawn): drive motors to ports A and B, large motor to C, colour sensor to D, force sensor to E.
+
+0 // Hub
+1 71 0 0 0 -1 0 0 0 1 0 0 0 -1 45601c01.dat
+0 STEP
+0 // Right drive motor: two blue 3L pins into the side of the hub
+1 1 -80 -10 -80 -1 0 0 0 1 0 0 0 -1 6558.dat
+1 1 -80 -50 -80 -1 0 0 0 1 0 0 0 -1 6558.dat
+1 15 -100 -30 -80 0 1 0 -1 0 0 0 0 1 54696p01.dat
+0 STEP
+0 // Left drive motor
+1 1 80 -10 -80 -1 0 0 0 1 0 0 0 -1 6558.dat
+1 1 80 -50 -80 -1 0 0 0 1 0 0 0 -1 6558.dat
+1 15 100 -30 -80 0 -1 0 1 0 0 0 0 1 54696p01.dat
+0 STEP
+0 // Wheels on 3L axles
+1 71 -155 -30 -80 -1 0 0 0 1 0 0 0 -1 4519.dat
+1 15 -167.5 -30 -80 0 0 -1 0 1 0 1 0 0 39367p01.dat
+1 71 155 -30 -80 -1 0 0 0 1 0 0 0 -1 4519.dat
+1 15 167.5 -30 -80 0 0 1 0 1 0 -1 0 0 39367p01.dat
+0 STEP
+0 // Back: a 7L beam with two blue 3L pins
+1 1 -40 -30 120 0 0 1 0 1 0 -1 0 0 6558.dat
+1 1 40 -30 120 0 0 1 0 1 0 -1 0 0 6558.dat
+1 15 0 -30 120 0 0 -1 1 0 0 0 -1 0 32524.dat
+0 STEP
+0 // Ball caster
+1 71 0 -30 140 0 0 1 0 1 0 -1 0 0 39370c01.dat
+0 STEP
+0 // Large motor at the front, output up, on two black pins
+1 0 -40 -30 -110 0 0 1 0 1 0 -1 0 0 2780.dat
+1 0 40 -30 -110 0 0 1 0 1 0 -1 0 0 2780.dat
+1 15 0 -30 -140 -1 0 0 0 1 0 0 0 -1 54675.dat
+0 STEP
+0 // Arm hub: two blue 3L pins in the motor output, then a 3L beam
+1 1 -20 -90 -140 0 -1 0 1 0 0 0 0 1 6558.dat
+1 1 20 -90 -140 0 -1 0 1 0 0 0 0 1 6558.dat
+1 15 0 -90 -140 0 0 -1 0 1 0 1 0 0 32523.dat
+0 STEP
+0 // Sweeper arm: an 11L beam on the same pins
+1 15 0 -110 -140 0 0 -1 0 1 0 1 0 0 32525.dat
+0 STEP
+0 // Scoops: two 3x5 L-beams, each on two black pins
+1 0 -40 -120 -140 0 -1 0 1 0 0 0 0 1 2780.dat
+1 0 -100 -120 -140 0 -1 0 1 0 0 0 0 1 2780.dat
+1 71 -20 -130 -140 0 0 -1 0 -1 0 -1 0 0 32526.dat
+1 0 40 -120 -140 0 -1 0 1 0 0 0 0 1 2780.dat
+1 0 100 -120 -140 0 -1 0 1 0 0 0 0 1 2780.dat
+1 71 20 -130 -140 0 0 1 0 1 0 -1 0 0 32526.dat
+0 STEP
+0 // Colour sensor on the right of the large motor, looking down
+1 0 -50 -50 -120 -1 0 0 0 1 0 0 0 -1 2780.dat
+1 0 -50 -50 -160 -1 0 0 0 1 0 0 0 -1 2780.dat
+1 15 -80 -50 -140 -1 0 0 0 0 -1 0 -1 0 37308.dat
+0 STEP
+0 // Force sensor on the left as a front bumper
+1 0 50 -50 -240 -1 0 0 0 1 0 0 0 -1 2780.dat
+1 0 50 -10 -240 -1 0 0 0 1 0 0 0 -1 2780.dat
+1 15 80 -30 -280 1 0 0 0 1 0 0 0 1 37312.dat
+0 STEP

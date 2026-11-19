@@ -885,6 +885,7 @@ html[data-theme="dark"] #pyCheat code{color:var(--accent-hi)}
       <p class="small" style="margin:0" data-i18n="robots.help"></p>
       <div class="rowbtns demos">
         <button class="btn sm" id="btnBuildRover" data-i18n="build.rover">Voorbeeld: Rover</button>
+        <button class="btn sm" id="btnBuildVeegbot" data-i18n="build.veegbot">Voorbeeld: Veegbot</button>
         <button class="btn sm" id="btnBuildDemo" data-i18n="build.demo">Voorbeeld: Robotje van stenen</button>
       </div>
       <div class="models" id="models"></div>
@@ -1662,7 +1663,7 @@ const I18N = {
     'set.robot': 'Robot', 'set.profile': 'Profiel', 'set.name': 'Naam', 'set.new': 'Nieuw', 'set.share': 'Delen', 'set.delete': 'Verwijderen', 'set.deleteSure': 'Zeker weten?',
     'robots.title': 'Bouw een robot', 'robots.help': 'Bouw een robot met de gratis bouwinstructies van LEGO® Education en tik dan op Gebruiken: de app zet de poorten goed en zet voorbeeldprogramma\'s klaar in Code.',
     'ldr.title': 'Zelf ontworpen in BrickLink Studio?', 'ldr.help': 'Exporteer je model in Studio als LDraw™-bestand (.ldr of .mpd, het bestandsformaat van www.ldraw.org) en open het hier. De app zoekt de hub, motoren en sensoren en stelt een profiel voor. Kabels staan niet in zo\'n bestand: controleer de poorten met het schema als de hub verbonden is.',
-    'build.title': 'Bouwplan', 'build.open': 'Bouwplan', 'build.demo': 'Voorbeeld: Robotje van stenen', 'build.demoName': 'Robotje', 'build.rover': 'Voorbeeld: Rover (alleen onderdelen uit de SPIKE™ Prime-set)', 'build.roverName': 'Rover', 'build.close': 'Sluiten',
+    'build.title': 'Bouwplan', 'build.open': 'Bouwplan', 'build.demo': 'Voorbeeld: Robotje van stenen', 'build.demoName': 'Robotje', 'build.rover': 'Voorbeeld: Rover (alleen onderdelen uit de SPIKE™ Prime-set)', 'build.roverName': 'Rover', 'build.veegbot': 'Voorbeeld: Veegbot met draaiarm, kleur- en druksensor (alle motoren uit de SPIKE™ Prime-set)', 'build.veegbotName': 'Veegbot', 'build.close': 'Sluiten',
     'build.step': 'Stap {0} van {1}', 'build.prev': 'Vorige', 'build.next': 'Volgende', 'build.done': 'Klaar!', 'build.reset': 'Recht zetten',
     'build.loading': 'Bouwstenen laden… {0}%', 'build.making': 'Model opbouwen…', 'build.fail': 'Het bouwplan kon niet worden geopend: {0}',
     'build.offline': 'Bouwplannen werken via de website (met internet de eerste keer), niet als los bestand.',
@@ -1844,7 +1845,7 @@ const I18N = {
     'set.robot': 'Robot', 'set.profile': 'Profile', 'set.name': 'Name', 'set.new': 'New', 'set.share': 'Share', 'set.delete': 'Delete', 'set.deleteSure': 'Are you sure?',
     'robots.title': 'Build a robot', 'robots.help': 'Build a robot with the free building instructions from LEGO® Education, then tap Use: the app sets the ports and puts example programs in Code.',
     'ldr.title': 'Designed it yourself in BrickLink Studio?', 'ldr.help': 'Export your model from Studio as an LDraw™ file (.ldr or .mpd, the file format of www.ldraw.org) and open it here. The app finds the hub, motors and sensors and suggests a profile. Cables are not in such a file: check the ports with the diagram once the hub is connected.',
-    'build.title': 'Building guide', 'build.open': 'Building guide', 'build.demo': 'Example: little brick robot', 'build.demoName': 'Little robot', 'build.rover': 'Example: Rover (only parts from the SPIKE™ Prime set)', 'build.roverName': 'Rover', 'build.close': 'Close',
+    'build.title': 'Building guide', 'build.open': 'Building guide', 'build.demo': 'Example: little brick robot', 'build.demoName': 'Little robot', 'build.rover': 'Example: Rover (only parts from the SPIKE™ Prime set)', 'build.roverName': 'Rover', 'build.veegbot': 'Example: sweeper robot with a turning arm, colour and force sensor (all motors of the SPIKE™ Prime set)', 'build.veegbotName': 'Sweeper robot', 'build.close': 'Close',
     'build.step': 'Step {0} of {1}', 'build.prev': 'Back', 'build.next': 'Next', 'build.done': 'Done!', 'build.reset': 'Straighten',
     'build.loading': 'Loading bricks… {0}%', 'build.making': 'Building the model…', 'build.fail': 'The building guide could not be opened: {0}',
     'build.offline': 'Building guides work from the website (online the first time), not as a single file.',
@@ -8447,6 +8448,7 @@ if (typeof module !== 'undefined') module.exports = LDraw;
   };
   $('btnBuildDemo').addEventListener('click', () => openExample('demo.ldr', 'build.demoName'));
   $('btnBuildRover').addEventListener('click', () => openExample('rover.ldr', 'build.roverName'));
+  $('btnBuildVeegbot').addEventListener('click', () => openExample('veegbot.ldr', 'build.veegbotName'));
   $('btnBuild').addEventListener('click', () => { const b = buildOf(S.id); if (b) openBuild(b.text, b.title); else toast(t('build.none'), 'warn'); });
   const showBuildBtn = () => $('btnBuild').classList.toggle('hide2', !buildOf(S.id));
   /* ---------- instellingen-UI ---------- */

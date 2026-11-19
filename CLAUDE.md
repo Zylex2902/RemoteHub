@@ -106,12 +106,13 @@ no App Store or Google Play badges before then.
   terms (rule 10): every guide shows the credit "The LDraw Parts Library" (CC BY) with links to
   www.ldraw.org and LICENSE-NOTICES.txt; "LDraw" never in our name, titles or URLs (files live in
   `site/app/bricks/`), LDraw™ with the Jessiman Estate trademark notice.
-- Example guides are own designs: `site/app/bricks/demo.ldr` (bricks) and `rover.ldr`, written by
-  `tools/designs/rover.py` (needs `LDRAW_ZIP`). That script checks every pin/axle end sits inside a real
+- Example guides are own designs: `site/app/bricks/demo.ldr` (bricks), `rover.ldr` and `veegbot.ldr`, written
+  by `tools/designs/rover.py` / `veegbot.py` (need `LDRAW_ZIP`; shared checks in `common.py`). They check every pin/axle end sits inside a real
   hole (from the LDraw hole primitives, `tools/designs/geo.py`), bodies do not overlap, wheels and caster
   touch the same ground, and part counts stay within LEGO Education's SPIKE Prime element overview.
   Use cable-less motor/sensor parts (54696p01, 37316): the `c01` versions shift the part and draw a
-  cable coil through the model. Not built physically yet.
+  cable coil through the model. `veegbot.py` also checks that the turning arm's circle is clear. Design
+  coordinates have the front at +Z and are written turned to face -Z. Not built physically yet.
 - Layout must keep STOP visible without scrolling on every size in `tests/test_page.js` section E
   and both fold postures in `tests/test_fold.js`.
 
