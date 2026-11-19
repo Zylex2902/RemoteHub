@@ -302,7 +302,10 @@ const fakeHub = (opts) => {
   }
   // ---------- C. tilt steering on a touch device ----------
   if (RUN('C')) {
-  page = await open({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+  // Some machines (GitHub runners) deliver real orientation readings. Keep those away from the
+  // app so only the simulated events below count; trusted events come from the browser itself.
+  const blockRealTilt = () => { window.__realTilt = 0; window.addEventListener('deviceorientation', (e) => { if (e.isTrusted) { window.__realTilt++; e.stopImmediatePropagation(); } }, true); };
+  page = await open({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true }, {}, undefined, blockRealTilt);
   await page.click('#btnConnect'); await waitPhase(page, 'ready');
   assert.notStrictEqual(await page.$eval('#modes [data-mode="tilt"]', (e) => getComputedStyle(e).display), 'none');
   const tiltEv = (b, g) => page.evaluate(([b, g]) => window.dispatchEvent(new DeviceOrientationEvent('deviceorientation', { alpha: 0, beta: b, gamma: g })), [b, g]);
@@ -325,8 +328,9 @@ const fakeHub = (opts) => {
   assert.strictEqual(await last(page), 'C:0 D:0', 'release stops');
   await tiltEv(10, 0); await page.waitForTimeout(300); assert.strictEqual(await last(page), 'C:0 D:0', 'no driving unless held');
   assert.strictEqual(await page.evaluate(() => JSON.parse(localStorage.getItem('hubremote3')).mode), 'tilt');
+  const realTilt = await page.evaluate(() => window.__realTilt);
   await page.context().close();
-  console.log('C ok: tilt');
+  console.log('C ok: tilt (' + realTilt + ' real sensor events ignored)');
 
   }
   // ---------- D. small-packet fallback, 20-byte hub, v2 settings migration ----------
