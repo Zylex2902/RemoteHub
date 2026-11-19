@@ -37,7 +37,8 @@ program in a program slot on the hub, and then sends live drive commands to it.
 
 Web Bluetooth needs a secure address, so phones and tablets need the app hosted over https. This
 repository deploys `site/` to GitHub Pages on every push to `main` (see
-`.github/workflows/pages.yml`); enable Pages with "GitHub Actions" as the source.
+`.github/workflows/pages.yml`); enable Pages with "GitHub Actions" as the source. It can also be
+hosted on Netlify: `netlify.toml` publishes `site/` as is, with no build step.
 
 ## Using it
 
