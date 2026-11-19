@@ -6,8 +6,9 @@ game controller and no custom firmware.
 Hub Remote is a small web app (a PWA). It connects with Web Bluetooth, stores one short Python
 program in a program slot on the hub, and then sends live drive commands to it.
 
-**Compatibility:** works with the LEGO® Education SPIKE™ Prime hub on its standard firmware
-(app version 3). The firmware is not modified.
+**Compatibility:** works with the LEGO® Education SPIKE™ Prime and SPIKE™ Essential hubs on their
+standard firmware (app version 3). The firmware is not modified. On the small hub (2 ports, no speaker,
+no light matrix) sounds play on the phone and pictures are skipped.
 
 > Hub Remote is an independent project. LEGO® and SPIKE™ are trademarks of the LEGO Group, which
 > does not sponsor, authorize or endorse this project.

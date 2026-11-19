@@ -38,7 +38,7 @@ const I18N = {
     'app.slotHelp': 'Het programma in het gekozen slot wordt bij verbinden overschreven.',
     'hub.title': 'Hub', 'hub.name': 'Naam', 'hub.batt': 'Batterij', 'hub.fw': 'Firmware', 'hub.battTitle': 'Batterij van de hub',
     'about.title': 'Over',
-    'about.text': 'Hub Remote is een onafhankelijk project. Het werkt met de LEGO® Education SPIKE™ Prime-hub op de standaardfirmware. LEGO® en SPIKE™ zijn handelsmerken van de LEGO Group, die deze app niet sponsort, autoriseert of onderschrijft. Het communicatieprotocol is door de LEGO Group openbaar gedocumenteerd onder de Apache-licentie 2.0.',
+    'about.text': 'Hub Remote is een onafhankelijk project. Het werkt met de LEGO® Education SPIKE™ Prime-hub en SPIKE™ Essential-hub op de standaardfirmware. LEGO® en SPIKE™ zijn handelsmerken van de LEGO Group, die deze app niet sponsort, autoriseert of onderschrijft. Het communicatieprotocol is door de LEGO Group openbaar gedocumenteerd onder de Apache-licentie 2.0.',
     'log.title': 'Logboek', 'log.clear': 'Wissen',
     'share.title': '{0} delen', 'share.copy': 'Kopieer link', 'share.share': 'Delen', 'share.close': 'Sluiten', 'share.copied': 'Link gekopieerd',
     'share.note': 'Scan de code of open de link op een ander toestel om dit profiel over te nemen.',
@@ -130,6 +130,8 @@ const I18N = {
     'blk.dist': 'afstand {op} {n} cm', 'blk.color': 'kleur {p} is {col}', 'blk.force': 'krachtsensor {st}', 'blk.tilt': 'hub kantelt {dir}', 'blk.face': 'hub ligt met {f} boven', 'blk.btn': 'hubknop {b} ingedrukt',
     'cat.op': 'Rekenen', 'code.makeVar': 'Maak een variabele', 'code.noHat': 'Zet een Wanneer-blok bovenaan je programma, bijvoorbeeld "Wanneer het programma start".',
     'opt.abs': 'absolute waarde', 'opt.round': 'afgerond', 'opt.floor': 'naar beneden afgerond', 'opt.ceil': 'naar boven afgerond', 'opt.sqrt': 'wortel',
+    'hub.kind': 'Soort', 'hub.big': 'grote hub (6 poorten)', 'hub.small': 'kleine hub (2 poorten)', 'app.hubKind': 'Soort hub', 'kind.auto': 'Automatisch herkennen',
+    'msg.hubKind': 'Herkend als {0}.', 'play.small': 'Deze hub heeft geen luidspreker en geen lichtscherm: je hoort het op dit toestel.',
   },
   en: {
     'app.tagline': 'Remote control for your robot hub',
@@ -170,7 +172,7 @@ const I18N = {
     'app.slotHelp': 'The program in the selected slot is overwritten when you connect.',
     'hub.title': 'Hub', 'hub.name': 'Name', 'hub.batt': 'Battery', 'hub.fw': 'Firmware', 'hub.battTitle': 'Hub battery',
     'about.title': 'About',
-    'about.text': 'Hub Remote is an independent project. It works with the LEGO® Education SPIKE™ Prime hub on its standard firmware. LEGO® and SPIKE™ are trademarks of the LEGO Group, which does not sponsor, authorize or endorse this app. The communication protocol is publicly documented by the LEGO Group under the Apache License 2.0.',
+    'about.text': 'Hub Remote is an independent project. It works with the LEGO® Education SPIKE™ Prime and SPIKE™ Essential hubs on their standard firmware. LEGO® and SPIKE™ are trademarks of the LEGO Group, which does not sponsor, authorize or endorse this app. The communication protocol is publicly documented by the LEGO Group under the Apache License 2.0.',
     'log.title': 'Log', 'log.clear': 'Clear',
     'share.title': 'Share {0}', 'share.copy': 'Copy link', 'share.share': 'Share', 'share.close': 'Close', 'share.copied': 'Link copied',
     'share.note': 'Scan the code or open the link on another device to add this profile there.',
@@ -262,6 +264,8 @@ const I18N = {
     'blk.dist': 'distance {op} {n} cm', 'blk.color': 'colour {p} is {col}', 'blk.force': 'force sensor {st}', 'blk.tilt': 'hub tilts {dir}', 'blk.face': 'hub has {f} up', 'blk.btn': 'hub button {b} pressed',
     'cat.op': 'Operators', 'code.makeVar': 'Make a variable', 'code.noHat': 'Put a When block at the top of your program, for example "When the program starts".',
     'opt.abs': 'absolute value', 'opt.round': 'rounded', 'opt.floor': 'rounded down', 'opt.ceil': 'rounded up', 'opt.sqrt': 'square root',
+    'hub.kind': 'Type', 'hub.big': 'big hub (6 ports)', 'hub.small': 'small hub (2 ports)', 'app.hubKind': 'Hub type', 'kind.auto': 'Detect automatically',
+    'msg.hubKind': 'Recognised as {0}.', 'play.small': 'This hub has no speaker or light matrix: you hear it on this device.',
   },
 };
 if (typeof module !== 'undefined') module.exports = I18N;

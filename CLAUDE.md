@@ -1,6 +1,7 @@
 # Hub Remote: notes for Claude Code
 
-Web app (PWA) that drives a LEGO Education SPIKE Prime hub on stock firmware over Web Bluetooth.
+Web app (PWA) that drives a LEGO Education SPIKE Prime or SPIKE Essential hub on stock firmware over
+Web Bluetooth.
 Public, free, independent project. Read `README.md` first; this file holds what it does not.
 
 ## Commands
@@ -54,6 +55,12 @@ CI (`.github/workflows/pages.yml`) fails if `site/index.html` is not rebuilt and
 - Songs in the app are public domain or written for this project. Do not add copyrighted melodies.
 - CI: the GitHub Pages deploy runs only when the repository variable `DEPLOY_PAGES` is `true`;
   the app is hosted on Netlify (`netlify.toml`, publishes `site/` with no build step).
+- Two hub kinds, shown in the app only as 'big hub (6 ports)' and 'small hub (2 ports)' (no product
+  names in the UI). The small hub (owner has one) has ports A-B, and, as far as known, no speaker
+  and no 5x5 light matrix: sounds then play on the phone, pictures are skipped. Detection: product
+  value in the info response (only 0 = Prime is documented), and the hub program's `hw <matrix>
+  <sound> <ports>` line; Settings can override. Hub program imports must never assume
+  `light_matrix`, `sound`, `button` or ports C-F exist. Not yet tried on a real small hub.
 - Wide layouts (>= 900 px and both fold postures) have no tab bar: a header switch (`#modeSwitch`)
   toggles `body.codefull`. The overview never shows the editor; Code fills the screen. Programs
   and driving are never on screen together, and drive keys are ignored in the Code view.

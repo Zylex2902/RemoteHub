@@ -1,5 +1,10 @@
 import hub, motor, runloop, time
-from hub import port, light_matrix
+from hub import port
+# De kleine hub (2 poorten) heeft geen lichtscherm en geen luidspreker: niets mag daarop vastlopen.
+try:
+    from hub import light_matrix
+except Exception:
+    light_matrix = None
 try:
     from hub import sound
 except Exception:
@@ -21,8 +26,13 @@ try:
 except Exception:
     distance_sensor = None
 
-VERSION = '5'
-PORTS = {'A': port.A, 'B': port.B, 'C': port.C, 'D': port.D, 'E': port.E, 'F': port.F}
+VERSION = '6'
+PORTS = {}
+for _n in 'ABCDEF':
+    try:
+        PORTS[_n] = getattr(port, _n)
+    except Exception:
+        pass
 TIMEOUT_MS = 800
 tunnel = hub.config['module_tunnel']
 inbox = []
@@ -242,9 +252,15 @@ def show(img):
         pass
 
 
+def hw():
+    # Wat deze hub heeft: lichtscherm, geluid, aantal poorten.
+    say('hw ' + ('1' if light_matrix else '0') + ' ' + ('1' if sound else '0') + ' ' + str(len(PORTS)))
+
+
 def handle(text):
     if text == '?':
         say('rdy ' + VERSION)
+        hw()
         return
     if text == 'beep':
         try:
@@ -341,6 +357,7 @@ async def main():
     except Exception:
         pass
     say('rdy ' + VERSION)
+    hw()
     while True:
         if inbox:
             while inbox:

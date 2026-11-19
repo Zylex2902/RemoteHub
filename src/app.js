@@ -3,7 +3,7 @@
   const qsa = (sel, root) => Array.from((root || document).querySelectorAll(sel));
   const el = (tag, cls) => { const e = document.createElement(tag); if (cls) e.className = cls; return e; };
   const PORTS = ['A', 'B', 'C', 'D', 'E', 'F'];
-  const HUB_VERSION = '5';
+  const HUB_VERSION = '6';
   const enc = new TextEncoder(), dec = new TextDecoder();
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
@@ -15,7 +15,7 @@
   const newProfile = (name) => ({ id: uid(), name, left: 'A', right: 'B', invL: true, invR: false, speed: 60, turn: 60, trim: 0, userPorts: false,
     aux: [newAux(), newAux()], guard: false, guardCm: 20 });
   const G = { lang: 'auto', theme: 'light', sound: true, haptic: true, slot: 19, mode: 'joy', active: '', profiles: [],
-    hubVol: 60, voice: 'normal', react: true, song: [], path: [], programs: [], progActive: '' };
+    hubVol: 60, voice: 'normal', react: true, song: [], path: [], programs: [], progActive: '', hubKind: 'auto' };
   const curLang = () => (G.lang === 'nl' || G.lang === 'en') ? G.lang : ((navigator.language || 'en').toLowerCase().startsWith('nl') ? 'nl' : 'en');
   const t = (k, ...a) => {
     let s = (I18N[curLang()] || I18N.en)[k];
@@ -52,6 +52,7 @@
       if (raw.theme === 'dark') G.theme = 'dark';
       G.sound = raw.sound !== false; G.haptic = raw.haptic !== false; G.slot = num(raw.slot, 0, 19, 19);
       G.mode = ['joy', 'tank', 'tilt'].includes(raw.mode) ? raw.mode : 'joy';
+      G.hubKind = ['big', 'small'].includes(raw.hubKind) ? raw.hubKind : 'auto';
       G.hubVol = num(raw.hubVol, 0, 100, 60); G.voice = ['high', 'low'].includes(raw.voice) ? raw.voice : 'normal'; G.react = raw.react !== false;
       G.song = cleanPairs(raw.song, 200, (f) => (f === 0 ? 0 : num(f, 100, 10000, 0)), (ms) => num(ms, 50, 2000, 300));
       G.path = cleanPairs(raw.path, MAX_PATH, (v) => num(v, -100, 100, 0), (v) => num(v, -100, 100, 0));
@@ -270,9 +271,10 @@
     keepAwake(p === 'ready');
     if (p !== 'ready' && st.rec) finishRec();
     if (p !== 'ready' && st.run) st.run.stop();
-    $('playWhere').textContent = t(p === 'ready' ? 'play.hub' : 'play.phone');
+    $('playWhere').textContent = whereText();
     if (p === 'idle') {
       showBattery(null); st.motors = []; st.gotMotors = false; showChips(); showSensors([]);
+      st.hw = null; st.product = null; st.kindLogged = ''; applyHubKind();
       $('infoName').textContent = '-'; $('infoFw').textContent = '-';
     }
   }
@@ -362,6 +364,9 @@
       if (text.startsWith('rdy')) { if (st.readyWait) { const r = st.readyWait; st.readyWait = null; r(text); } return; }
       // Hubknoppen en gebaren (voor de programmeerkaartjes).
       if (/^btn [LR] [01]$/.test(text)) { st.btn[text[4]] = +text[6]; return; }
+      // Wat de hub heeft (lichtscherm, geluid, aantal poorten): bepaalt of het de grote of kleine hub is.
+      const hw = /^hw ([01]) ([01]) (\d)$/.exec(text);
+      if (hw) { st.hw = { matrix: hw[1] === '1', sound: hw[2] === '1', ports: +hw[3] }; applyHubKind(); return; }
       if (/^ges \d$/.test(text)) { if (st.run) st.run.fire('gesture', +text[4]); return; }
       if (text.startsWith('err ')) {
         const port = text.slice(4, 5), why = text.slice(6), m = t('msg.portErr', port);
@@ -458,6 +463,7 @@
     hub.chunk = Math.max(4, Math.floor((info.maxChunkSize || 64) / 4) * 4);
     $('infoName').textContent = hub.device.name || 'hub'; $('infoFw').textContent = info.firmware;
     log(t('msg.fw', info.firmware, hub.packet, hub.chunk));
+    st.product = info.product;
     if (await ping(700)) { log(t('msg.running')); resetDrive(); }
     else await install();
     await hub.request(Proto.deviceNotificationRequest(200), 0x29, 2000).catch(() => log(t('msg.noStatus'), 'warn'));
@@ -465,7 +471,7 @@
 
   function goReady(noteKey) {
     setPhase('ready'); setHint('hint.ready'); sfx.ready(); buzz(30);
-    hub.text('vol ' + G.hubVol).catch(() => {}); react('hello');
+    hub.text('vol ' + G.hubVol).catch(() => {}); applyHubKind(); react('hello');
     if (noteKey) { toast(t(noteKey), 'ok'); log(t(noteKey) + '.', 'ok'); }
   }
 
@@ -589,7 +595,8 @@
     const now = performance.now();
     if (st.phase !== 'ready' || now - st.lastBeep < 300) return;
     st.lastBeep = now; buzz(15);
-    hub.text('beep').catch(() => {});
+    if (hubSpeaker()) hub.text('beep').catch(() => {});
+    else playLocal([[440, 250]]);   // kleine hub: toeter op dit toestel
   }
 
   function auxPorts() {
@@ -966,8 +973,26 @@
     ['love', '❤️', 'love', () => melody('G4:1 C5:1 E5:2 R:1 C5:1 E5:1 G5:4', 120)],
   ];
   const linked = () => st.phase === 'ready';
+  // Grote hub (6 poorten, lichtscherm, luidspreker) of kleine hub (2 poorten, geen van beide).
+  // Herkend aan het hubtype uit het eerste antwoord en aan wat het hubprogramma meldt; in te stellen.
+  function smallHub() {
+    if (G.hubKind !== 'auto') return G.hubKind === 'small';
+    return (st.product !== null && st.product !== undefined && st.product !== 0) || !!(st.hw && (!st.hw.matrix || st.hw.ports <= 2));
+  }
+  const hubSpeaker = () => linked() && !smallHub();
+  const hubScreen = () => linked() && !smallHub();
+  const hubPorts = () => (smallHub() ? PORTS.slice(0, 2) : PORTS);
+  const whereText = () => t(!linked() ? 'play.phone' : smallHub() ? 'play.small' : 'play.hub');
+  function applyHubKind() {
+    const small = smallHub();
+    $('infoKind').textContent = st.phase === 'idle' && G.hubKind === 'auto' ? '-' : t(small ? 'hub.small' : 'hub.big');
+    $('playWhere').textContent = whereText();
+    fillStatic(); renderAuxSettings(); syncSettings();
+    const key = small ? 'small' : 'big';
+    if (linked() && st.kindLogged !== key) { st.kindLogged = key; log(t('msg.hubKind', t('hub.' + key)) + (st.product !== null && st.product !== undefined ? ' (' + st.product + ')' : '')); }
+  }
   const totalMs = (notes) => notes.reduce((a, n) => a + n[1], 0);
-  function showFace(name) { if (linked() && FACES[name]) hub.text('img ' + FACES[name]).catch(() => {}); }
+  function showFace(name) { if (hubScreen() && FACES[name]) hub.text('img ' + FACES[name]).catch(() => {}); }
   // Naar de hub in berichten van hooguit 24 noten: "tune" begint opnieuw, "tune+" sluit aan.
   function sendNotes(notes) {
     const toks = notes.map(([f, ms]) => Math.round(f) + ':' + Math.max(10, Math.round(ms)));
@@ -998,7 +1023,8 @@
     } catch (e) {}
   }
   function play(notes, face) {
-    if (linked()) { sendNotes(notes); if (face) showFace(face); } else playLocal(notes);
+    if (hubSpeaker()) sendNotes(notes); else playLocal(notes);
+    if (face) showFace(face);
     return totalMs(notes);
   }
   function quiet() {
@@ -1055,7 +1081,7 @@
     if (!notes.length) return 0;
     endMouth();
     const ms = play(notes);
-    if (!linked()) return ms;
+    if (!hubScreen()) return ms;
     const frames = ['mOpen', 'mHalf', 'mShut', 'mHalf'], until = performance.now() + ms;
     let i = 0;
     showFace(frames[i++]);
@@ -1444,8 +1470,9 @@
       });
     },
     send: (text) => { if (linked()) hub.text(text).catch(() => {}); },
-    tune: (notes) => { if (linked()) sendNotes(notes); else playLocal(notes); },
+    tune: (notes) => { if (hubSpeaker()) sendNotes(notes); else playLocal(notes); },
     img: (s) => {
+      if (!hubScreen()) return;
       imgPending = s;
       if (imgTimer) return;
       const flush = () => { imgTimer = null; if (imgPending && linked()) hub.text('img ' + imgPending).catch(() => {}); imgPending = null; };
@@ -1646,13 +1673,14 @@
 
   /* ---------- instellingen-UI ---------- */
   function fill(sel, items) { const v = sel.value; sel.textContent = ''; for (const [val, txt] of items) { const o = el('option'); o.value = val; o.textContent = txt; sel.appendChild(o); } if (v) sel.value = v; }
-  const portItems = () => PORTS.map((p) => [p, t('port', p)]);
+  const portItems = () => hubPorts().map((p) => [p, t('port', p)]);
   function fillStatic() {
     fill($('selLeft'), portItems()); fill($('selRight'), portItems());
     fill($('selSlot'), Array.from({ length: 20 }, (_, i) => [String(i), t('slot', i)]));
     fill($('selLang'), [['auto', t('lang.auto')], ['nl', 'Nederlands'], ['en', 'English']]);
     fill($('selTheme'), [['light', t('theme.light')], ['dark', t('theme.dark')]]);
     fill($('selVoice'), [['normal', t('voice.normal')], ['high', t('voice.high')], ['low', t('voice.low')]]);
+    fill($('selHubKind'), [['auto', t('kind.auto')], ['big', t('hub.big')], ['small', t('hub.small')]]);
   }
 
   function renderAuxSettings() {
@@ -1707,6 +1735,7 @@
     $('chkGuard').checked = S.guard; $('rngGuard').value = S.guardCm; $('outGuard').textContent = S.guardCm + ' cm';
     $('selSlot').value = String(G.slot); $('selLang').value = G.lang === 'nl' || G.lang === 'en' ? G.lang : 'auto';
     $('chkSound').checked = G.sound; $('chkHaptic').checked = G.haptic; $('selTheme').value = G.theme;
+    $('selHubKind').value = G.hubKind;
     $('rngVol').value = G.hubVol; $('outVol').textContent = G.hubVol + '%'; $('chkReact').checked = G.react; $('selVoice').value = G.voice;
     $('btnRoute').disabled = !G.path.length; $('btnSongPlay').disabled = !G.song.length;
     $('warnPorts').classList.toggle('on', S.left === S.right);
@@ -1728,6 +1757,7 @@
   bind('rngVol', 'input', (n) => { G.hubVol = +n.value; if (st.phase === 'ready') hub.text('vol ' + G.hubVol).catch(() => {}); });
   bind('chkReact', 'change', (n) => { G.react = n.checked; sfx.tick(); buzz(10); });
   bind('selVoice', 'change', (n) => { G.voice = n.value; sfx.tick(); });
+  $('selHubKind').addEventListener('change', (e) => { G.hubKind = e.target.value; save(); sfx.tick(); applyHubKind(); e.target.blur(); });
   function applyTheme() {
     document.documentElement.dataset.theme = G.theme;
     $('themeColor').setAttribute('content', G.theme === 'dark' ? '#161b22' : '#ffffff');
@@ -1753,7 +1783,7 @@
     qsa('[data-i18n-title]').forEach((n) => { n.title = t(n.dataset.i18nTitle); });
     qsa('[data-i18n-aria]').forEach((n) => { n.setAttribute('aria-label', t(n.dataset.i18nAria)); });
     qsa('[data-i18n-ph]').forEach((n) => { n.placeholder = t(n.dataset.i18nPh); });
-    $('playWhere').textContent = t(st.phase === 'ready' ? 'play.hub' : 'play.phone');
+    $('playWhere').textContent = whereText();
     if (st.songRec) $('btnSongRec').textContent = t('piano.stopRec');
     $('pillText').dataset.t = ''; $('btnConnectText').dataset.t = ''; $('hint').dataset.t = '';
     phaseTexts(); setText($('hint'), t(...st.hint));

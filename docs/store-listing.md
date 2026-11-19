@@ -34,7 +34,7 @@ robot hub. No game controller needed: connect over Bluetooth and drive.
 - Phones, tablets and foldables, portrait or landscape
 - English and Dutch, light and dark theme
 
-Compatibility: works with the LEGO® Education SPIKE™ Prime hub on its standard firmware. The
+Compatibility: works with the LEGO® Education SPIKE™ Prime and SPIKE™ Essential hubs on their standard firmware. The
 firmware is not modified. Hub Remote stores a small control program in a program slot you choose;
 whatever was in that slot is replaced.
 
@@ -71,7 +71,7 @@ programmeerbare robothub. Geen gamecontroller nodig: verbind via Bluetooth en ri
 - Telefoons, tablets en vouwtelefoons, staand of liggend
 - Nederlands en Engels, licht en donker thema
 
-Compatibiliteit: werkt met de LEGO® Education SPIKE™ Prime-hub op de standaardfirmware. De
+Compatibiliteit: werkt met de LEGO® Education SPIKE™ Prime-hub en SPIKE™ Essential-hub op de standaardfirmware. De
 firmware wordt niet aangepast. Hub Remote zet een klein besturingsprogramma in een programmaslot
 naar keuze; wat daar stond wordt vervangen.
 

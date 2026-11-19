@@ -7,7 +7,7 @@ src = re.search(r'<script type="text/plain" id="hub-program">(.*?)</script>', ht
 src = re.sub(r'^\s*\n', '', src)
 ast.parse(src)
 assert all(ord(c) < 128 for c in src), "non-ascii in hub program"
-assert "VERSION = '5'" in src and "HUB_VERSION = '5'" in html
+assert "VERSION = '6'" in src and "HUB_VERSION = '6'" in html
 print("program:", len(src.encode()), "bytes,", src.count("\n"), "lines")
 
 clock = [0]; calls = []; sent = []; script = []; pixels = []; beeps = []; hushes = []
@@ -87,7 +87,8 @@ script[:] = [
 ]
 exec(compile(src, "program.py", "exec"), {"__name__": "__main__"})
 def at(t0, t1): return [(k, p, v) for (t, k, p, v) in calls if t0 <= t < t1]
-assert sent[0] == b"rdy 5" and sent.count(b"rdy 5") == 2, sent
+assert sent[0] == b"rdy 6" and sent.count(b"rdy 6") == 2, sent
+assert sent[1] == b"hw 1 1 6" and sent.count(b"hw 1 1 6") == 2, sent   # what the big hub has, after each rdy
 early = [b for b in beeps if b[0] < 4000]
 assert len(early) == 1 and early[0][1:] == (440, 250, 100), beeps
 assert len(pixels) == 7 + 25 and pixels[7] == (0, 0, 100) and pixels[-1] == (4, 4, 55) and pixels[8] == (1, 0, 0), pixels[7:]
@@ -130,4 +131,17 @@ assert ("stop", 2, 0) in fs and not any(p == 3 for (k, p, v) in fs), fs
 # halt: all six ports stopped (E is missing and skipped), sound stopped
 assert sorted(p for (k, p, v) in at(8100, 8200) if k == "stop") == [0, 1, 2, 3, 5], at(8100, 8200)
 assert any(8100 <= t <= 8120 for t in hushes), hushes
-print("OK hub program v5: drive, failsafe, ping, horn, gripper, music, images, exact moves, positions, stop modes, buttons, gestures, lights, halt")
+# ---- the small hub: ports A and B only, no light matrix, no speaker, no buttons or gesture API ----
+small = types.ModuleType("hub"); small.config = {"module_tunnel": tunnel}; small.port = types.SimpleNamespace(A=0, B=1)
+sys.modules["hub"] = small
+calls.clear(); sent.clear(); beeps.clear(); pixels.clear(); clock[0] = 0; END = 2000
+script[:] = [(100, b"A:40 B:-40"), (200, b"?"), (300, b"beep"), (310, b"tune 440:100"), (320, b"img 9000000000000000000000009"),
+             (330, b"C:50 E:20"), (400, b"deg A:90:50"), (500, b"halt"), (600, b"A:30")]
+exec(compile(src, "program.py", "exec"), {"__name__": "__main__"})
+assert sent[:2] == [b"rdy 6", b"hw 0 0 2"] and sent.count(b"hw 0 0 2") == 2, sent
+assert at(100, 200) == [("run", 0, 400), ("run", 1, -400)], at(100, 200)
+assert at(300, 400) == [], 'no speaker, no screen, no ports C and E: nothing happens and nothing breaks'
+assert at(400, 500) == [("deg", 0, (90, 500))]
+assert sorted(p for (k, p, v) in at(500, 600) if k == "stop") == [0, 1], 'halt stops the two ports that exist'
+assert at(600, 700) == [("run", 0, 300)] and beeps == [] and pixels == []
+print("OK hub program v6: drive, failsafe, ping, horn, gripper, music, images, exact moves, positions, stop modes, buttons, gestures, lights, halt; small hub")
