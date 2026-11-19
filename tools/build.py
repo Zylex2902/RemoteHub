@@ -12,10 +12,21 @@ SRC, SITE = ROOT / "src", ROOT / "site"
 rd = lambda p: p.read_text(encoding="utf8")
 
 
+def blockly():
+    # Blockly-kern plus de Nederlandse en Engelse menuteksten als objecten (BlocklyMsg.nl / .en),
+    # zodat de pagina van taal kan wisselen zonder ze over elkaar heen te laden.
+    v = ROOT / "vendor" / "blockly"
+    out = [rd(v / "blockly_compressed.js"), "var BlocklyMsg = {};"]
+    for lang in ("nl", "en"):
+        out.append("(function () { var module = { exports: {} }, exports = module.exports;\n" + rd(v / ("msg-" + lang + ".js"))
+                   + "\nBlocklyMsg." + lang + " = module.exports; })();")
+    return "\n".join(out)
+
+
 def build():
     html = rd(SRC / "base.html")
     parts = {"CSS": rd(SRC / "style.css"), "HUB": rd(SRC / "hub_program.py"), "PROTO": rd(SRC / "proto.js"),
-             "QR": rd(ROOT / "vendor" / "qrcode.min.js").strip(), "I18N": rd(SRC / "i18n.js"), "CARDS": rd(SRC / "cards.js"),
+             "QR": rd(ROOT / "vendor" / "qrcode.min.js").strip(), "I18N": rd(SRC / "i18n.js"), "BLOCKLY": blockly(), "CARDS": rd(SRC / "cards.js"),
              "APP": rd(SRC / "app.js")}
     for key, text in parts.items():
         assert "</script>" not in text and "</style>" not in text, key

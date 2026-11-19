@@ -1,6 +1,6 @@
 {
   "name": "hub-remote",
-  "version": "5.0.0",
+  "version": "5.1.0",
   "private": true,
   "description": "Drive a programmable robot hub from the browser over Web Bluetooth.",
   "license": "MIT",
@@ -10,12 +10,14 @@
     "vendor": "terser node_modules/qrcode-generator/dist/qrcode.js -c -m -o vendor/qrcode.min.js",
     "test": "npm run test:unit && npm run test:browser",
     "test:unit": "node tests/test_proto.js && node tests/test_cards.js && python3 -I tests/test_hub_program.py",
-    "test:browser": "node tests/test_page.js && node tests/test_fold.js && node tests/test_sw.js"
+    "test:browser": "node tests/test_page.js && node tests/test_fold.js && node tests/test_sw.js",
+    "vendor:blockly": "cp node_modules/blockly/blockly_compressed.js vendor/blockly/ && cp node_modules/blockly/msg/nl.js vendor/blockly/msg-nl.js && cp node_modules/blockly/msg/en.js vendor/blockly/msg-en.js && cp node_modules/blockly/media/* site/blockly-media/ && cp node_modules/blockly/LICENSE licenses/Apache-2.0-Blockly.txt"
   },
   "devDependencies": {
-    "playwright": "^1.63.0",
+    "blockly": "13.4.0",
     "jsqr": "^1.4.0",
-    "terser": "^5.51.2",
-    "qrcode-generator": "^2.0.4"
+    "playwright": "^1.63.0",
+    "qrcode-generator": "^2.0.4",
+    "terser": "^5.51.2"
   }
 }

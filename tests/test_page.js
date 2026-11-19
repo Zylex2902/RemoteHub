@@ -407,7 +407,9 @@ const fakeHub = (opts) => {
     const measure = () => page.evaluate(() => {
       const r = (id) => document.getElementById(id).getBoundingClientRect();
       const vis = (el) => getComputedStyle(el).display !== 'none';
-      const over = [...document.querySelectorAll('body *')].filter((e) => { const b = e.getBoundingClientRect(); return b.width > 0 && (b.right > innerWidth + 0.5 || b.left < -0.5) && !e.closest('#log') && !e.closest('#toasts') && !e.closest('#sheet'); }).map((e) => e.tagName + '#' + e.id + '.' + e.className).slice(0, 4);
+      const over = [...document.querySelectorAll('body *')].filter((e) => { const b = e.getBoundingClientRect(); return b.width > 0 && (b.right > innerWidth + 0.5 || b.left < -0.5) && !e.closest('#log') && !e.closest('#toasts') && !e.closest('#sheet')
+        // the block editor clips its own canvas, and keeps its floating menus off-screen until used
+        && !(e.closest('#blocklyDiv') && e.id !== 'blocklyDiv') && !e.closest('.blocklyWidgetDiv,.blocklyDropDownDiv,.blocklyTooltipDiv'); }).map((e) => e.tagName + '#' + e.id + '.' + e.className).slice(0, 4);
       const pad = r('pad'), modes = r('modes'); const cx = pad.left + pad.width / 2, cy = pad.top + pad.height / 2;
       const near = Math.hypot(Math.max(modes.left - cx, 0, cx - modes.right), Math.max(modes.top - cy, 0, cy - modes.bottom));
       return { stopBottom: r('btnStop').bottom, padW: pad.width, tabbar: vis(document.getElementById('tabbar')), tabTop: r('tabbar').top, vh: innerHeight, over,
@@ -612,54 +614,76 @@ const fakeHub = (opts) => {
   await page.context().close();
   console.log('G ok: songs, moods, faces, robot language, piano, dances, route, on/off motor, reactions');
   }
-  // ---------- H. code tab: build a program with cards, run it against the simulated hub ----------
+  // ---------- H. code tab: blocks (Blockly), run against the simulated hub ----------
   if (RUN('H')) {
-  page = await open({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+  // an old program made with cards (version 5.0) is converted to blocks on load
+  const oldProg = { id: 'old1', name: 'Kaartjes', vars: ['k'], stacks: [[{ t: 'start', p: {} }, { t: 'repeat', p: { n: { k: 'n', v: 3 } } }, { t: 'changeVar', p: { v: 'k', n: { k: 'n', v: 1 } } }, { t: 'end', p: {} }]] };
+  const seed = 'if (!localStorage.getItem("hubremote3")) localStorage.setItem("hubremote3", ' + JSON.stringify(JSON.stringify({ profiles: [], programs: [oldProg], progActive: 'old1' })) + ');';
+  page = await open({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true }, {}, undefined, seed);
   page.on('dialog', (d) => d.accept(d.message().includes('variabele') ? 'teller' : 'Robotdans'));
   const toastHas = (re, timeout) => page.waitForFunction((src) => new RegExp(src).test(document.getElementById('toasts').textContent), re.source, { timeout: timeout || 15000 });
   const count = () => page.evaluate(() => window.__hub.tunnel.length);
   const since = async (n) => (await tunnelOf(page)).slice(n);
-  const card = (i) => '#stacks .stack:nth-child(1) .pcard[data-i="' + i + '"]';
-  const depthsNow = () => page.$$eval('#stacks .pcard', (e) => e.map((x) => x.style.getPropertyValue('--d').trim()));
-  const addCard = async (fromSel, cat, type) => { await page.click(fromSel); await page.waitForTimeout(250); await page.click('.pcat.cat-' + cat); await page.click('.pcard.pick[data-t="' + type + '"]'); await page.waitForTimeout(250); };
+  const wsLoad = (json) => page.evaluate((j) => { const ws = Blockly.getMainWorkspace(); ws.clear(); Blockly.serialization.workspaces.load(j, ws); }, json);
+  const blockTypes = () => page.evaluate(() => Blockly.getMainWorkspace().getTopBlocks(true).map((b) => { const out = []; for (let x = b; x; x = x.getNextBlock()) out.push(x.type); return out; }));
+  const sh = (v) => ({ shadow: { type: 'hr_num', fields: { NUM: v } } });
+  await page.click('.tab[data-view="viewCode"]'); await page.waitForTimeout(800);
+  assert.deepStrictEqual(await blockTypes(), [['start', 'repeat']], 'card program shown as blocks');
+  assert.strictEqual(await page.evaluate(() => Blockly.getMainWorkspace().getTopBlocks()[0].getNextBlock().getInputTargetBlock('DO').type), 'changeVar');
+  const migrated = await page.evaluate(() => JSON.parse(localStorage.getItem('hubremote3')).programs[0]);
+  assert.ok(migrated.ws && migrated.ws.blocks && !migrated.stacks, 'stored as blocks');
+  await page.selectOption('#selProg', 'old1');
+  await page.waitForTimeout(700);   // let pending saves finish first
+  await page.evaluate(() => { localStorage.setItem('hubremote3', JSON.stringify({ profiles: [] })); }); await page.reload(); await page.waitForTimeout(300);   // fresh start: the example program
   await page.click('#btnConnect'); await waitPhase(page, 'ready');
-  await page.click('.tab[data-view="viewCode"]'); await page.waitForTimeout(400);
-  // the example program: smile, forward 10 cm, a happy sound, back 10 cm, write Hi!
-  assert.strictEqual(await page.$$eval('#stacks .pcard', (e) => e.length), 6);
+  await page.click('.tab[data-view="viewCode"]'); await page.waitForTimeout(800);
+  // the example program in blocks: smile, forward 10 cm, a happy sound, back 10 cm, write Hi!
+  assert.deepStrictEqual(await blockTypes(), [['start', 'img', 'moveFor', 'mood', 'moveFor', 'write']]);
+  assert.strictEqual(await page.$$eval('.blocklyToolboxCategory', (e) => e.length), 9);
+  await page.evaluate(() => { const ws = Blockly.getMainWorkspace(), o = ws.highlightBlock.bind(ws); window.__lit = []; ws.highlightBlock = (id, on) => { window.__lit.push([id, on]); return o(id, on); }; });
   let n0 = await count();
   await page.click('#btnRun');
-  await page.waitForFunction(() => document.querySelector('#stacks .pcard.active'), null, { timeout: 3000 });
   await toastHas(/Programma klaar/, 20000);
   let msgs = await since(n0);
-  assert.deepStrictEqual(msgs.filter((x) => x.startsWith('deg ')), ['deg C:-206:50 D:206:50', 'deg C:206:50 D:-206:50'], msgs.join('|'));   // left motor C is reversed
-  assert.ok(msgs.includes('img 0000009090000009000909990'), 'smile');
-  assert.ok(msgs.some((x) => x.startsWith('tune ')), 'happy sound');
-  assert.ok(msgs.filter((x) => x.startsWith('img ')).length > 10, 'text scrolls');
-  assert.ok(msgs.includes('halt'), 'everything stopped at the end');
+  assert.deepStrictEqual(msgs.filter((x) => x.startsWith('deg ')), ['deg C:-206:50 D:206:50', 'deg C:206:50 D:-206:50'], msgs.join('|'));
+  assert.ok(msgs.includes('img 0000009090000009000909990') && msgs.some((x) => x.startsWith('tune ')) && msgs.includes('halt'));
   let pos = await page.evaluate(() => ({ c: window.__hub.m.C.pos, d: window.__hub.m.D.pos }));
   assert.ok(Math.abs(pos.c) < 3 && Math.abs(pos.d) < 3, 'back where it started ' + JSON.stringify(pos));
-  assert.strictEqual(await page.$$eval('#stacks .pcard.active', (e) => e.length), 0);
-  assert.ok((await page.evaluate(() => window.__hub.events)).includes('devnot:50'), 'fast sensor updates while running');
-  // a new program, built from the card menu: repeat 2 { beep }, motor C 90 degrees, a variable, a picture
-  await page.click('#btnProgNew'); await page.waitForTimeout(300);
-  assert.strictEqual(await page.$$eval('#stacks .pcard', (e) => e.length), 1);
-  await addCard('#stacks .stackfoot .btn', 'control', 'repeat');
-  assert.deepStrictEqual(await depthsNow(), ['0', '1', '1']);
-  await page.fill(card(1) + ' input.vnum', '2');
-  await addCard(card(1) + ' ~ .ptools .btn.primary', 'sound', 'beepFor');
-  await page.fill(card(2) + ' input.vnum', '0.2');
-  assert.deepStrictEqual(await depthsNow(), ['0', '1', '2', '1'], 'beep inside the repeat');
-  await addCard('#stacks .stackfoot .btn', 'motor', 'motorFor');
-  const sels = await page.$$(card(4) + ' .pbody > select');
-  await sels[0].selectOption('C'); await sels[2].selectOption('deg'); await page.fill(card(4) + ' input.vnum', '90');
-  await addCard('#stacks .stackfoot .btn', 'var', 'setVar');
-  await page.selectOption(card(5) + ' select.var', '+'); await page.waitForTimeout(200);
-  assert.strictEqual(await page.$eval(card(5) + ' select.var', (e) => e.value), 'teller');
-  await page.selectOption(card(5) + ' .vsel', 's:dist');
-  await addCard('#stacks .stackfoot .btn', 'light', 'img');
-  await page.click(card(6) + ' .imgbtn'); await page.waitForTimeout(300);
+  const lit = await page.evaluate(() => window.__lit);
+  assert.ok(lit.filter((x) => x[1]).length >= 5 && lit[lit.length - 1][1] === false, 'running blocks light up, and go dark at the end');
+  // a real drag: a beep block from the Geluid menu snaps under the last block
+  const clickCat = async (i) => { await (await page.$$('.blocklyToolboxCategory'))[i].click(); await page.waitForTimeout(600); };
+  await clickCat(4);   // Geluid
+  const from = await page.evaluate(() => { const b = Blockly.getMainWorkspace().getFlyout().getWorkspace().getTopBlocks(true).find((x) => x.type === 'beepFor'); const r = b.getSvgRoot().getBoundingClientRect(); return { x: r.left + 12, y: r.top + 10 }; });
+  const to = await page.evaluate(() => { const ws = Blockly.getMainWorkspace(); let b = ws.getTopBlocks(true)[0]; while (b.getNextBlock()) b = b.getNextBlock(); const r = b.getSvgRoot().getBoundingClientRect(); return { x: r.left + 12, y: r.bottom + 2 }; });
+  await page.mouse.move(from.x, from.y); await page.mouse.down();
+  for (let i = 1; i <= 12; i++) { await page.mouse.move(from.x + ((to.x - from.x) * i) / 12, from.y + ((to.y - from.y) * i) / 12); await page.waitForTimeout(20); }
+  // like a finger: look where the block is and steer it so its top meets the bottom of the last block
+  const at = await page.evaluate(() => { const r = document.querySelector('.blocklyDragging').getBoundingClientRect(); return { x: r.left, y: r.top }; });
+  await page.mouse.move(to.x + (to.x - 12 - at.x), to.y + (to.y - 6 - at.y), { steps: 4 }); await page.waitForTimeout(100);
+  await page.mouse.up(); await page.waitForTimeout(400);
+  assert.deepStrictEqual(await blockTypes(), [['start', 'img', 'moveFor', 'mood', 'moveFor', 'write', 'beepFor']], 'dragged block snapped on');
+  // make a variable with the button in the Variabelen menu
+  await clickCat(8);   // Variabelen
+  await page.click('.blocklyFlyoutButton'); await page.waitForTimeout(500);
+  assert.deepStrictEqual(await page.evaluate(() => Blockly.getMainWorkspace().getVariableMap().getAllVariables().map((v) => v.getName())), ['teller']);
+  assert.ok(await page.evaluate(() => Blockly.getMainWorkspace().getFlyout().getWorkspace().getTopBlocks().some((b) => b.type === 'setVar')), 'variable blocks offered');
+  await page.mouse.click(30, 300); await page.waitForTimeout(200);
+  // a new program from blocks: repeat 2 { beep }, motor C 90 degrees, teller = distance, a picture chosen in the picker
+  await page.click('#btnProgNew'); await page.waitForTimeout(400);
+  assert.deepStrictEqual(await blockTypes(), [['start']]);
+  await wsLoad({ variables: [{ name: 'teller', id: 'vt' }], blocks: { languageVersion: 0, blocks: [{ type: 'start', x: 20, y: 20, next: { block:
+    { type: 'repeat', inputs: { n: sh(2), DO: { block: { type: 'beepFor', fields: { note: 'C5' }, inputs: { n: sh(0.2) } } } }, next: { block:
+      { type: 'motorFor', fields: { p: 'C', dir: 'cw', unit: 'deg' }, inputs: { n: sh(90) }, next: { block:
+        { type: 'setVar', fields: { v: { id: 'vt' } }, inputs: { n: { shadow: { type: 'hr_num', fields: { NUM: 0 } }, block: { type: 'rep_sensor', fields: { S: 'dist' } } } }, next: { block:
+          { type: 'img', id: 'pic1', fields: { img: '0000009090000009000909990' } } } } } } } } } }] } });
+  await page.waitForTimeout(300);
+  const picAt = await page.evaluate(() => { const f = Blockly.getMainWorkspace().getBlockById('pic1').getField('img'); const r = f.getSvgRoot().getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; });
+  await page.mouse.click(picAt.x, picAt.y); await page.waitForTimeout(400);
+  assert.ok(await page.$eval('#imgSheet', (e) => e.classList.contains('on')), 'picture picker opens');
   await page.click('#imgPresets .imgbtn[aria-label="hartje"]'); await page.click('#imgGrid .px[data-i="12"]');
   await page.click('#imgDone'); await page.waitForTimeout(300);
+  assert.strictEqual(await page.evaluate(() => Blockly.getMainWorkspace().getBlockById('pic1').getFieldValue('img')), '0909099999990990999000900');
   await page.click('#btnProgRename'); await page.waitForTimeout(200);
   assert.strictEqual(await page.$eval('#selProg', (e) => e.selectedOptions[0].textContent), 'Robotdans');
   n0 = await count();
@@ -667,19 +691,22 @@ const fakeHub = (opts) => {
   msgs = await since(n0);
   assert.strictEqual(msgs.filter((x) => x === 'tune 523:200').length, 2, msgs.join('|'));
   assert.ok(msgs.indexOf('deg C:90:75') > msgs.lastIndexOf('tune 523:200'), 'motor after the beeps');
-  assert.ok(msgs.includes('img 0909099999990990999000900'), 'heart with the middle light off: ' + msgs.filter((x) => x.startsWith('img')).join(','));
-  // saved: reload and everything is still there
+  assert.ok(msgs.includes('img 0909099999990990999000900'), 'chosen picture');
+  // saved: reload and the program is still there
+  await page.waitForTimeout(500);
   await page.reload(); await page.waitForTimeout(500);
   const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('hubremote3')));
   const rd = saved.programs.find((p) => p.name === 'Robotdans');
-  assert.ok(rd && rd.vars.includes('teller') && rd.stacks[0].length === 7, JSON.stringify(rd && rd.stacks[0].map((c) => c.t)));
-  assert.deepStrictEqual(rd.stacks[0][5].p.n, { k: 's', v: 'dist' });
+  assert.ok(rd && rd.ws.variables.some((v) => v.name === 'teller'), JSON.stringify(rd && rd.ws.variables));
   await page.click('#btnConnect'); await waitPhase(page, 'ready');
-  await page.click('.tab[data-view="viewCode"]'); await page.waitForTimeout(300);
-  // STOP and leaving the screen stop a program that drives forever
-  await page.click('#btnProgNew'); await page.waitForTimeout(200);
-  await addCard('#stacks .stackfoot .btn', 'move', 'moveStart');
-  await addCard('#stacks .stackfoot .btn', 'control', 'wait'); await page.fill(card(2) + ' input.vnum', '10');   // a program that ends stops its motors
+  await page.click('.tab[data-view="viewCode"]'); await page.waitForTimeout(800);
+  assert.deepStrictEqual(await blockTypes(), [['start', 'repeat', 'motorFor', 'setVar', 'img']]);
+  // nothing to run without a When block
+  await page.click('#btnProgNew'); await page.waitForTimeout(300);
+  await wsLoad({ blocks: { languageVersion: 0, blocks: [{ type: 'moveStop', x: 20, y: 20 }] } });
+  await page.click('#btnRun'); await toastHas(/Wanneer-blok/);
+  // STOP and leaving the screen stop a program that drives
+  await wsLoad({ blocks: { languageVersion: 0, blocks: [{ type: 'start', x: 20, y: 20, next: { block: { type: 'moveStart', fields: { dir: 'fw' }, next: { block: { type: 'wait', inputs: { n: sh(10) } } } } } }] } });
   await page.click('#btnRun'); await page.waitForTimeout(700);
   assert.notStrictEqual(await last(page), 'C:0 D:0', 'program drives');
   assert.strictEqual(await page.$eval('#codeStatus', (e) => e.textContent), 'Programma loopt');
@@ -690,16 +717,11 @@ const fakeHub = (opts) => {
   await page.click('#btnRun'); await page.waitForTimeout(500);
   await page.click('.tab[data-view="viewPlay"]'); await page.waitForTimeout(400);
   assert.strictEqual(await last(page), 'C:0 D:0', 'view switch stops the program');
-  assert.strictEqual(await page.evaluate(() => document.body.classList.contains('running')), false);
-  // events: wait until something is close, and when a hub button is pressed
-  await page.click('.tab[data-view="viewCode"]'); await page.waitForTimeout(300);
-  await page.click('#btnProgNew'); await page.waitForTimeout(200);
-  await addCard('#stacks .stackfoot .btn', 'control', 'waitUntil');
-  await addCard('#stacks .stackfoot .btn', 'sound', 'beepFor');
-  await page.click('#btnAddStack'); await page.waitForTimeout(250);
-  await page.click('.pcard.pick[data-t="when"]'); await page.waitForTimeout(250);
-  await page.selectOption('#stacks .stack:nth-child(2) .pcard[data-i="0"] select.ckind', 'btn'); await page.waitForTimeout(200);
-  await addCard('#stacks .stack:nth-child(2) .stackfoot .btn', 'sound', 'mood');
+  // events: wait until something is close; when the hub button is pressed (a second stack)
+  await page.click('.tab[data-view="viewCode"]'); await page.waitForTimeout(600);
+  await wsLoad({ blocks: { languageVersion: 0, blocks: [
+    { type: 'start', x: 20, y: 20, next: { block: { type: 'waitUntil', inputs: { c: { block: { type: 'b_dist', fields: { op: '<' }, inputs: { n: sh(10) } } } }, next: { block: { type: 'beepFor', fields: { note: 'C5' }, inputs: { n: sh(0.5) } } } } } },
+    { type: 'when', x: 20, y: 300, inputs: { c: { block: { type: 'b_and', inputs: { A: { block: { type: 'b_btn', fields: { b: 'L' } } }, B: { block: { type: 'b_not', inputs: { A: { block: { type: 'b_btn', fields: { b: 'R' } } } } } } } } } }, next: { block: { type: 'mood', fields: { mood: 'happy' } } } }] } });
   n0 = await count();
   await page.click('#btnRun'); await page.waitForTimeout(500);
   assert.strictEqual(await page.$eval('#codeStatus', (e) => e.textContent), 'Wacht op gebeurtenissen');
@@ -711,29 +733,32 @@ const fakeHub = (opts) => {
   assert.ok((await since(n0)).some((x) => x.startsWith('tune ') && x !== 'tune 523:500'), 'mood on the hub button');
   await page.evaluate(() => { window.__hub.dist = 350; });
   await page.dispatchEvent('#btnProgStop', 'pointerdown'); await page.waitForTimeout(300);
-  // the joystick takes over from a running program
-  await page.click('#btnProgNew'); await page.waitForTimeout(200);
-  await addCard('#stacks .stackfoot .btn', 'move', 'moveStart');
-  await addCard('#stacks .stackfoot .btn', 'control', 'wait'); await page.fill(card(2) + ' input.vnum', '10');
+  // wide screen: code next to driving; the joystick takes over a running program
+  await wsLoad({ blocks: { languageVersion: 0, blocks: [{ type: 'start', x: 20, y: 20, next: { block: { type: 'moveStart', fields: { dir: 'fw' }, next: { block: { type: 'wait', inputs: { n: sh(10) } } } } } }] } });
   await page.click('#btnRun'); await page.waitForTimeout(400);
-  assert.strictEqual(await page.evaluate(() => document.body.classList.contains('running')), true);
-  await page.setViewportSize({ width: 1280, height: 800 }); await page.waitForTimeout(400);   // wide: drive and code side by side
+  await page.setViewportSize({ width: 1280, height: 800 }); await page.waitForTimeout(500);
   const P = await rect(page, '#pad');
   await ptr(page, '#pad', 'pointerdown', P.cx, P.cy, 1); await page.waitForTimeout(300);
   assert.strictEqual(await page.evaluate(() => document.body.classList.contains('running')), false, 'joystick takes over');
   await ptr(page, '#pad', 'pointerup', P.cx, P.cy, 1);
-  // STOP stays on screen on small phones, also at the end of a long program
-  for (const [w, h] of [[280, 653], [844, 390], [375, 667]]) {
-    await page.setViewportSize({ width: w, height: h }); await page.waitForTimeout(300);
-    if (!(await page.$eval('#viewCode', (e) => e.classList.contains('active')))) { await page.click('.tab[data-view="viewCode"]'); await page.waitForTimeout(300); }
-    await page.evaluate(() => { document.getElementById('main').scrollTop = 1e6; }); await page.waitForTimeout(200);
-    const b = await rect(page, '#btnProgStop');
+  const ed = await rect(page, '#blocklyDiv');
+  assert.ok(ed.h >= 380 && ed.w > 400, 'editor size on a laptop ' + JSON.stringify(ed));
+  // STOP stays on screen and the editor fits on phones
+  for (const [w, h] of [[280, 653], [844, 390], [375, 667], [390, 844]]) {
+    await page.setViewportSize({ width: w, height: h }); await page.waitForTimeout(400);
+    if (!(await page.$eval('#viewCode', (e) => e.classList.contains('active')))) { await page.click('.tab[data-view="viewCode"]'); await page.waitForTimeout(600); }
+    const b = await rect(page, '#btnProgStop'), e = await rect(page, '#blocklyDiv');
     assert.ok(b.y >= 0 && b.y + b.h <= h && b.w > 60, w + 'x' + h + ' STOP visible: ' + JSON.stringify(b));
+    assert.ok(e.h >= 250 && e.x >= 0 && e.x + e.w <= w + 0.5, w + 'x' + h + ' editor ' + JSON.stringify(e));
   }
-  await page.setViewportSize({ width: 390, height: 844 }); await page.waitForTimeout(200);
   await page.screenshot({ path: OUT + '/code.png' });
+  // English blocks after a language switch
+  await page.click('.tab[data-view="viewSettings"]'); await page.waitForTimeout(300);
+  await page.selectOption('#selLang', 'en'); await page.waitForTimeout(300);
+  await page.click('.tab[data-view="viewCode"]'); await page.waitForTimeout(800);
+  assert.ok(/Move|When/.test(await page.$eval('#blocklyDiv', (e) => e.textContent)), 'blocks in English');
   await page.context().close();
-  console.log('H ok: example program, card menu, nesting, variables, pictures, save, STOP, view switch, events, joystick');
+  console.log('H ok: card programs converted, example run with lit blocks, drag and snap, variable button, picture picker, save, STOP, view switch, events, joystick, layouts, English');
   }
   await browser.close(); server.close();
   assert.deepStrictEqual(errors, [], 'page errors: ' + errors.join('\n'));

@@ -144,14 +144,19 @@ const Cards = (() => {
 
   /* ---------- nieuwe kaarten en opschonen ---------- */
   const isNum = (x) => typeof x === 'number' && isFinite(x);
-  function cleanVal(v, spec) {
+  const OPS = ['+', '-', '*', '/', '%'], FNS = ['abs', 'round', 'floor', 'ceil', 'sqrt'];
+  // Een waarde: getal, variabele, sensor, of een som/functie/toeval met waarden erin (blokken in blokken).
+  function cleanVal(v, spec, depth) {
+    const d = spec ? spec.def : 0, sub = (x, def) => cleanVal(x, { def }, (depth || 0) + 1);
     if (isNum(v)) return { k: 'n', v };
-    if (!v || typeof v !== 'object') return { k: 'n', v: spec.def };
-    if (v.k === 'n') return { k: 'n', v: isNum(+v.v) ? +v.v : spec.def };
-    if (v.k === 'r') return { k: 'r', a: isNum(+v.a) ? +v.a : 1, b: isNum(+v.b) ? +v.b : 10 };
+    if (!v || typeof v !== 'object' || (depth || 0) > 24) return { k: 'n', v: d };
+    if (v.k === 'n') return { k: 'n', v: isNum(+v.v) ? +v.v : d };
+    if (v.k === 'r') return { k: 'r', a: sub(v.a, 1), b: sub(v.b, 10) };
+    if (v.k === 'op') return { k: 'op', op: OPS.includes(v.op) ? v.op : '+', a: sub(v.a, 0), b: sub(v.b, 0) };
+    if (v.k === 'fn') return { k: 'fn', f: FNS.includes(v.f) ? v.f : 'abs', a: sub(v.a, 0) };
     if (v.k === 'v') return { k: 'v', v: String(v.v || '').slice(0, 20) };
     if (v.k === 's' && SENSORS.includes(v.v)) return { k: 's', v: v.v };
-    return { k: 'n', v: spec.def };
+    return { k: 'n', v: d };
   }
   function cleanParam(spec, v) {
     switch (spec.type) {
@@ -169,7 +174,13 @@ const Cards = (() => {
       default: return typeof v === 'string' ? v.slice(0, 30) : spec.def;   // song, mood: de pagina kent de lijst
     }
   }
-  function cleanCond(c) {
+  function cleanCond(c, depth) {
+    // en/of/niet bevatten zelf voorwaarden; 'none' is een leeg vakje (onwaar).
+    if (c && typeof c === 'object' && (depth || 0) < 24) {
+      if (c.k === 'and' || c.k === 'or') return { k: c.k, a: cleanCond(c.a || { k: 'none' }, (depth || 0) + 1), b: cleanCond(c.b || { k: 'none' }, (depth || 0) + 1) };
+      if (c.k === 'not') return { k: 'not', a: cleanCond(c.a || { k: 'none' }, (depth || 0) + 1) };
+      if (c.k === 'none') return { k: 'none' };
+    }
     c = c && typeof c === 'object' && COND[c.k] ? c : { k: 'dist' };
     const out = { k: c.k, not: c.not === true };
     for (const spec of COND[c.k]) out[spec.k] = cleanParam(spec, c[spec.k]);
@@ -188,13 +199,14 @@ const Cards = (() => {
     if (!c || !T[c.t]) return null;
     const out = { t: c.t, p: {} }, p = c.p && typeof c.p === 'object' ? c.p : {};
     for (const spec of T[c.t].params) out.p[spec.k] = cleanParam(spec, p[spec.k]);
+    if (typeof c.id === 'string') out.id = c.id;   // blok in de editor, om het oplichten te tonen
     return out;
   }
   function cleanProgram(raw, fallbackName) {
     const r = raw && typeof raw === 'object' ? raw : {};
     const vars = (Array.isArray(r.vars) ? r.vars : []).filter((v) => typeof v === 'string' && v.trim()).map((v) => v.trim().slice(0, 20)).slice(0, 20);
     const stacks = (Array.isArray(r.stacks) ? r.stacks : []).slice(0, 12).map((s) => {
-      const cards = (Array.isArray(s) ? s : (s && s.cards) || []).slice(0, 200).map(cleanCard).filter(Boolean);
+      const cards = (Array.isArray(s) ? s : (s && s.cards) || []).slice(0, 600).map(cleanCard).filter(Boolean);
       if (!cards.length || T[cards[0].t].kind !== 'hat') cards.unshift(newCard('start'));
       return cards.filter((c, i) => i === 0 || T[c.t].kind !== 'hat');
     });
@@ -341,8 +353,16 @@ const Cards = (() => {
       if (v.k === 'n') return +v.v || 0;
       if (v.k === 'v') return this.vars[v.v] || 0;
       if (v.k === 's') return this.sensor(v.v);
+      if (v.k === 'op') {
+        const a = this.val(v.a), b = this.val(v.b);
+        return v.op === '+' ? a + b : v.op === '-' ? a - b : v.op === '*' ? a * b : v.op === '/' ? (b ? a / b : 0) : (b ? ((a % b) + b) % b : 0);
+      }
+      if (v.k === 'fn') {
+        const a = this.val(v.a);
+        return v.f === 'abs' ? Math.abs(a) : v.f === 'round' ? Math.round(a) : v.f === 'floor' ? Math.floor(a) : v.f === 'ceil' ? Math.ceil(a) : Math.sqrt(Math.max(0, a));
+      }
       if (v.k === 'r') {
-        const lo = Math.min(v.a, v.b), hi = Math.max(v.a, v.b);
+        const ra = this.val(v.a), rb = this.val(v.b), lo = Math.min(ra, rb), hi = Math.max(ra, rb);
         return Number.isInteger(lo) && Number.isInteger(hi) ? lo + Math.floor(this.io.random() * (hi - lo + 1)) : lo + this.io.random() * (hi - lo);
       }
       return 0;
@@ -351,6 +371,10 @@ const Cards = (() => {
       const d = this.io.data(), cmp = (a, op, b) => (op === '<' ? a < b : op === '>' ? a > b : Math.abs(a - b) < 1e-9);
       let r = false;
       switch (c.k) {
+        case 'none': return false;
+        case 'and': return this.cond(c.a) && this.cond(c.b);
+        case 'or': return this.cond(c.a) || this.cond(c.b);
+        case 'not': return !this.cond(c.a);
         case 'dist': { const cm = this.sensor('dist'); r = cm < 0 ? c.op === '>' : cmp(cm, c.op, this.val(c.n)); break; }
         case 'color': r = c.p === 'any' ? Object.values(d.colors).includes(c.col) : d.colors[c.p] === c.col; break;
         case 'force': r = c.st === 'pressed' ? !!(d.force && d.force.pressed) : c.st === 'released' ? !(d.force && d.force.pressed) : !!(d.force && d.force.v >= 70); break;
@@ -488,6 +512,272 @@ const Cards = (() => {
     }
   }
 
-  return { PORTS, COLORS, NOTES, CATS, ICONS, TYPES: T, COND, SENSORS, IMAGES, FONT, newCard, cleanCard, cleanCond, cleanProgram, depths, compile, steer, textColumns, Runner };
+  /* ---------- blokken (Blockly): definities, gereedschapskist en omzetten ---------- */
+  // Blokken die alleen een waarde of waar/onwaar geven (rond en zeshoekig), naast de opdrachtblokken.
+  const dd = (k, opts) => ({ k, type: 'choice', opts });
+  const numIn = (k, def) => ({ k, type: 'num', def });
+  const boolIn = (k) => ({ k, type: 'cond' });
+  const REP = {
+    rep_sensor: { cat: 'sensor', out: 'Number', tpl: 'blk.sensor', params: [{ k: 'S', type: 'sensor' }] },
+    rep_motorPos: { cat: 'sensor', out: 'Number', tpl: 'blk.motorPos', params: [P.port('P', 'A')] },
+    rep_random: { cat: 'op', out: 'Number', tpl: 'blk.random', params: [numIn('A', 1), numIn('B', 10)] },
+    rep_arith: { cat: 'op', out: 'Number', tpl: 'blk.arith', params: [numIn('A', 0), dd('OP', OPS), numIn('B', 0)] },
+    rep_fn: { cat: 'op', out: 'Number', tpl: 'blk.fn', params: [dd('F', FNS), numIn('A', 0)] },
+    b_cmp: { cat: 'op', out: 'Boolean', tpl: 'blk.cmp', params: [numIn('A', 0), dd('OP', ['<', '=', '>']), numIn('B', 50)] },
+    b_and: { cat: 'op', out: 'Boolean', tpl: 'blk.and', params: [boolIn('A'), boolIn('B')] },
+    b_or: { cat: 'op', out: 'Boolean', tpl: 'blk.or', params: [boolIn('A'), boolIn('B')] },
+    b_not: { cat: 'op', out: 'Boolean', tpl: 'blk.not', params: [boolIn('A')] },
+    b_dist: { cat: 'sensor', out: 'Boolean', tpl: 'blk.dist', params: COND.dist },
+    b_color: { cat: 'sensor', out: 'Boolean', tpl: 'blk.color', params: COND.color },
+    b_force: { cat: 'sensor', out: 'Boolean', tpl: 'blk.force', params: COND.force },
+    b_tilt: { cat: 'sensor', out: 'Boolean', tpl: 'blk.tilt', params: COND.tilt },
+    b_face: { cat: 'sensor', out: 'Boolean', tpl: 'blk.face', params: COND.face },
+    b_btn: { cat: 'sensor', out: 'Boolean', tpl: 'blk.btn', params: COND.btn },
+  };
+  const NUM_SENSORS = SENSORS.filter((x) => !x.startsWith('pos'));
+  // Een tekst met {k}-plekken omzetten naar een Blockly-bericht met %1, %2 ... en de bijbehorende velden.
+  function toMsg(tpl, argFor) {
+    const args = [];
+    const msg = String(tpl).replace(/%/g, '%%').replace(/\{(\w+)\}/g, (_, k) => { const a = argFor(k); if (!a) return ''; args.push(a); return '%' + args.length; });
+    return [msg, args];
+  }
+  function argOf(spec, tr, lists) {
+    const opts = (items) => ({ type: 'field_dropdown', name: spec.k, options: items });
+    switch (spec.type) {
+      case 'num': return { type: 'input_value', name: spec.k, check: 'Number' };
+      case 'cond': return { type: 'input_value', name: spec.k, check: 'Boolean' };
+      case 'choice': return opts(spec.opts.map((o) => [tr('opt.' + o), o]));
+      case 'port': return opts(PORTS.map((p) => [p, p]));
+      case 'portAny': return opts([[tr('code.any'), 'any']].concat(PORTS.map((p) => [p, p])));
+      case 'color': return opts(COLORS.map((c) => [{ src: lists.swatch(c), width: 18, height: 18, alt: tr('color.' + c) }, String(c)]));
+      case 'note': return opts(NOTES.map((n) => [n, n]));
+      case 'song': return opts(lists.song);
+      case 'mood': return opts(lists.mood);
+      case 'sensor': return opts(NUM_SENSORS.map((x) => [tr('src.' + x), x]));
+      case 'text': case 'msg': return { type: 'field_input', name: spec.k, text: spec.def };
+      case 'var': return { type: 'field_variable', name: spec.k, variable: null };
+      case 'img': return { type: 'field_picture', name: spec.k, value: spec.def };
+    }
+    return null;
+  }
+  // Alle blokdefinities (JSON voor Blockly), in de taal van tr. lists: liedjes, robotgeluiden, kleurstalen.
+  function blockDefs(tr, lists) {
+    const defs = [];
+    const mk = (type, tpl, params, extra) => {
+      const [m, a] = toMsg(tpl, (k) => { const spec = params.find((x) => x.k === k); return spec && argOf(spec, tr, lists); });
+      defs.push(Object.assign({ type, message0: m, args0: a, inputsInline: true, tooltip: '', helpUrl: '' }, extra));
+    };
+    for (const t of Object.values(T)) {
+      if (t.kind === 'else' || t.kind === 'end') continue;
+      const style = 'cat_' + t.cat + (t.kind === 'hat' ? '_hat' : '');
+      if (t.kind === 'hat') mk(t.id, tr('card.' + t.id), t.params, { style, nextStatement: null });
+      else if (t.kind === 'begin') {
+        mk(t.id, tr('card.' + t.id), t.params, Object.assign({ style, previousStatement: null, message1: '%1', args1: [{ type: 'input_statement', name: 'DO' }] }, t.id === 'forever' ? {} : { nextStatement: null }));
+        if (t.id === 'if') mk('ifElse', tr('card.if'), t.params, { style, previousStatement: null, nextStatement: null, message1: '%1', args1: [{ type: 'input_statement', name: 'DO' }], message2: tr('blk.else'), args2: [], message3: '%1', args3: [{ type: 'input_statement', name: 'ELSE' }] });
+      } else mk(t.id, tr('card.' + t.id), t.params, { style, previousStatement: null, nextStatement: null });
+    }
+    defs.push({ type: 'hr_num', message0: '%1', args0: [{ type: 'field_number', name: 'NUM', value: 0 }], output: 'Number', style: 'cat_op', tooltip: '', helpUrl: '' });
+    defs.push({ type: 'var_get', message0: '%1', args0: [{ type: 'field_variable', name: 'v', variable: null }], output: 'Number', style: 'cat_var', tooltip: '', helpUrl: '' });
+    for (const [type, r] of Object.entries(REP)) mk(type, tr(r.tpl), r.params, { output: r.out, style: 'cat_' + r.cat });
+    return defs;
+  }
+  // De gereedschapskist: categorieën met blokken, getallen alvast ingevuld.
+  function toolbox(tr) {
+    const entry = (type, params, fields) => {
+      const e = { kind: 'block', type }, inputs = {};
+      params.filter((s) => s.type === 'num').forEach((s) => { inputs[s.k] = { shadow: { type: 'hr_num', fields: { NUM: s.def } } }; });
+      if (Object.keys(inputs).length) e.inputs = inputs;
+      if (fields) e.fields = fields;
+      return e;
+    };
+    const cats = [];
+    for (const c of CATS) {
+      if (c === 'var') continue;
+      const contents = [];
+      for (const t of Object.values(T)) {
+        if (t.cat !== c || t.kind === 'else' || t.kind === 'end' || t.params.some((s) => s.type === 'var')) continue;
+        contents.push(entry(t.id, t.params));
+        if (t.id === 'if') contents.push(entry('ifElse', t.params));
+      }
+      if (c === 'sensor') {
+        NUM_SENSORS.forEach((x) => contents.push(entry('rep_sensor', [], { S: x })));
+        contents.push(entry('rep_motorPos', REP.rep_motorPos.params));
+        ['b_dist', 'b_color', 'b_force', 'b_tilt', 'b_face', 'b_btn'].forEach((x) => contents.push(entry(x, REP[x].params)));
+      }
+      cats.push({ kind: 'category', name: tr('cat.' + c), categorystyle: 'cat_' + c, contents });
+      if (c === 'sensor') {
+        const op = [entry('rep_random', REP.rep_random.params)];
+        ['+', '-', '*', '/'].forEach((o) => op.push(entry('rep_arith', REP.rep_arith.params, { OP: o })));
+        op.push(entry('rep_fn', REP.rep_fn.params));
+        ['<', '=', '>'].forEach((o) => op.push(entry('b_cmp', REP.b_cmp.params, { OP: o })));
+        op.push(entry('b_and', []), entry('b_or', []), entry('b_not', []));
+        cats.push({ kind: 'category', name: tr('cat.op'), categorystyle: 'cat_op', contents: op });
+      }
+    }
+    cats.push({ kind: 'category', name: tr('cat.var'), categorystyle: 'cat_var', custom: 'HR_VARS' });
+    return { kind: 'categoryToolbox', contents: cats };
+  }
+  // Variabelenblokken voor de gereedschapskist (de pagina zet de knop 'maak een variabele' ervoor).
+  function varBlocks(varList) {
+    if (!varList.length) return [];
+    const f = { v: { id: varList[0].id } }, sh = (n) => ({ shadow: { type: 'hr_num', fields: { NUM: n } } });
+    return varList.map((v) => ({ kind: 'block', type: 'var_get', fields: { v: { id: v.id } } })).concat([
+      { kind: 'block', type: 'setVar', fields: f, inputs: { n: sh(0) } },
+      { kind: 'block', type: 'changeVar', fields: f, inputs: { n: sh(1) } },
+      { kind: 'block', type: 'mathVar', fields: f, inputs: { a: sh(1), b: sh(1) } },
+    ]);
+  }
+
+  // Opgeslagen werkblad (Blockly-JSON) naar een programma voor de uitvoerder.
+  function fromBlocks(ws, name) {
+    const vars = {};
+    ((ws && ws.variables) || []).forEach((v) => { if (v && v.id) vars[v.id] = String(v.name || ''); });
+    const field = (b, k) => (b.fields ? b.fields[k] : undefined);
+    const inp = (b, k) => { const i = b.inputs && b.inputs[k]; return i ? i.block || i.shadow || null : null; };
+    const varName = (f) => (f && (vars[f.id] || f.name)) || '';
+    const expr = (b, d) => {
+      if (!b || d > 24) return { k: 'n', v: 0 };
+      switch (b.type) {
+        case 'hr_num': return { k: 'n', v: +field(b, 'NUM') || 0 };
+        case 'var_get': return { k: 'v', v: varName(field(b, 'v')) };
+        case 'rep_sensor': return { k: 's', v: field(b, 'S') };
+        case 'rep_motorPos': return { k: 's', v: 'pos' + field(b, 'P') };
+        case 'rep_random': return { k: 'r', a: expr(inp(b, 'A'), d + 1), b: expr(inp(b, 'B'), d + 1) };
+        case 'rep_arith': return { k: 'op', op: field(b, 'OP'), a: expr(inp(b, 'A'), d + 1), b: expr(inp(b, 'B'), d + 1) };
+        case 'rep_fn': return { k: 'fn', f: field(b, 'F'), a: expr(inp(b, 'A'), d + 1) };
+      }
+      return { k: 'n', v: 0 };
+    };
+    const cond = (b, d) => {
+      if (!b || d > 24) return { k: 'none' };
+      switch (b.type) {
+        case 'b_cmp': return { k: 'cmp', a: expr(inp(b, 'A'), d + 1), op: field(b, 'OP'), b: expr(inp(b, 'B'), d + 1) };
+        case 'b_and': case 'b_or': return { k: b.type.slice(2), a: cond(inp(b, 'A'), d + 1), b: cond(inp(b, 'B'), d + 1) };
+        case 'b_not': return { k: 'not', a: cond(inp(b, 'A'), d + 1) };
+        case 'b_dist': return { k: 'dist', op: field(b, 'op'), n: expr(inp(b, 'n'), d + 1) };
+        case 'b_color': return { k: 'color', p: field(b, 'p'), col: +field(b, 'col') };
+        case 'b_force': return { k: 'force', st: field(b, 'st') };
+        case 'b_tilt': return { k: 'tilt', dir: field(b, 'dir') };
+        case 'b_face': return { k: 'face', f: field(b, 'f') };
+        case 'b_btn': return { k: 'btn', b: field(b, 'b') };
+      }
+      return { k: 'none' };
+    };
+    const params = (b, type) => {
+      const p = {};
+      for (const spec of T[type].params) {
+        if (spec.type === 'num') p[spec.k] = expr(inp(b, spec.k), 0);
+        else if (spec.type === 'cond') p[spec.k] = cond(inp(b, spec.k), 0);
+        else if (spec.type === 'var') p[spec.k] = varName(field(b, spec.k));
+        else if (spec.type === 'color') p[spec.k] = +field(b, spec.k);
+        else p[spec.k] = field(b, spec.k);
+      }
+      return p;
+    };
+    const off = (b) => b.enabled === false || (Array.isArray(b.disabledReasons) && b.disabledReasons.length);
+    const chain = (b, out, d) => {
+      for (; b && d < 60; b = b.next && b.next.block) {
+        const type = b.type === 'ifElse' ? 'if' : b.type;
+        if (off(b) || !T[type] || T[type].kind === 'hat') continue;
+        out.push({ t: type, p: params(b, type), id: b.id });
+        if (T[type].kind === 'begin') {
+          chain(inp(b, 'DO'), out, d + 1);
+          if (b.type === 'ifElse') { out.push({ t: 'else', p: {}, id: b.id }); chain(inp(b, 'ELSE'), out, d + 1); }
+          out.push({ t: 'end', p: {} });
+        }
+      }
+    };
+    const stacks = [];
+    (((ws && ws.blocks && ws.blocks.blocks) || [])).forEach((b) => {
+      if (!b || off(b) || !T[b.type] || T[b.type].kind !== 'hat') return;   // losse blokken zonder gebeurtenis doen niets
+      const cards = [{ t: b.type, p: params(b, b.type), id: b.id }];
+      chain(b.next && b.next.block, cards, 0);
+      stacks.push(cards);
+    });
+    const prog = cleanProgram({ name, vars: Object.values(vars), stacks: stacks.length ? stacks : [[newCard('start')]] }, name);
+    if (!stacks.length) prog.empty = true;
+    return prog;
+  }
+  // Een programma van kaartjes (ouder formaat) naar een werkblad met blokken.
+  function toBlocks(prog) {
+    const ids = {}, variables = [];
+    const varId = (name) => {
+      if (!ids[name]) { ids[name] = 'v' + variables.length + '_' + Math.random().toString(36).slice(2, 7); variables.push({ name, id: ids[name] }); }
+      return ids[name];
+    };
+    prog.vars.forEach(varId);
+    const exprBlock = (v) => {
+      if (!v || v.k === 'n') return null;
+      if (v.k === 'v') return { type: 'var_get', fields: { v: { id: varId(v.v || 'x') } } };
+      if (v.k === 's') return v.v.startsWith('pos') ? { type: 'rep_motorPos', fields: { P: v.v[3] } } : { type: 'rep_sensor', fields: { S: v.v } };
+      if (v.k === 'r') return { type: 'rep_random', inputs: { A: num(v.a), B: num(v.b) } };
+      if (v.k === 'op') return { type: 'rep_arith', fields: { OP: v.op }, inputs: { A: num(v.a), B: num(v.b) } };
+      if (v.k === 'fn') return { type: 'rep_fn', fields: { F: v.f }, inputs: { A: num(v.a) } };
+      return null;
+    };
+    const num = (v) => { const i = { shadow: { type: 'hr_num', fields: { NUM: v && v.k === 'n' ? v.v : 0 } } }, b = exprBlock(v); if (b) i.block = b; return i; };
+    const condBlock = (c) => {
+      if (!c || c.k === 'none') return null;
+      if (c.not) return { type: 'b_not', inputs: { A: { block: condBlock(Object.assign({}, c, { not: false })) } } };
+      const both = (b) => { const x = {}; if (b) x.block = b; return x; };
+      switch (c.k) {
+        case 'and': case 'or': return { type: 'b_' + c.k, inputs: { A: both(condBlock(c.a)), B: both(condBlock(c.b)) } };
+        case 'not': return { type: 'b_not', inputs: { A: both(condBlock(c.a)) } };
+        case 'dist': return { type: 'b_dist', fields: { op: c.op }, inputs: { n: num(c.n) } };
+        case 'color': return { type: 'b_color', fields: { p: c.p, col: String(c.col) } };
+        case 'force': return { type: 'b_force', fields: { st: c.st } };
+        case 'tilt': return { type: 'b_tilt', fields: { dir: c.dir } };
+        case 'face': return { type: 'b_face', fields: { f: c.f } };
+        case 'btn': return { type: 'b_btn', fields: { b: c.b } };
+        case 'timer': return { type: 'b_cmp', fields: { OP: c.op }, inputs: { A: { block: { type: 'rep_sensor', fields: { S: 'timer' } } }, B: num(c.n) } };
+        case 'motor': return { type: 'b_cmp', fields: { OP: c.op }, inputs: { A: { block: { type: 'rep_motorPos', fields: { P: c.p } } }, B: num(c.n) } };
+        case 'cmp': return { type: 'b_cmp', fields: { OP: c.op }, inputs: { A: num(c.a), B: num(c.b) } };
+      }
+      return null;
+    };
+    const cardBlock = (card, type) => {
+      const b = { type: type || card.t }, fields = {}, inputs = {};
+      for (const spec of T[card.t].params) {
+        const v = card.p[spec.k];
+        if (spec.type === 'num') inputs[spec.k] = num(v);
+        else if (spec.type === 'cond') { const cb = condBlock(v); if (cb) inputs[spec.k] = { block: cb }; }
+        else if (spec.type === 'var') fields[spec.k] = { id: varId(v || 'x') };
+        else if (spec.type === 'color') fields[spec.k] = String(v);
+        else fields[spec.k] = v;
+      }
+      if (Object.keys(fields).length) b.fields = fields;
+      if (Object.keys(inputs).length) b.inputs = inputs;
+      return b;
+    };
+    const chain = (nodes) => {
+      let first = null, prev = null;
+      for (const n of nodes || []) {
+        const ifElse = n.c.t === 'if' && n.elseBody;
+        const b = cardBlock(n.c, ifElse ? 'ifElse' : null);
+        if (T[n.c.t].kind === 'begin') {
+          b.inputs = b.inputs || {};
+          const body = chain(n.body);
+          if (body) b.inputs.DO = { block: body };
+          if (ifElse) { const eb = chain(n.elseBody); if (eb) b.inputs.ELSE = { block: eb }; }
+        }
+        if (prev) prev.next = { block: b }; else first = b;
+        prev = b;
+      }
+      return first;
+    };
+    let y = 30;
+    const tops = prog.stacks.map((cards) => {
+      const hat = cardBlock(cards[0]);
+      hat.x = 30; hat.y = y;
+      const body = chain(compile(cards));
+      if (body) hat.next = { block: body };
+      y += 70 + cards.length * 52;
+      return hat;
+    });
+    return { blocks: { languageVersion: 0, blocks: tops }, variables };
+  }
+
+  return { PORTS, COLORS, NOTES, CATS, ICONS, TYPES: T, COND, SENSORS, IMAGES, FONT, REP, newCard, cleanCard, cleanCond, cleanProgram, depths, compile, steer, textColumns, Runner,
+    blockDefs, toolbox, varBlocks, fromBlocks, toBlocks };
 })();
 if (typeof module !== 'undefined') module.exports = Cards;

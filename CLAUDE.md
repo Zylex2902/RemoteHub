@@ -34,11 +34,17 @@ CI (`.github/workflows/pages.yml`) fails if `site/index.html` is not rebuilt and
   Dances and route replay run only in the Drive view and end on `halt()` or on any joystick,
   tilt, tank or key input. An extra motor in on/off mode keeps turning after the tap, so it
   must stay in `st.aux` and be cleared by `halt()` (STOP, blur, hidden, view switch, link lost).
-- Programming cards (`src/cards.js`, Code tab) run in the page, not on the hub. Dances, routes and
+- The Code tab is a Blockly editor (13.4.0, vendored in `vendor/blockly/`, inlined by the build,
+  media in `site/blockly-media/`; update with `npm run vendor:blockly`). Block definitions and the
+  toolbox are generated from `Cards.TYPES` and `Cards.REP` in `src/cards.js`; programs are stored as
+  Blockly JSON (`G.programs[].ws`) and turned into the runner format with `Cards.fromBlocks` when
+  Start is pressed. Old card programs are converted with `Cards.toBlocks` on load. Sheets, toasts
+  and the banner sit above Blockly's layers (z-index 2000+).
+- Programs (`src/cards.js`, Code tab) run in the page, not on the hub. Dances, routes and
   programs share the drive loop: `st.run` takes over `targets()`/`outputs()`, and `halt()` stops it.
   Moves over degrees go to the hub as `deg`/`goto`; the page sends zero speeds first (`syncOut`)
-  because a non-zero speed for a port cancels its move on the hub. Card texts live in i18n as
-  `card.*`, `opt.*`, `cond.*`, `src.*`; `tests/test_cards.js` checks every key exists.
+  because a non-zero speed for a port cancels its move on the hub. Block texts live in i18n as
+  `card.*`, `blk.*`, `opt.*`, `src.*`; `tests/test_cards.js` checks every key and every block.
 - Not confirmed on hardware: the IMU fields in status messages (units: degrees, or tenths, which
   the runner detects; the sign of pitch/roll for 'tilts forward' is a guess), `button.pressed`,
   `motion_sensor.gesture()` (gesture numbers), `light.color`, `distance_sensor.show`,
@@ -70,7 +76,8 @@ CI (`.github/workflows/pages.yml`) fails if `site/index.html` is not rebuilt and
 ## Intellectual property guardrails
 
 The Code tab offers the same kinds of commands as the official hub app, with our own names,
-icons, colours and card design; never copy its block look, icons or texts.
+icons, colours and texts; never copy its block look, icons or texts. The block style is Blockly's
+own renderer: never call it "Scratch" or use Scratch's name, cat, colours or icons (MIT trademarks).
 Follow `docs/trademarks.md` for every change: no "LEGO" or "SPIKE" in names, identifiers, icons,
 URLs or store metadata; compatibility stated once with symbols and the disclaimer; keep the
 notices. Warn the owner before adding anything that could touch a patent, copyright or trademark.

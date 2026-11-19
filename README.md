@@ -23,9 +23,11 @@ program in a program slot on the hub, and then sends live drive commands to it.
 - Live sensors: distance, colour and force, plus an optional stop-for-obstacles guard
 - A profile per robot, shareable as a link or QR code
 - Hub battery level with low-battery warnings
-- Code tab: programming cards in eight groups (events, movement, motors, light, sound, control,
-  sensors, variables), 58 card types with nested blocks, conditions, variables, random numbers,
-  sensor values and several stacks that start on events; the running card lights up
+- Code tab: a drag-and-drop block editor (Blockly) with puzzle blocks that snap together, 74 blocks
+  in nine groups (events, movement, motors, light, sound, control, sensors, operators, variables):
+  loops and if/else, number and true/false blocks that fit in slots (sums, random numbers, sensor
+  values, and/or/not), variables, pictures you draw, and several stacks that start on events; the
+  running block lights up
 - Play tab: public-domain songs and a one-octave piano on the hub's speaker, robot moods with a face
   on the hub's light matrix, and robot language: the hub says a typed sentence in beeps (one per
   syllable, a question rises) while it moves its mouth
@@ -84,6 +86,7 @@ npm run build              # src/ -> site/index.html
 npm run build:standalone   # also dist/hub-remote.html, one file with the fonts embedded
 npm run test:unit          # protocol vectors + hub program logic
 npm run test:browser       # full flow in headless Chrome against a simulated hub
+npm run vendor:blockly     # after updating the blockly package: copy it into vendor/ and site/
 ```
 
 `site/index.html` is generated. Edit the files in `src/` and rebuild.
@@ -97,12 +100,12 @@ src/style.css        styles, light and dark theme, all screen layouts
 src/proto.js         protocol: framing, CRC, messages (no DOM)
 src/hub_program.py   the program that runs on the hub
 src/i18n.js          Dutch and English texts
-src/cards.js         programming cards: the card set and the program runner (no DOM)
+src/cards.js         programming blocks: block set, conversion and the program runner (no DOM)
 src/app.js           connection, controls, settings, profiles
 site/                the deployable app: built page, manifest, service worker, icons, fonts
 tests/               unit and browser tests, reference vectors
 tools/build.py       builds the page
-vendor/              minified QR code library
+vendor/              minified QR code library, Blockly (block editor) and its Dutch and English texts
 docs/                store listing text and trademark notes
 ```
 
@@ -114,7 +117,7 @@ Live commands then travel as small text messages (`A:-60 B:60`, `pos E 120 80`, 
 `ges 2` for its buttons and gestures. If no message arrives for 800 ms the hub program stops the drive
 motors, any move over degrees still under way, and the queued notes.
 
-Programs made with cards run in the page (`src/cards.js`), not on the hub: the page sends the commands
+Programs made with blocks run in the page (`src/cards.js`), not on the hub: the page sends the commands
 above and reads motor positions and the motion sensor from the hub's status messages.
 
 ## Contributing

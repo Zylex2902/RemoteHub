@@ -29,7 +29,7 @@ robot hub. No game controller needed: connect over Bluetooth and drive.
 - Horn, hub battery level and low-battery warning
 - Songs, robot sounds with faces on the hub's lights, a piano, and a robot language the hub speaks in beeps
 - Dances and a route you record once and drive again
-- Programming cards: build programs with events, loops, conditions, sensors and variables
+- Programming with drag-and-drop blocks: events, loops, conditions, sensors, sums and variables
 - Reconnects by itself, and the robot stops if the link drops
 - Phones, tablets and foldables, portrait or landscape
 - English and Dutch, light and dark theme
@@ -66,7 +66,7 @@ programmeerbare robothub. Geen gamecontroller nodig: verbind via Bluetooth en ri
 - Toeter, batterijniveau van de hub en een waarschuwing bij bijna leeg
 - Liedjes, robotgeluidjes met gezichtjes op de lampjes van de hub, een piano, en robottaal die de hub zelf in piepjes spreekt
 - Dansjes en een route die je één keer rijdt en opnieuw laat afspelen
-- Programmeerkaartjes: maak programma's met gebeurtenissen, herhalingen, voorwaarden, sensoren en variabelen
+- Programmeren met blokken die je in elkaar klikt: gebeurtenissen, herhalingen, voorwaarden, sensoren, sommen en variabelen
 - Verbindt vanzelf opnieuw, en de robot stopt als de verbinding wegvalt
 - Telefoons, tablets en vouwtelefoons, staand of liggend
 - Nederlands en Engels, licht en donker thema

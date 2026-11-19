@@ -20,7 +20,9 @@ const FILE = 'file://' + path.join(SITE, 'index.html');
       return { hseg: matchMedia('(horizontal-viewport-segments: 2)').matches, vseg: matchMedia('(vertical-viewport-segments: 2)').matches,
         drive: g('viewDrive'), settings: g('viewSettings'), log: g('viewLog'), stop: g('btnStop'),
         tabbar: getComputedStyle(document.getElementById('tabbar')).display, scroll: main.scrollHeight - main.clientHeight,
-        over: [...document.querySelectorAll('body *')].filter((e) => { const b = e.getBoundingClientRect(); return b.width > 0 && b.right > innerWidth + 0.5 && !e.closest('#sheet'); }).length };
+        over: [...document.querySelectorAll('body *')].filter((e) => { const b = e.getBoundingClientRect(); return b.width > 0 && b.right > innerWidth + 0.5 && !e.closest('#sheet')
+          // the block editor clips its own canvas and keeps its floating menus off-screen until used
+          && !(e.closest('#blocklyDiv') && e.id !== 'blocklyDiv') && !e.closest('.blocklyWidgetDiv,.blocklyDropDownDiv,.blocklyTooltipDiv'); }).length };
     });
     assert.strictEqual(r.tabbar, 'none', name); assert.strictEqual(r.over, 0, name + ' overflow'); assert.ok(r.scroll <= 1, name + ' page scrolls');
     if (name === 'book') {

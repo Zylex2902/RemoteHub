@@ -16,10 +16,11 @@ for (const lang of ['nl', 'en']) {
     for (const spec of C.TYPES[t].params) assert.ok(tpl.includes('{' + spec.k + '}'), lang + ' card.' + t + ' has {' + spec.k + '}');
     for (const spec of C.TYPES[t].params) if (spec.type === 'choice') for (const o of spec.opts) assert.ok(L['opt.' + o], lang + ' opt.' + o);
   }
-  for (const k of Object.keys(C.COND)) {
-    assert.ok(L['cond.' + k], lang + ' cond.' + k);
-    for (const spec of C.COND[k]) { assert.ok(L['cond.' + k].includes('{' + spec.k + '}'), lang + ' cond.' + k + ' {' + spec.k + '}'); if (spec.type === 'choice') for (const o of spec.opts) assert.ok(L['opt.' + o], lang + ' opt.' + o); }
+  for (const [type, r] of Object.entries(C.REP)) {
+    assert.ok(L[r.tpl], lang + ' ' + r.tpl);
+    for (const spec of r.params) { assert.ok(L[r.tpl].includes('{' + spec.k + '}'), lang + ' ' + type + ' {' + spec.k + '}'); if (spec.type === 'choice') for (const o of spec.opts) assert.ok(L['opt.' + o], lang + ' opt.' + o); }
   }
+  assert.ok(L['cat.op'] && L['blk.else'] && L['code.makeVar']);
   for (const s of C.SENSORS) assert.ok(L['src.' + s], lang + ' src.' + s);
   for (const c of C.CATS) assert.ok(L['cat.' + c], lang + ' cat.' + c);
   for (const im of Object.keys(C.IMAGES)) assert.ok(L['imgname.' + im], lang + ' imgname.' + im);
@@ -181,5 +182,52 @@ const n = (v) => ({ k: 'n', v }), V = (v) => ({ k: 'v', v });
   h = harness([['start', { t: 'wait', p: { n: n(0.1) } }, { t: 'wait', p: { n: n(0.1) } }]]);
   h.run.start(); await h.advance(500);
   assert.deepStrictEqual(h.kinds('active').map((x) => x[2]), [1, 2, -1, -1]);
-  console.log('OK cards:', Object.keys(C.TYPES).length, 'card types,', Object.keys(C.COND).length, 'conditions, runner checks passed');
+  // ---- blocks ----
+  const tr = (k) => I18N.nl[k] || k, lists = { song: [['Happy Birthday', 'birthday']], mood: [['Blij', 'happy']], swatch: () => 'data:image/svg+xml,x' };
+  const defs = C.blockDefs(tr, lists), byType = {};
+  defs.forEach((d) => { byType[d.type] = d; });
+  for (const d of defs) for (let i = 0; d['message' + i] !== undefined; i++) {
+    const n = (d['message' + i].replace(/%%/g, '').match(/%\d/g) || []).length;
+    assert.strictEqual(n, (d['args' + i] || []).length, d.type + ' message' + i + ' has a slot per input');
+  }
+  assert.ok(byType.ifElse && byType.hr_num && byType.var_get && !byType.else && !byType.end);
+  assert.ok(byType.start.nextStatement === null && byType.start.previousStatement === undefined, 'hat block');
+  assert.ok(byType.forever.nextStatement === undefined && byType.repeat.nextStatement === null, 'forever has nothing after it');
+  assert.strictEqual(byType.b_and.output, 'Boolean'); assert.strictEqual(byType.rep_arith.output, 'Number');
+  assert.ok(byType.moveSpeed.message0.includes('%%'), 'percent sign kept');
+  const tb = C.toolbox(tr), seen = new Set();
+  tb.contents.forEach((cat) => (cat.contents || []).forEach((e) => { assert.ok(byType[e.type], 'toolbox block ' + e.type); seen.add(e.type); }));
+  for (const t of Object.keys(C.TYPES)) if (!['else', 'end', 'setVar', 'changeVar', 'mathVar'].includes(t)) assert.ok(seen.has(t), 'in the toolbox: ' + t);
+  assert.strictEqual(tb.contents.length, 9); assert.strictEqual(tb.contents[8].custom, 'HR_VARS');
+  assert.strictEqual(C.varBlocks([]).length, 0); assert.strictEqual(C.varBlocks([{ id: 'a', name: 'x' }]).length, 4);
+  // cards -> blocks -> cards keeps everything (except ids, which come from the blocks)
+  const strip = (p) => JSON.parse(JSON.stringify(p.stacks.map((st) => st.map((c) => ({ t: c.t, p: c.p })))));
+  const big = C.cleanProgram({ vars: ['a', 'b'], stacks: [
+    [{ t: 'start' }, { t: 'repeat', p: { n: { k: 'op', op: '*', a: { k: 'v', v: 'a' }, b: { k: 'n', v: 2 } } } }, { t: 'if', p: { c: { k: 'and', a: { k: 'dist', op: '<', n: { k: 'n', v: 15 } }, b: { k: 'not', a: { k: 'btn', b: 'L' } } } } },
+      { t: 'moveFor', p: { dir: 'bw', n: { k: 'r', a: { k: 'n', v: 1 }, b: { k: 's', v: 'timer' } }, unit: 'sec' } }, { t: 'else' }, { t: 'img', p: { img: C.IMAGES.heart } }, { t: 'end' }, { t: 'end' },
+      { t: 'setVar', p: { v: 'b', n: { k: 'fn', f: 'round', a: { k: 's', v: 'posC' } } } }, { t: 'btnLight', p: { c: 3 } }, { t: 'forever' }, { t: 'say', p: { t: 'Hoi' } }, { t: 'end' }],
+    [{ t: 'when', p: { c: { k: 'color', p: 'B', col: 9 } } }, { t: 'waitUntil', p: { c: { k: 'force', st: 'pressed', not: true } } }],
+    [{ t: 'gesture', p: { g: 'shake' } }, { t: 'repeatUntil', p: { c: { k: 'timer', op: '>', n: { k: 'n', v: 3 } } } }, { t: 'beepFor' }, { t: 'end' }]] });
+  const back = C.fromBlocks(JSON.parse(JSON.stringify(C.toBlocks(big))), 'x');
+  const want = strip(big);
+  want[1][1].p.c = { k: 'not', a: { k: 'force', not: false, st: 'pressed' } };   // 'not' becomes a not-block
+  want[2][1].p.c = { k: 'cmp', not: false, a: { k: 's', v: 'timer' }, op: '>', b: { k: 'n', v: 3 } };   // timer condition becomes a comparison
+  assert.deepStrictEqual(strip(back), want);
+  assert.deepStrictEqual(JSON.parse(JSON.stringify(back.vars)).sort(), ['a', 'b']);
+  assert.ok(back.stacks[0].every((c) => c.t === 'end' || typeof c.id === 'string' || c.id === undefined));
+  // loose blocks without a When block, and switched-off blocks, do nothing
+  const ws = C.toBlocks(C.cleanProgram({ stacks: [[{ t: 'start' }, { t: 'wait' }, { t: 'beepFor' }]] }));
+  ws.blocks.blocks.push({ type: 'moveStop', x: 400, y: 0 });
+  ws.blocks.blocks[0].next.block.enabled = false;
+  const fb = C.fromBlocks(ws, 'y');
+  assert.deepStrictEqual(JSON.parse(JSON.stringify(fb.stacks.map((st) => st.map((c) => c.t)))), [['start', 'beepFor']], 'switched-off block skipped, the rest runs; loose block ignored');
+  assert.strictEqual(C.fromBlocks({}, 'leeg').empty, true);
+  // expressions and combined conditions in the runner
+  h = harness([['start', { t: 'setVar', p: { v: 'a', n: { k: 'op', op: '-', a: { k: 'op', op: '*', a: n(3), b: n(4) }, b: { k: 'fn', f: 'sqrt', a: n(16) } } } },
+    { t: 'setVar', p: { v: 'b', n: { k: 'r', a: { k: 'v', v: 'a' }, b: { k: 'op', op: '+', a: { k: 'v', v: 'a' }, b: n(0) } } } },
+    { t: 'if', p: { c: { k: 'or', a: { k: 'none' }, b: { k: 'and', a: { k: 'cmp', a: V('a'), op: '=', b: n(8) }, b: { k: 'not', a: { k: 'btn', b: 'R' } } } } } }, { t: 'setVar', p: { v: 'c', n: n(1) } }, 'end',
+    { t: 'setVar', p: { v: 'd', n: { k: 'fn', f: 'floor', a: n(-2.5) } } }]], ['a', 'b', 'c', 'd']);
+  h.run.start(); await h.advance(300);
+  assert.deepStrictEqual({ ...h.run.vars }, { a: 8, b: 8, c: 1, d: -3 });
+  console.log('OK cards:', Object.keys(C.TYPES).length, 'card types,', defs.length, 'blocks, runner, conversions and expressions checked');
 })().catch((e) => { console.error('FAIL', e.message); process.exit(1); });

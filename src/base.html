@@ -15,6 +15,8 @@
   Apache License 2.0 met aangepaste merkenclausule). cobsEncode/cobsDecode zijn naar JavaScript
   overgezet uit de voorbeeldcode in die repository.
   Het blok "qr" bevat qrcode-generator, Copyright (c) 2009 Kazuhiko Arase, MIT-licentie.
+  Het blok "blockly" bevat Blockly 13.4.0, Copyright Google LLC, Apache License 2.0; de afbeeldingen
+  en geluiden in blockly-media/ komen uit hetzelfde pakket.
   De lettertypes Fredoka en Nunito vallen onder de SIL Open Font License 1.1.
   Zie LICENSE-NOTICES.txt.
 -->
@@ -124,8 +126,7 @@
       </div>
       <div class="small codestatus" id="codeStatus" aria-live="polite"></div>
     </div>
-    <div id="stacks"></div>
-    <button class="btn addstack" id="btnAddStack" data-i18n="code.addStack">+ Nieuw spoor</button>
+    <div class="blockly" id="blocklyDiv"></div>
     <p class="small" style="margin:0 4px" data-i18n="code.help"></p>
   </section>
 
@@ -271,7 +272,7 @@
     <div class="card">
       <h2 data-i18n="about.title">Over</h2>
       <p class="small" style="margin:0" data-i18n="about.text"></p>
-      <p class="small" style="margin:8px 0 0">Hub Remote 5.0</p>
+      <p class="small" style="margin:8px 0 0">Hub Remote 5.1</p>
     </div>
   </section>
   </div>
@@ -316,14 +317,6 @@
   </div>
 </div>
 
-<div class="sheet" id="palSheet" aria-hidden="true">
-  <div class="card box pal">
-    <div class="palhead"><h2 data-i18n="code.palette">Kies een kaart</h2><button class="btn sm" id="palClose" data-i18n="code.close">Sluiten</button></div>
-    <div class="pcats" id="palCats"></div>
-    <div class="plist" id="palList"></div>
-  </div>
-</div>
-
 <div class="sheet" id="imgSheet" aria-hidden="true">
   <div class="card box">
     <h2 data-i18n="code.imgTitle">Kies of teken een plaatje</h2>
@@ -357,7 +350,12 @@
 <script id="i18n">
 {{I18N}}</script>
 
-<!-- Programmeerkaartjes: kaartenset en uitvoerder (geen DOM). -->
+<!-- Blockly 13.4.0, Copyright Google LLC, Apache License 2.0 (blokkeneditor). -->
+<script id="blockly">
+{{BLOCKLY}}
+</script>
+
+<!-- Programmeerblokken: blokkenset, omzetting en uitvoerder (geen DOM). -->
 <script id="cards">
 {{CARDS}}</script>
 
