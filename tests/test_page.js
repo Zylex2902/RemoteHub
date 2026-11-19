@@ -455,7 +455,7 @@ const fakeHub = (opts) => {
   // not connected: everything plays on the phone, nothing goes to the hub
   await page.click('.tab[data-view="viewPlay"]'); await page.waitForTimeout(300);
   assert.ok(/Niet verbonden/.test(await page.$eval('#playWhere', (e) => e.textContent)));
-  await page.click('#song-twinkle'); await page.click('#mood-happy');
+  await page.click('#song-birthday'); await page.click('#mood-happy');
   await page.click('#btnDance1'); await toastHas(/Verbind eerst/);
   assert.strictEqual(await page.$eval('#btnRoute', (e) => e.disabled), true, 'no route yet');
   // connect: volume is sent and the robot says hello with a wink
@@ -468,16 +468,16 @@ const fakeHub = (opts) => {
   await page.click('.tab[data-view="viewPlay"]'); await page.waitForTimeout(300);
   assert.ok(/Verbonden/.test(await page.$eval('#playWhere', (e) => e.textContent)));
   let n0 = await count();
-  await page.click('#song-twinkle'); await page.waitForTimeout(300);
+  await page.click('#song-birthday'); await page.waitForTimeout(300);
   msgs = await since(n0);
   const tw = tunes(msgs);
-  assert.strictEqual(tw.length, 2, msgs.join('|'));
-  assert.ok(tw[0].startsWith('tune 262:420 0:40 262:420 0:40 392:420') && tw[1].startsWith('tune+ '), tw[0]);
-  assert.strictEqual(tw[0].split(' ').length - 1, 24); assert.strictEqual(tw[1].split(' ').length - 1, 4);
+  assert.strictEqual(tw.length, 3, msgs.join('|'));   // 25 notes + gaps = 50 tokens: 24 + 24 + 2
+  assert.ok(tw[0].startsWith('tune 392:230 0:40 392:75 0:15 440:320') && tw[1].startsWith('tune+ ') && tw[2].startsWith('tune+ '), tw[0]);
+  assert.deepStrictEqual(tw.map((x) => x.split(' ').length - 1), [24, 24, 2]);
   assert.ok(imgs(msgs).length === 1, 'note face');
   n0 = await count(); await page.click('#song-quiet'); await page.waitForTimeout(200);
   assert.ok((await since(n0)).includes('hush'));
-  for (const id of ['jacob', 'ode', 'elise', 'fanfare']) {
+  for (const id of ['jingle', 'entertainer', 'mountain', 'mozart', 'ode', 'elise', 'fanfare']) {
     n0 = await count(); await page.click('#song-' + id); await page.waitForTimeout(250);
     const toks = tunes(await since(n0)).flatMap((x) => x.split(' ').slice(1));
     assert.ok(toks.length > 4 && toks.every(NOTE_OK), id + ': ' + toks.join(' '));
