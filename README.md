@@ -36,7 +36,9 @@ program in a program slot on the hub, and then sends live drive commands to it.
 - Without a hub, songs, moods and the piano play on the phone itself
 - Reconnects by itself; the robot stops within about a second if the link drops
 - Dutch and English, light and dark theme
-- Phones, tablets and foldables, portrait and landscape; installable and usable offline
+- Phones, tablets and foldables, portrait and landscape; installable and usable offline. On wide
+  screens a Drive/Code switch in the header shows either the overview (driving, log, play,
+  settings) or the block editor across the whole screen
 
 ## Where it runs
 

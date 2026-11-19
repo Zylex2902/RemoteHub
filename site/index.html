@@ -537,6 +537,20 @@ body.running .run{opacity:.55}
 @media (max-width:360px){.codetop{flex-wrap:wrap}.codetop select{flex:1 1 100%}.codetop .btn{flex:1}}
 /* Boven de editor uitkomen: Blockly geeft zijn lijst en menu's een hoge laag. */
 #toasts{z-index:2100}.sheet{z-index:2000}.banner{z-index:2050}
+/* ---- versie 5.1: op brede schermen is code een eigen scherm ---- */
+.modeswitch{display:none}
+@media (min-width:900px),(horizontal-viewport-segments:2),(vertical-viewport-segments:2){
+  .modeswitch{display:flex;gap:4px;padding:4px;margin-left:12px;border-radius:999px;border:2px solid var(--line);background:var(--panel2)}
+  .tab2{font:600 14px var(--head);padding:7px 18px;border:0;border-radius:999px;background:none;color:var(--muted);cursor:pointer;transition:background .2s var(--ease),color .2s var(--ease)}
+  .tab2.on{background:var(--accent);color:var(--accent-ink)}
+  /* Overzicht: rijden, logboek, spelen en instellingen; zonder editor. */
+  #viewCode{display:none !important}
+  /* Programmeren: alleen de editor, over de hele breedte en hoogte. */
+  body.codefull main{display:flex !important;flex-direction:column;overflow:auto}
+  body.codefull .side{display:contents}
+  body.codefull .view{display:none !important}
+  body.codefull #viewCode{display:flex !important;flex:1 0 auto;padding:var(--gap) !important}
+}
 </style>
 </head>
 <body data-phase="idle">
@@ -548,6 +562,11 @@ body.running .run{opacity:.55}
       <b>Hub Remote</b>
       <span data-i18n="app.tagline">Afstandsbediening voor je robothub</span>
     </div>
+  </div>
+  <!-- Brede schermen: wisselen tussen besturen en programmeren (op de telefoon doet de tabbalk dit). -->
+  <div class="modeswitch" id="modeSwitch" role="tablist">
+    <button class="tab2 on" data-view="viewDrive" data-i18n="tab.drive">Rijden</button>
+    <button class="tab2" data-view="viewCode" data-i18n="tab.code">Code</button>
   </div>
   <div class="spacer"></div>
   <div class="batt" id="batt" data-i18n-title="hub.battTitle" title="Batterij van de hub">
@@ -6471,6 +6490,8 @@ if (typeof module !== 'undefined') module.exports = Cards;
     if (e.code === 'Escape') { closeShare(); return; }
     if (e.ctrlKey || e.metaKey || e.altKey || typing(e)) return;
     if (e.code === 'Space') { e.preventDefault(); if (!e.repeat) emergencyStop(); return; }
+    // Tijdens het programmeren sturen toetsen de robot niet (pijltjes en letters zijn voor de editor).
+    if (st.view === 'viewCode') return;
     if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') { if (!st.turbo) setTurbo(true); return; }
     if (e.code === 'KeyH') { if (!e.repeat) { $('btnHorn').classList.add('on'); beep(); } return; }
     const k = KEYMAP[e.code], a = AUXKEYS[e.code];
@@ -7007,9 +7028,9 @@ if (typeof module !== 'undefined') module.exports = Cards;
   }
   // De editor vult op de telefoon het scherm onder de startbalk; op brede schermen een vaste hoogte.
   function resizeEditor(only) {
-    const div = $('blocklyDiv'), wide = !$('tabbar').getClientRects().length || getComputedStyle($('tabbar')).display === 'none';
-    const gap = parseFloat(getComputedStyle($('viewCode')).rowGap) || 12;
-    const h = wide ? Math.max(380, Math.round(innerHeight * 0.62)) : Math.max(260, $('main').clientHeight - $('codebar').offsetHeight - gap * 3);
+    // Code staat altijd alleen in beeld (telefoon: eigen tab; breed: hele scherm), dus vult de editor de rest.
+    const div = $('blocklyDiv'), gap = parseFloat(getComputedStyle($('viewCode')).rowGap) || 12;
+    const h = Math.max(260, $('main').clientHeight - $('codebar').offsetHeight - gap * 3);
     div.style.height = h + 'px';
     if (!only && code.ws) Blockly.svgResize(code.ws);
   }
@@ -7217,6 +7238,9 @@ if (typeof module !== 'undefined') module.exports = Cards;
     if (st.rec && id !== 'viewDrive') finishRec();
     st.view = id; halt();
     tabs.forEach((tb, i) => { const on = tb.dataset.view === id; tb.classList.toggle('on', on); if (on) $('tabbar').style.setProperty('--i', i); });
+    // Brede schermen: programmeren krijgt het hele scherm, de rest is het overzicht.
+    document.body.classList.toggle('codefull', id === 'viewCode');
+    qsa('#modeSwitch .tab2').forEach((b) => b.classList.toggle('on', (b.dataset.view === 'viewCode') === (id === 'viewCode')));
     if (id === 'viewLog') $('logDot').classList.remove('on');
     old.classList.add('leave');
     setTimeout(() => {
@@ -7227,6 +7251,12 @@ if (typeof module !== 'undefined') module.exports = Cards;
     }, 110);
   }
   tabs.forEach((tb) => tb.addEventListener('click', () => { sfx.tab(); buzz(8); showView(tb.dataset.view); }));
+  qsa('#modeSwitch .tab2').forEach((b) => b.addEventListener('click', () => {
+    // Terug naar het overzicht vanuit code; vanuit het overzicht (welk scherm ook) naar code.
+    const to = b.dataset.view;
+    if ((to === 'viewCode') === (st.view === 'viewCode')) return;
+    sfx.tab(); buzz(8); showView(to);
+  }));
 
   /* ---------- profielen ---------- */
   function uniqueName(base) {
@@ -7477,8 +7507,6 @@ if (typeof module !== 'undefined') module.exports = Cards;
   if (bleMsg) log(bleMsg, 'warn'); else log(t('msg.ready'));
   if (imported) setTimeout(() => { toast(imported[0], imported[1]); log(imported[0], imported[1] === 'err' ? 'err' : 'ok'); }, 300);
 
-  // Brede schermen tonen de code meteen naast het rijden.
-  ensureEditor();
 
   if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
     navigator.serviceWorker.register('sw.js').catch(() => {});

@@ -54,6 +54,9 @@ CI (`.github/workflows/pages.yml`) fails if `site/index.html` is not rebuilt and
 - Songs in the app are public domain or written for this project. Do not add copyrighted melodies.
 - CI: the GitHub Pages deploy runs only when the repository variable `DEPLOY_PAGES` is `true`;
   the app is hosted on Netlify (`netlify.toml`, publishes `site/` with no build step).
+- Wide layouts (>= 900 px and both fold postures) have no tab bar: a header switch (`#modeSwitch`)
+  toggles `body.codefull`. The overview never shows the editor; Code fills the screen. Programs
+  and driving are never on screen together, and drive keys are ignored in the Code view.
 - Layout must keep STOP visible without scrolling on every size in `tests/test_page.js` section E
   and both fold postures in `tests/test_fold.js`.
 

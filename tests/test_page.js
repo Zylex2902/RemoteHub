@@ -733,16 +733,24 @@ const fakeHub = (opts) => {
   assert.ok((await since(n0)).some((x) => x.startsWith('tune ') && x !== 'tune 523:500'), 'mood on the hub button');
   await page.evaluate(() => { window.__hub.dist = 350; });
   await page.dispatchEvent('#btnProgStop', 'pointerdown'); await page.waitForTimeout(300);
-  // wide screen: code next to driving; the joystick takes over a running program
+  // drive keys do nothing while programming (arrows and letters belong to the editor)
+  await page.keyboard.down('KeyW'); await page.waitForTimeout(400);
+  assert.strictEqual(await last(page), 'C:0 D:0', 'W does not drive in the Code tab');
+  await page.keyboard.up('KeyW');
+  // wide screen: Code fills the screen; the header switch goes back to the overview and stops the program
   await wsLoad({ blocks: { languageVersion: 0, blocks: [{ type: 'start', x: 20, y: 20, next: { block: { type: 'moveStart', fields: { dir: 'fw' }, next: { block: { type: 'wait', inputs: { n: sh(10) } } } } } }] } });
-  await page.click('#btnRun'); await page.waitForTimeout(400);
-  await page.setViewportSize({ width: 1280, height: 800 }); await page.waitForTimeout(500);
-  const P = await rect(page, '#pad');
-  await ptr(page, '#pad', 'pointerdown', P.cx, P.cy, 1); await page.waitForTimeout(300);
-  assert.strictEqual(await page.evaluate(() => document.body.classList.contains('running')), false, 'joystick takes over');
-  await ptr(page, '#pad', 'pointerup', P.cx, P.cy, 1);
+  await page.setViewportSize({ width: 1280, height: 800 }); await page.waitForTimeout(600);
   const ed = await rect(page, '#blocklyDiv');
-  assert.ok(ed.h >= 380 && ed.w > 400, 'editor size on a laptop ' + JSON.stringify(ed));
+  assert.ok(ed.w > 1200 && ed.h >= 450, 'editor fills a laptop screen ' + JSON.stringify(ed));
+  assert.strictEqual(await page.$eval('#viewDrive', (e) => getComputedStyle(e).display), 'none', 'no driving controls while programming');
+  assert.ok(await page.$eval('#modeSwitch .tab2[data-view="viewCode"]', (e) => e.classList.contains('on')));
+  await page.click('#btnRun'); await page.waitForTimeout(500);
+  assert.notStrictEqual(await last(page), 'C:0 D:0', 'program drives');
+  await page.click('#modeSwitch .tab2[data-view="viewDrive"]'); await page.waitForTimeout(500);
+  assert.strictEqual(await last(page), 'C:0 D:0', 'switching to the overview stops the program');
+  assert.strictEqual(await page.$eval('#viewCode', (e) => getComputedStyle(e).display), 'none', 'overview without the editor');
+  assert.ok((await rect(page, '#pad')).w > 120 && (await rect(page, '#viewPlay')).w > 300, 'overview shows driving and play');
+  await page.click('#modeSwitch .tab2[data-view="viewCode"]'); await page.waitForTimeout(600);
   // STOP stays on screen and the editor fits on phones
   for (const [w, h] of [[280, 653], [844, 390], [375, 667], [390, 844]]) {
     await page.setViewportSize({ width: w, height: h }); await page.waitForTimeout(400);
@@ -758,7 +766,7 @@ const fakeHub = (opts) => {
   await page.click('.tab[data-view="viewCode"]'); await page.waitForTimeout(800);
   assert.ok(/Move|When/.test(await page.$eval('#blocklyDiv', (e) => e.textContent)), 'blocks in English');
   await page.context().close();
-  console.log('H ok: card programs converted, example run with lit blocks, drag and snap, variable button, picture picker, save, STOP, view switch, events, joystick, layouts, English');
+  console.log('H ok: card programs converted, example run with lit blocks, drag and snap, variable button, picture picker, save, STOP, view switch, events, no drive keys, full-screen code on wide screens, layouts, English');
   }
   await browser.close(); server.close();
   assert.deepStrictEqual(errors, [], 'page errors: ' + errors.join('\n'));

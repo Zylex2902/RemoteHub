@@ -741,6 +741,8 @@
     if (e.code === 'Escape') { closeShare(); return; }
     if (e.ctrlKey || e.metaKey || e.altKey || typing(e)) return;
     if (e.code === 'Space') { e.preventDefault(); if (!e.repeat) emergencyStop(); return; }
+    // Tijdens het programmeren sturen toetsen de robot niet (pijltjes en letters zijn voor de editor).
+    if (st.view === 'viewCode') return;
     if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') { if (!st.turbo) setTurbo(true); return; }
     if (e.code === 'KeyH') { if (!e.repeat) { $('btnHorn').classList.add('on'); beep(); } return; }
     const k = KEYMAP[e.code], a = AUXKEYS[e.code];
@@ -1277,9 +1279,9 @@
   }
   // De editor vult op de telefoon het scherm onder de startbalk; op brede schermen een vaste hoogte.
   function resizeEditor(only) {
-    const div = $('blocklyDiv'), wide = !$('tabbar').getClientRects().length || getComputedStyle($('tabbar')).display === 'none';
-    const gap = parseFloat(getComputedStyle($('viewCode')).rowGap) || 12;
-    const h = wide ? Math.max(380, Math.round(innerHeight * 0.62)) : Math.max(260, $('main').clientHeight - $('codebar').offsetHeight - gap * 3);
+    // Code staat altijd alleen in beeld (telefoon: eigen tab; breed: hele scherm), dus vult de editor de rest.
+    const div = $('blocklyDiv'), gap = parseFloat(getComputedStyle($('viewCode')).rowGap) || 12;
+    const h = Math.max(260, $('main').clientHeight - $('codebar').offsetHeight - gap * 3);
     div.style.height = h + 'px';
     if (!only && code.ws) Blockly.svgResize(code.ws);
   }
@@ -1487,6 +1489,9 @@
     if (st.rec && id !== 'viewDrive') finishRec();
     st.view = id; halt();
     tabs.forEach((tb, i) => { const on = tb.dataset.view === id; tb.classList.toggle('on', on); if (on) $('tabbar').style.setProperty('--i', i); });
+    // Brede schermen: programmeren krijgt het hele scherm, de rest is het overzicht.
+    document.body.classList.toggle('codefull', id === 'viewCode');
+    qsa('#modeSwitch .tab2').forEach((b) => b.classList.toggle('on', (b.dataset.view === 'viewCode') === (id === 'viewCode')));
     if (id === 'viewLog') $('logDot').classList.remove('on');
     old.classList.add('leave');
     setTimeout(() => {
@@ -1497,6 +1502,12 @@
     }, 110);
   }
   tabs.forEach((tb) => tb.addEventListener('click', () => { sfx.tab(); buzz(8); showView(tb.dataset.view); }));
+  qsa('#modeSwitch .tab2').forEach((b) => b.addEventListener('click', () => {
+    // Terug naar het overzicht vanuit code; vanuit het overzicht (welk scherm ook) naar code.
+    const to = b.dataset.view;
+    if ((to === 'viewCode') === (st.view === 'viewCode')) return;
+    sfx.tab(); buzz(8); showView(to);
+  }));
 
   /* ---------- profielen ---------- */
   function uniqueName(base) {
@@ -1747,8 +1758,6 @@
   if (bleMsg) log(bleMsg, 'warn'); else log(t('msg.ready'));
   if (imported) setTimeout(() => { toast(imported[0], imported[1]); log(imported[0], imported[1] === 'err' ? 'err' : 'ok'); }, 300);
 
-  // Brede schermen tonen de code meteen naast het rijden.
-  ensureEditor();
 
   if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
     navigator.serviceWorker.register('sw.js').catch(() => {});
