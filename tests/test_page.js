@@ -312,7 +312,16 @@ const fakeHub = (opts) => {
   await page.click('#modes [data-mode="tilt"]'); await page.waitForTimeout(300);
   const P = await rect(page, '#pad');
   await ptr(page, '#pad', 'pointerdown', P.cx, P.cy, 1);
-  await page.waitForFunction(() => /geen kantelgegevens/.test(document.getElementById('toasts').textContent));   // no sensor data yet
+  await page.waitForFunction(() => /geen kantelgegevens/.test(document.getElementById('toasts').textContent), null, { timeout: 5000 })   // no sensor data yet
+    .catch(async (e) => {
+      // Explain a failure here: it has only been seen on GitHub runners.
+      console.log('C state', JSON.stringify(await page.evaluate(() => ({
+        toasts: document.getElementById('toasts').textContent, lang: navigator.language, realTilt: window.__realTilt,
+        mode: JSON.parse(localStorage.getItem('hubremote3') || '{}').mode, tiltBtn: document.querySelector('#modes [data-mode="tilt"]').className,
+        pad: document.getElementById('pad').className, coarse: matchMedia('(pointer:coarse)').matches,
+        perm: typeof DeviceOrientationEvent.requestPermission, log: document.getElementById('log').textContent.slice(-400) }))));
+      throw e;
+    });
   await tiltEv(45, 0);
   await page.evaluate(() => (window.__hub.tunnel.length = 0));
   await ptr(page, '#pad', 'pointerdown', P.cx, P.cy, 1); await page.waitForTimeout(300);
