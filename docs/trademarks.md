@@ -37,9 +37,15 @@ Pybricks, describe their compatibility the same way. This is a working checklist
    that opens their site) and may name the models to say which one a profile fits, but we never copy,
    host, embed or redraw their instructions, pictures or PDFs. Our wiring diagram is our own
    schematic of a hub with its port letters, not a picture of the product.
-10. Keep `THIRD-PARTY-NOTICES.md`, `licenses/` and the comment at the top of `src/base.html` when
+10. **LDraw:** credit "The LDraw Parts Library" (CC BY) wherever its parts are used, with the
+   licence terms one tap away (the building guide shows both, with a link to www.ldraw.org).
+   "LDraw" may describe the file format, with ™ and the notice that it is a trademark of the Estate
+   of James Jessiman, but never appears in our app name, titles or URLs (that is why the files live
+   under `/app/bricks/`), and nothing suggests that LDraw.org endorses us
+   (https://www.ldraw.org/legal-info, https://www.ldraw.org/article/239.html).
+11. Keep `THIRD-PARTY-NOTICES.md`, `licenses/` and the comment at the top of `src/base.html` when
    redistributing.
-11. A disclaimer does not make an otherwise misleading use acceptable.
+12. A disclaimer does not make an otherwise misleading use acceptable.
 
 ## Why
 

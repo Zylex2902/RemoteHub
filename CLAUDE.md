@@ -95,14 +95,17 @@ no App Store or Google Play badges before then.
   suggests ports (drive pair A+B, extra motors next, then sensors). Profiles keep `sens` {port: kind},
   also in the share link. Studio `.io` (password-protected zip) is deliberately not read.
 - Building guides: `src/buildview.js` (three.js 0.170 LDrawLoader + OrbitControls) is bundled by
-  `npm run build` (esbuild) into `site/app/ldraw/viewer.js`, loaded lazily; CI checks it is rebuilt. Bricks
-  come from `site/app/ldraw/parts.pack` (gzip of `0 FILE` sections, made by `tools/ldraw_pack.py` from the
+  `npm run build` (esbuild) into `site/app/bricks/viewer.js`, loaded lazily; CI checks it is rebuilt. Bricks
+  come from `site/app/bricks/parts.pack` (gzip of `0 FILE` sections, made by `tools/ldraw_pack.py` from the
   official LDraw `complete.zip`, not in the repo); the page packs model + needed parts into one MPD,
   so nothing is fetched elsewhere. The loader renames `s/x` to `parts/s/x` and `48/x` to `p/48/x`:
   embedded names must match. Guides are stored per profile in localStorage `hubremote3-builds`.
   Opening one calls `halt()`; arrow keys step, Escape closes. Owner-approved exception to the
   imagery rule (rule 6 of `docs/trademarks.md`): 3D bricks only inside the app, never on the site
-  or store screenshots. Does not work as a file:// page or in the standalone build.
+  or store screenshots. Does not work as a file:// page or in the standalone build. LDraw.org's
+  terms (rule 10): every guide shows the credit "The LDraw Parts Library" (CC BY) with links to
+  www.ldraw.org and LICENSE-NOTICES.txt; "LDraw" never in our name, titles or URLs (files live in
+  `site/app/bricks/`), LDraw™ with the Jessiman Estate trademark notice.
 - Layout must keep STOP visible without scrolling on every size in `tests/test_page.js` section E
   and both fold postures in `tests/test_fold.js`.
 

@@ -20,7 +20,7 @@
 
 # Brick shapes for the building-guide viewer: gzip data that the page unpacks itself.
 [[headers]]
-  for = "/app/ldraw/*.pack"
+  for = "/app/bricks/*.pack"
   [headers.values]
     Content-Type = "application/octet-stream"
 

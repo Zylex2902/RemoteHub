@@ -655,6 +655,8 @@ html[data-theme="dark"] #pyCheat code{color:var(--accent-hi)}
 .bnav .btn{min-width:96px}
 .bnote{margin:0;text-align:center}
 .bnote:empty{display:none}
+.bcredit{margin:0;text-align:center;font-size:11.5px;opacity:.8}
+.bcredit a{color:inherit}
 </style>
 </head>
 <body data-phase="idle">
@@ -1028,6 +1030,8 @@ html[data-theme="dark"] #pyCheat code{color:var(--accent-hi)}
     <button class="btn primary" id="btnBuildNext" data-i18n="build.next">Volgende</button>
   </div>
   <p class="small bnote" id="buildNote"></p>
+  <!-- Naamsvermelding van de bouwstenen (CC BY) en de licenties, zoals LDraw.org vraagt. -->
+  <p class="small bcredit"><span data-i18n="build.credit"></span> <a href="https://www.ldraw.org/" target="_blank" rel="noopener noreferrer">www.ldraw.org</a> · <a href="LICENSE-NOTICES.txt" target="_blank" rel="noopener" data-i18n="build.licenses">Licenties</a></p>
 </div>
 
 <div class="sheet" id="imgSheet" aria-hidden="true">
@@ -1652,7 +1656,7 @@ const I18N = {
     'tilt.hold': 'Houd vast en kantel', 'tilt.denied': 'Geen toegang tot de bewegingssensor van dit toestel.', 'tilt.none': 'Dit toestel geeft geen kantelgegevens door.',
     'set.robot': 'Robot', 'set.profile': 'Profiel', 'set.name': 'Naam', 'set.new': 'Nieuw', 'set.share': 'Delen', 'set.delete': 'Verwijderen', 'set.deleteSure': 'Zeker weten?',
     'robots.title': 'Bouw een robot', 'robots.help': 'Bouw een robot met de gratis bouwinstructies van LEGO® Education en tik dan op Gebruiken: de app zet de poorten goed en zet voorbeeldprogramma\'s klaar in Code.',
-    'ldr.title': 'Zelf ontworpen in BrickLink Studio?', 'ldr.help': 'Exporteer je model in Studio als LDraw-bestand (.ldr of .mpd) en open het hier. De app zoekt de hub, motoren en sensoren en stelt een profiel voor. Kabels staan niet in zo\'n bestand: controleer de poorten met het schema als de hub verbonden is.',
+    'ldr.title': 'Zelf ontworpen in BrickLink Studio?', 'ldr.help': 'Exporteer je model in Studio als LDraw™-bestand (.ldr of .mpd, het bestandsformaat van www.ldraw.org) en open het hier. De app zoekt de hub, motoren en sensoren en stelt een profiel voor. Kabels staan niet in zo\'n bestand: controleer de poorten met het schema als de hub verbonden is.',
     'build.title': 'Bouwplan', 'build.open': 'Bouwplan', 'build.demo': 'Probeer een voorbeeld-bouwplan', 'build.demoName': 'Robotje', 'build.close': 'Sluiten',
     'build.step': 'Stap {0} van {1}', 'build.prev': 'Vorige', 'build.next': 'Volgende', 'build.done': 'Klaar!', 'build.reset': 'Recht zetten',
     'build.loading': 'Bouwstenen laden… {0}%', 'build.making': 'Model opbouwen…', 'build.fail': 'Het bouwplan kon niet worden geopend: {0}',
@@ -1660,7 +1664,7 @@ const I18N = {
     'build.auto': 'Dit bestand had geen bouwstappen; de app heeft ze zelf gemaakt, van onder naar boven.', 'build.missing': '{0} soort(en) onderdelen zitten niet in de bouwstenenset en zijn een grijs blok.',
     'build.help': 'Sleep om te draaien, knijp om te zoomen. De nieuwe onderdelen van deze stap hebben hun echte kleur; wat je al gebouwd hebt is lichter.',
     'build.saved': 'Het bouwplan hoort nu bij profiel "{0}".', 'build.noRoom': 'Het bouwplan is te groot om te bewaren; je kunt het nu wel bekijken.', 'build.none': 'Bij dit profiel hoort nog geen bouwplan.',
-    'build.license': 'Bouwstenen: LDraw-bibliotheek (CC BY). 3D: three.js (MIT).',
+    'build.credit': 'Bouwstenen: The LDraw Parts Library (CC BY 2.0 en CC BY 4.0), 3D: three.js (MIT). LDraw™ is een handelsmerk van de Estate of James Jessiman; Hub Remote is geen product van LDraw.org.', 'build.licenses': 'Licenties',
     'ldc.0': 'zwart', 'ldc.1': 'blauw', 'ldc.2': 'groen', 'ldc.4': 'rood', 'ldc.5': 'donkerroze', 'ldc.7': 'lichtgrijs', 'ldc.8': 'donkergrijs', 'ldc.10': 'felgroen', 'ldc.14': 'geel', 'ldc.15': 'wit', 'ldc.19': 'zandbruin', 'ldc.25': 'oranje', 'ldc.26': 'magenta', 'ldc.27': 'limoen', 'ldc.28': 'donker zandbruin', 'ldc.70': 'roodbruin', 'ldc.71': 'lichtgrijs', 'ldc.72': 'donkergrijs', 'ldc.73': 'middenblauw', 'ldc.191': 'lichtoranje', 'ldc.226': 'lichtgeel', 'ldc.320': 'donkerrood', 'ldc.322': 'azuurblauw', 'ldc.272': 'donkerblauw', 'ldc.33': 'doorzichtig donkerblauw', 'ldc.34': 'doorzichtig groen', 'ldc.36': 'doorzichtig rood', 'ldc.43': 'doorzichtig lichtblauw', 'ldc.46': 'doorzichtig geel', 'ldc.47': 'doorzichtig',
     'ldr.open': 'Studio-bestand openen', 'ldr.io': 'Dit is een Studio-projectbestand (.io). Exporteer het in Studio als LDraw-bestand (.ldr) en open dat.', 'ldr.bad': 'Dit bestand kan ik niet lezen als LDraw-model.',
     'ldr.big': 'Dit bestand is te groot.', 'ldr.none': 'Geen SPIKE™-hub, motoren of sensoren gevonden in "{0}" ({1} onderdelen).', 'ldr.found': '"{0}": {1} onderdelen, waarvan:',
@@ -1834,7 +1838,7 @@ const I18N = {
     'tilt.hold': 'Hold and tilt', 'tilt.denied': 'No access to the motion sensor of this device.', 'tilt.none': 'This device does not report tilt data.',
     'set.robot': 'Robot', 'set.profile': 'Profile', 'set.name': 'Name', 'set.new': 'New', 'set.share': 'Share', 'set.delete': 'Delete', 'set.deleteSure': 'Are you sure?',
     'robots.title': 'Build a robot', 'robots.help': 'Build a robot with the free building instructions from LEGO® Education, then tap Use: the app sets the ports and puts example programs in Code.',
-    'ldr.title': 'Designed it yourself in BrickLink Studio?', 'ldr.help': 'Export your model from Studio as an LDraw file (.ldr or .mpd) and open it here. The app finds the hub, motors and sensors and suggests a profile. Cables are not in such a file: check the ports with the diagram once the hub is connected.',
+    'ldr.title': 'Designed it yourself in BrickLink Studio?', 'ldr.help': 'Export your model from Studio as an LDraw™ file (.ldr or .mpd, the file format of www.ldraw.org) and open it here. The app finds the hub, motors and sensors and suggests a profile. Cables are not in such a file: check the ports with the diagram once the hub is connected.',
     'build.title': 'Building guide', 'build.open': 'Building guide', 'build.demo': 'Try an example building guide', 'build.demoName': 'Little robot', 'build.close': 'Close',
     'build.step': 'Step {0} of {1}', 'build.prev': 'Back', 'build.next': 'Next', 'build.done': 'Done!', 'build.reset': 'Straighten',
     'build.loading': 'Loading bricks… {0}%', 'build.making': 'Building the model…', 'build.fail': 'The building guide could not be opened: {0}',
@@ -1842,7 +1846,7 @@ const I18N = {
     'build.auto': 'This file had no building steps; the app made them itself, from the bottom up.', 'build.missing': '{0} kind(s) of parts are not in the brick set and show as a grey block.',
     'build.help': 'Drag to turn, pinch to zoom. The new parts of this step have their real colour; what you already built is lighter.',
     'build.saved': 'The building guide now belongs to profile "{0}".', 'build.noRoom': 'The building guide is too large to keep; you can still look at it now.', 'build.none': 'This profile has no building guide yet.',
-    'build.license': 'Bricks: LDraw library (CC BY). 3D: three.js (MIT).',
+    'build.credit': 'Bricks: The LDraw Parts Library (CC BY 2.0 and CC BY 4.0), 3D: three.js (MIT). LDraw™ is a trademark of the Estate of James Jessiman; Hub Remote is not a product of LDraw.org.', 'build.licenses': 'Licences',
     'ldc.0': 'black', 'ldc.1': 'blue', 'ldc.2': 'green', 'ldc.4': 'red', 'ldc.5': 'dark pink', 'ldc.7': 'light grey', 'ldc.8': 'dark grey', 'ldc.10': 'bright green', 'ldc.14': 'yellow', 'ldc.15': 'white', 'ldc.19': 'tan', 'ldc.25': 'orange', 'ldc.26': 'magenta', 'ldc.27': 'lime', 'ldc.28': 'dark tan', 'ldc.70': 'reddish brown', 'ldc.71': 'light bluish grey', 'ldc.72': 'dark bluish grey', 'ldc.73': 'medium blue', 'ldc.191': 'bright light orange', 'ldc.226': 'bright light yellow', 'ldc.320': 'dark red', 'ldc.322': 'medium azure', 'ldc.272': 'dark blue', 'ldc.33': 'trans dark blue', 'ldc.34': 'trans green', 'ldc.36': 'trans red', 'ldc.43': 'trans light blue', 'ldc.46': 'trans yellow', 'ldc.47': 'trans clear',
     'ldr.open': 'Open a Studio file', 'ldr.io': 'This is a Studio project file (.io). Export it from Studio as an LDraw file (.ldr) and open that.', 'ldr.bad': 'I cannot read this file as an LDraw model.',
     'ldr.big': 'This file is too large.', 'ldr.none': 'No SPIKE™ hub, motors or sensors found in "{0}" ({1} parts).', 'ldr.found': '"{0}": {1} parts, including:',
@@ -8357,7 +8361,7 @@ if (typeof module !== 'undefined') module.exports = LDraw;
     if (window.HRBuild) return Promise.resolve(window.HRBuild);
     if (!viewerLoad) viewerLoad = new Promise((ok, fail) => {
       const sc = document.createElement('script');
-      sc.src = 'ldraw/viewer.js';
+      sc.src = 'bricks/viewer.js';
       sc.onload = () => (window.HRBuild ? ok(window.HRBuild) : fail(new Error('viewer')));
       sc.onerror = () => { viewerLoad = null; fail(new Error('viewer')); };
       document.head.appendChild(sc);
@@ -8401,7 +8405,7 @@ if (typeof module !== 'undefined') module.exports = LDraw;
       const B = await loadViewer();
       if (my !== bv.token) return;
       const bg = getComputedStyle(document.body).getPropertyValue('--panel2').trim() || '#f0f4ff';
-      const ctl = await B.open($('buildView'), text, { packUrl: 'ldraw/parts.pack', background: bg,
+      const ctl = await B.open($('buildView'), text, { packUrl: 'bricks/parts.pack', background: bg,
         onProgress: (f) => { if (my === bv.token) load.textContent = f < 1 ? t('build.loading', Math.round(f * 100)) : t('build.making'); } });
       if (my !== bv.token) { ctl.dispose(); return; }
       bv.ctl = ctl; load.textContent = '';
@@ -8432,7 +8436,7 @@ if (typeof module !== 'undefined') module.exports = LDraw;
   $('buildRange').addEventListener('input', (e) => { if (bv.ctl) { bv.ctl.go(+e.target.value - 1); showBuildStep(); } });
   $('btnBuildDemo').addEventListener('click', () => {
     if (location.protocol === 'file:') { toast(t('build.offline'), 'warn'); return; }
-    fetch('ldraw/demo.ldr').then((r) => (r.ok ? r.text() : Promise.reject(new Error(r.status)))).then((txt) => openBuild(txt, t('build.demoName')))
+    fetch('bricks/demo.ldr').then((r) => (r.ok ? r.text() : Promise.reject(new Error(r.status)))).then((txt) => openBuild(txt, t('build.demoName')))
       .catch((e) => { toast(t('build.fail', e.message), 'err'); });
   });
   $('btnBuild').addEventListener('click', () => { const b = buildOf(S.id); if (b) openBuild(b.text, b.title); else toast(t('build.none'), 'warn'); });

@@ -952,6 +952,10 @@ let HTTP = '';
   await page.click('#btnBuildDemo');
   await page.waitForFunction(() => /Stap 1 van 12/.test(document.getElementById('buildStep').textContent), null, { timeout: 30000 });
   assert.deepStrictEqual(await chips(), ['1×Plate 2 x 6 · donkergrijs']);
+  // the brick shapes are credited as LDraw.org asks, with the licences one tap away
+  const credit = await page.$eval('.bcredit', (e) => ({ text: e.innerText, links: [...e.querySelectorAll('a')].map((a) => a.getAttribute('href')), shown: e.getClientRects().length > 0 }));
+  assert.ok(credit.shown && /The LDraw Parts Library/.test(credit.text) && /LDraw™ is een handelsmerk/.test(credit.text), credit.text);
+  assert.deepStrictEqual(credit.links, ['https://www.ldraw.org/', 'LICENSE-NOTICES.txt']);
   let canvas = await page.$eval('#buildView canvas', (c) => [c.clientWidth, c.clientHeight]);
   assert.ok(canvas[0] > 300 && canvas[1] > 300, 'canvas fills the view: ' + canvas);
   const shot1 = await page.locator('#buildView').screenshot();

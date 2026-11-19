@@ -2212,7 +2212,7 @@
     if (window.HRBuild) return Promise.resolve(window.HRBuild);
     if (!viewerLoad) viewerLoad = new Promise((ok, fail) => {
       const sc = document.createElement('script');
-      sc.src = 'ldraw/viewer.js';
+      sc.src = 'bricks/viewer.js';
       sc.onload = () => (window.HRBuild ? ok(window.HRBuild) : fail(new Error('viewer')));
       sc.onerror = () => { viewerLoad = null; fail(new Error('viewer')); };
       document.head.appendChild(sc);
@@ -2256,7 +2256,7 @@
       const B = await loadViewer();
       if (my !== bv.token) return;
       const bg = getComputedStyle(document.body).getPropertyValue('--panel2').trim() || '#f0f4ff';
-      const ctl = await B.open($('buildView'), text, { packUrl: 'ldraw/parts.pack', background: bg,
+      const ctl = await B.open($('buildView'), text, { packUrl: 'bricks/parts.pack', background: bg,
         onProgress: (f) => { if (my === bv.token) load.textContent = f < 1 ? t('build.loading', Math.round(f * 100)) : t('build.making'); } });
       if (my !== bv.token) { ctl.dispose(); return; }
       bv.ctl = ctl; load.textContent = '';
@@ -2287,7 +2287,7 @@
   $('buildRange').addEventListener('input', (e) => { if (bv.ctl) { bv.ctl.go(+e.target.value - 1); showBuildStep(); } });
   $('btnBuildDemo').addEventListener('click', () => {
     if (location.protocol === 'file:') { toast(t('build.offline'), 'warn'); return; }
-    fetch('ldraw/demo.ldr').then((r) => (r.ok ? r.text() : Promise.reject(new Error(r.status)))).then((txt) => openBuild(txt, t('build.demoName')))
+    fetch('bricks/demo.ldr').then((r) => (r.ok ? r.text() : Promise.reject(new Error(r.status)))).then((txt) => openBuild(txt, t('build.demoName')))
       .catch((e) => { toast(t('build.fail', e.message), 'err'); });
   });
   $('btnBuild').addEventListener('click', () => { const b = buildOf(S.id); if (b) openBuild(b.text, b.title); else toast(t('build.none'), 'warn'); });

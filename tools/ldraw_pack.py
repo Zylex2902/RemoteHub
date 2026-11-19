@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Makes site/app/ldraw/parts.pack: the LDraw parts the building-guide viewer can show.
+"""Makes site/app/bricks/parts.pack: the LDraw parts the building-guide viewer can show.
 
 Usage: python3 tools/ldraw_pack.py path/to/complete.zip
 complete.zip is the official LDraw parts library (https://library.ldraw.org/library/updates/complete.zip),
@@ -13,7 +13,7 @@ gzip-compressed; the first section is LDConfig.ldr. Anything not in the pack sho
 import gzip, re, sys, zipfile
 from pathlib import Path
 
-OUT = Path(__file__).resolve().parent.parent / "site" / "app" / "ldraw" / "parts.pack"
+OUT = Path(__file__).resolve().parent.parent / "site" / "app" / "bricks" / "parts.pack"
 
 KEEP = re.compile(
     r"^(Technic |Electric Powered Up |Wheel |Tyre |"

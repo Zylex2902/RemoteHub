@@ -1,6 +1,6 @@
 // Bouwplan-viewer: toont een LDraw-model (bijv. uit BrickLink Studio) stap voor stap in 3D.
-// Wordt met esbuild samen met three.js gebundeld tot site/app/ldraw/viewer.js en pas geladen als iemand
-// een bouwplan opent. De bouwstenen komen uit ons eigen pakket (ldraw/parts.pack, gemaakt door
+// Wordt met esbuild samen met three.js gebundeld tot site/app/bricks/viewer.js en pas geladen als iemand
+// een bouwplan opent. De bouwstenen komen uit ons eigen pakket (bricks/parts.pack, gemaakt door
 // tools/ldraw_pack.py uit de LDraw-bibliotheek); er wordt niets van andere sites opgehaald.
 import { WebGLRenderer, Scene, PerspectiveCamera, Box3, Vector3, Color, PMREMGenerator, SRGBColorSpace } from 'three';
 import { LDrawLoader } from 'three/examples/jsm/loaders/LDrawLoader.js';
@@ -83,7 +83,7 @@ function colourNames() {
 
 // Opent een bouwplan in `host` (een leeg element). Geeft een besturing terug: stappen, ga naar stap, opruimen.
 async function open(host, modelText, opts = {}) {
-  await loadPack(opts.packUrl || 'ldraw/parts.pack', opts.onProgress);
+  await loadPack(opts.packUrl || 'bricks/parts.pack', opts.onProgress);
   const packed = packModel(modelText);
   const loader = new LDrawLoader();
   loader.setConditionalLineMaterial(LDrawConditionalLineMaterial);
