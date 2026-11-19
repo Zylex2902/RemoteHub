@@ -1,7 +1,7 @@
 // Checks the page's protocol code (framing, CRC, messages) against vectors made with the reference implementation.
 const fs = require('fs'), vm = require('vm'), assert = require('assert');
 const path = require('path');
-const html = fs.readFileSync(path.join(__dirname, '..', 'site', 'index.html'), 'utf8');
+const html = fs.readFileSync(path.join(__dirname, '..', 'site', 'app', 'index.html'), 'utf8');
 const src = html.match(/<script id="proto">([\s\S]*?)<\/script>/)[1];
 const ctx = { module: { exports: {} }, TextEncoder, TextDecoder, Uint8Array, Uint32Array, DataView, Math, Error };
 vm.runInNewContext(src, ctx);

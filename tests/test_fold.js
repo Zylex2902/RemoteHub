@@ -2,8 +2,8 @@
 const { chromium } = require('playwright');
 const assert = require('assert');
 const path = require('path');
-const { SITE, launchOptions } = require('./helpers');
-const FILE = 'file://' + path.join(SITE, 'index.html');
+const { APP, launchOptions } = require('./helpers');
+const FILE = 'file://' + path.join(APP, 'index.html');
 
 (async () => {
   const browser = await chromium.launch(launchOptions(['--enable-experimental-web-platform-features']));

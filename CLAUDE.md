@@ -7,14 +7,19 @@ Public, free, independent project. Read `README.md` first; this file holds what 
 ## Commands
 
 ```
-npm run build              # src/ -> site/index.html (never edit site/index.html by hand)
+npm run build              # src/ -> site/app/index.html (app) + site/index.html (landing); never edit them
+npm run screenshots        # landing page screenshots (site/img/) from the app; rerun after UI changes
 npm run test:unit          # protocol vectors + hub program logic (fast, no browser)
 npm run test:browser       # headless Chrome against a simulated hub (ONLY=AE limits sections)
 npm run build:standalone   # dist/hub-remote.html, single file with fonts embedded
 ```
 
 Browser tests: set `CHROME_PATH` or run `npx playwright install chromium`; `NO_SANDBOX=1` as root.
-CI (`.github/workflows/pages.yml`) fails if `site/index.html` is not rebuilt and committed.
+CI (`.github/workflows/pages.yml`) fails if `site/app/index.html` or `site/index.html` is not rebuilt
+and committed. The site root is the landing page (`src/landing.html`, `src/landing.css`); the app is
+at `/app/`. The landing page must stay honest about availability: web and Android (install from
+Chrome) work today, iPhone/iPad via Bluefy; store apps are 'coming'/'planned' until they exist, and
+no App Store or Google Play badges before then.
 
 ## Things that bite
 
@@ -36,7 +41,7 @@ CI (`.github/workflows/pages.yml`) fails if `site/index.html` is not rebuilt and
   tilt, tank or key input. An extra motor in on/off mode keeps turning after the tap, so it
   must stay in `st.aux` and be cleared by `halt()` (STOP, blur, hidden, view switch, link lost).
 - The Code tab is a Blockly editor (13.4.0, vendored in `vendor/blockly/`, inlined by the build,
-  media in `site/blockly-media/`; update with `npm run vendor:blockly`). Block definitions and the
+  media in `site/app/blockly-media/`; update with `npm run vendor:blockly`). Block definitions and the
   toolbox are generated from `Cards.TYPES` and `Cards.REP` in `src/cards.js`; programs are stored as
   Blockly JSON (`G.programs[].ws`) and turned into the runner format with `Cards.fromBlocks` when
   Start is pressed. Old card programs are converted with `Cards.toBlocks` on load. Sheets, toasts
@@ -54,9 +59,9 @@ CI (`.github/workflows/pages.yml`) fails if `site/index.html` is not rebuilt and
   from the phone, because it does not come from the robot.
 - Songs in the app are public domain or written for this project. Do not add copyrighted melodies.
 - CI: the GitHub Pages deploy runs only when the repository variable `DEPLOY_PAGES` is `true`;
-  the app is hosted on Netlify (`netlify.toml`, publishes `site/` with no build step).
-- Two hub kinds, shown in the app only as 'big hub (6 ports)' and 'small hub (2 ports)' (no product
-  names in the UI). The small hub (owner has one) has ports A-B, and, as far as known, no speaker
+  the app is hosted on Netlify (`netlify.toml`, publishes `site/` with no build step: landing at `/`, app at `/app/`).
+- Two hub kinds: SPIKE Prime (6 ports) and SPIKE Essential (2 ports), named in the UI with ™ as
+  descriptions (rule 2 of `docs/trademarks.md`). The small hub (owner has one) has ports A-B, and, as far as known, no speaker
   and no 5x5 light matrix: sounds then play on the phone, pictures are skipped. Detection: product
   value in the info response (only 0 = Prime is documented), and the hub program's `hw <matrix>
   <sound> <ports>` line; Settings can override. Hub program imports must never assume
@@ -88,12 +93,13 @@ CI (`.github/workflows/pages.yml`) fails if `site/index.html` is not rebuilt and
 
 ## Intellectual property guardrails
 
-The Code tab offers the same kinds of commands as the official hub app, with our own names,
-icons, colours and texts; never copy its block look, icons or texts. The block style is Blockly's
-own renderer: never call it "Scratch" or use Scratch's name, cat, colours or icons (MIT trademarks).
-Follow `docs/trademarks.md` for every change: no "LEGO" or "SPIKE" in names, identifiers, icons,
-URLs or store metadata; compatibility stated once with symbols and the disclaimer; keep the
-notices. Warn the owner before adding anything that could touch a patent, copyright or trademark.
+Follow `docs/trademarks.md` for every change. In short: our name, icon, logo, domain and store
+titles carry no LEGO marks; naming LEGO® and SPIKE™ products to describe compatibility is fine,
+also in headings and in the app, with the symbols and the disclaimer; no LEGO imagery and nothing
+that suggests endorsement. The Code tab offers the same kinds of commands as the official hub app
+with our own names, icons, colours and texts; the block style is Blockly's own renderer, and
+"Scratch" (name, cat, colours, icons) is never used. Warn the owner before adding anything else
+that could touch a patent, copyright or trademark.
 
 ## Project look
 

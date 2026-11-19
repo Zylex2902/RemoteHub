@@ -10,8 +10,9 @@
     "vendor": "terser node_modules/qrcode-generator/dist/qrcode.js -c -m -o vendor/qrcode.min.js",
     "test": "npm run test:unit && npm run test:browser",
     "test:unit": "node tests/test_proto.js && node tests/test_cards.js && python3 -I tests/test_hub_program.py",
-    "test:browser": "node tests/test_page.js && node tests/test_fold.js && node tests/test_sw.js",
-    "vendor:blockly": "cp node_modules/blockly/blockly_compressed.js vendor/blockly/ && cp node_modules/blockly/msg/nl.js vendor/blockly/msg-nl.js && cp node_modules/blockly/msg/en.js vendor/blockly/msg-en.js && cp node_modules/blockly/media/* site/blockly-media/ && cp node_modules/blockly/LICENSE licenses/Apache-2.0-Blockly.txt"
+    "test:browser": "node tests/test_page.js && node tests/test_fold.js && node tests/test_sw.js && node tests/test_landing.js",
+    "vendor:blockly": "cp node_modules/blockly/blockly_compressed.js vendor/blockly/ && cp node_modules/blockly/msg/nl.js vendor/blockly/msg-nl.js && cp node_modules/blockly/msg/en.js vendor/blockly/msg-en.js && cp node_modules/blockly/media/* site/blockly-media/ && cp node_modules/blockly/LICENSE licenses/Apache-2.0-Blockly.txt",
+    "screenshots": "node tools/screenshots.js"
   },
   "devDependencies": {
     "blockly": "13.4.0",

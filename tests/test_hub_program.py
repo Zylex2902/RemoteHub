@@ -1,7 +1,7 @@
 """Runs the hub program against stubbed hub modules: drive, failsafe, ping, horn, gripper, music, images,
 exact moves, positions, stop modes, buttons, gestures, lights and the STOP command."""
 import sys, re, types, asyncio, ast, pathlib
-PAGE = pathlib.Path(sys.argv[1]) if len(sys.argv) > 1 else pathlib.Path(__file__).resolve().parent.parent / "site" / "index.html"
+PAGE = pathlib.Path(sys.argv[1]) if len(sys.argv) > 1 else pathlib.Path(__file__).resolve().parent.parent / "site" / "app" / "index.html"
 html = PAGE.read_text(encoding="utf8")
 src = re.search(r'<script type="text/plain" id="hub-program">(.*?)</script>', html, re.S).group(1)
 src = re.sub(r'^\s*\n', '', src)

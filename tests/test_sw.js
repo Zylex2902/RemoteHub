@@ -8,7 +8,7 @@ const { serve, launchOptions } = require('./helpers');
   const browser = await chromium.launch(launchOptions());
   const ctx = await browser.newContext(); const page = await ctx.newPage(); const errs = [];
   page.on('pageerror', (e) => errs.push(String(e)));
-  await page.goto(server.url);
+  await page.goto(server.url + 'app/');   // the app lives under /app/; the root is the landing page
   await page.evaluate(() => navigator.serviceWorker.ready.then(() => new Promise((r) => setTimeout(r, 600))));
   const man = await page.evaluate(() => fetch('manifest.webmanifest').then((r) => r.json()));
   assert.strictEqual(man.name, 'Hub Remote'); assert.strictEqual(man.icons.length, 3);

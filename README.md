@@ -50,7 +50,9 @@ no light matrix) sounds play on the phone and pictures are skipped.
 | iPhone, iPad | a Web Bluetooth browser such as Bluefy | needs https; Safari has no Web Bluetooth |
 
 Web Bluetooth needs a secure address, so phones and tablets need the app hosted over https. The
-app is hosted on Netlify: `netlify.toml` publishes `site/` as is, with no build step. GitHub Pages
+site is hosted on Netlify: `netlify.toml` publishes `site/` as is, with no build step. The root is
+a landing page that explains the app and the ways to use it (web, Android, iPhone/iPad); the app
+itself lives at `/app/`. GitHub Pages
 works too: enable Pages with "GitHub Actions" as the source and set the repository variable
 `DEPLOY_PAGES` to `true`; `.github/workflows/pages.yml` then deploys every push to `main`.
 
@@ -85,14 +87,15 @@ Requirements: Node 20+, Python 3.9+, Chrome for the browser tests.
 
 ```
 npm install
-npm run build              # src/ -> site/index.html
+npm run build              # src/ -> site/app/index.html (the app) and site/index.html (landing page)
 npm run build:standalone   # also dist/hub-remote.html, one file with the fonts embedded
 npm run test:unit          # protocol vectors + hub program logic
 npm run test:browser       # full flow in headless Chrome against a simulated hub
-npm run vendor:blockly     # after updating the blockly package: copy it into vendor/ and site/
+npm run vendor:blockly     # after updating the blockly package: copy it into vendor/ and site/app/
+npm run screenshots        # app screenshots for the landing page (site/img/), after UI changes
 ```
 
-`site/index.html` is generated. Edit the files in `src/` and rebuild.
+`site/app/index.html` and `site/index.html` are generated. Edit the files in `src/` and rebuild.
 
 Environment for the browser tests: `CHROME_PATH` selects a Chrome binary (otherwise run
 `npx playwright install chromium` once); `NO_SANDBOX=1` is needed when running as root.
@@ -105,9 +108,12 @@ src/hub_program.py   the program that runs on the hub
 src/i18n.js          Dutch and English texts
 src/cards.js         programming blocks: block set, conversion and the program runner (no DOM)
 src/app.js           connection, controls, settings, profiles
-site/                the deployable app: built page, manifest, service worker, icons, fonts
+src/landing.html     the landing page (with src/landing.css)
+site/                the deployable site: landing page, screenshots in img/
+site/app/            the app: built page, manifest, service worker, icons, fonts, Blockly media
 tests/               unit and browser tests, reference vectors
-tools/build.py       builds the page
+tools/build.py       builds the app page and the landing page
+tools/screenshots.js makes the landing page screenshots from the app and a simulated hub
 vendor/              minified QR code library, Blockly (block editor) and its Dutch and English texts
 docs/                store listing text and trademark notes
 ```

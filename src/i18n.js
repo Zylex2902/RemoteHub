@@ -130,8 +130,8 @@ const I18N = {
     'blk.dist': 'afstand {op} {n} cm', 'blk.color': 'kleur {p} is {col}', 'blk.force': 'krachtsensor {st}', 'blk.tilt': 'hub kantelt {dir}', 'blk.face': 'hub ligt met {f} boven', 'blk.btn': 'hubknop {b} ingedrukt',
     'cat.op': 'Rekenen', 'code.makeVar': 'Maak een variabele', 'code.noHat': 'Zet een Wanneer-blok bovenaan je programma, bijvoorbeeld "Wanneer het programma start".',
     'opt.abs': 'absolute waarde', 'opt.round': 'afgerond', 'opt.floor': 'naar beneden afgerond', 'opt.ceil': 'naar boven afgerond', 'opt.sqrt': 'wortel',
-    'hub.kind': 'Soort', 'hub.big': 'grote hub (6 poorten)', 'hub.small': 'kleine hub (2 poorten)', 'app.hubKind': 'Soort hub', 'kind.auto': 'Automatisch herkennen',
-    'msg.hubKind': 'Herkend als {0}.', 'play.small': 'Deze hub heeft geen luidspreker en geen lichtscherm: je hoort het op dit toestel.',
+    'hub.kind': 'Soort', 'hub.big': 'SPIKE™ Prime-hub (6 poorten)', 'hub.small': 'SPIKE™ Essential-hub (2 poorten)', 'app.hubKind': 'Soort hub', 'kind.auto': 'Automatisch herkennen',
+    'msg.hubKind': 'Herkend als {0}.', 'play.small': 'De SPIKE™ Essential-hub heeft geen luidspreker en geen lichtscherm: je hoort het op dit toestel.',
   },
   en: {
     'app.tagline': 'Remote control for your robot hub',
@@ -264,8 +264,8 @@ const I18N = {
     'blk.dist': 'distance {op} {n} cm', 'blk.color': 'colour {p} is {col}', 'blk.force': 'force sensor {st}', 'blk.tilt': 'hub tilts {dir}', 'blk.face': 'hub has {f} up', 'blk.btn': 'hub button {b} pressed',
     'cat.op': 'Operators', 'code.makeVar': 'Make a variable', 'code.noHat': 'Put a When block at the top of your program, for example "When the program starts".',
     'opt.abs': 'absolute value', 'opt.round': 'rounded', 'opt.floor': 'rounded down', 'opt.ceil': 'rounded up', 'opt.sqrt': 'square root',
-    'hub.kind': 'Type', 'hub.big': 'big hub (6 ports)', 'hub.small': 'small hub (2 ports)', 'app.hubKind': 'Hub type', 'kind.auto': 'Detect automatically',
-    'msg.hubKind': 'Recognised as {0}.', 'play.small': 'This hub has no speaker or light matrix: you hear it on this device.',
+    'hub.kind': 'Type', 'hub.big': 'SPIKE™ Prime hub (6 ports)', 'hub.small': 'SPIKE™ Essential hub (2 ports)', 'app.hubKind': 'Hub type', 'kind.auto': 'Detect automatically',
+    'msg.hubKind': 'Recognised as {0}.', 'play.small': 'The SPIKE™ Essential hub has no speaker or light matrix: you hear it on this device.',
   },
 };
 if (typeof module !== 'undefined') module.exports = I18N;

@@ -1,43 +1,57 @@
 # Trademarks: how this project refers to other brands
 
 Hub Remote works with hardware made by the LEGO Group, and has no relationship with it. The rules
-below keep that clear. They follow the LEGO Group's published Fair Play guidelines and the store
-policies of Apple and Google. This is a working checklist, not legal advice.
+below keep that clear. They follow referential (nominative) use: naming another company's product
+to say what ours works with, honestly and no more than needed. Comparable projects, such as
+Pybricks, describe their compatibility the same way. This is a working checklist, not legal advice.
 
 ## Rules
 
-1. No "LEGO" or "SPIKE" in the app name, repository name, package identifiers, icon, logo, domain
-   or URL path.
-2. Compatibility is stated descriptively, in body text, with the trademark symbols:
-   "works with the LEGO® Education SPIKE™ Prime hub".
-3. Wherever a LEGO trademark appears, the disclaimer appears too:
+1. **Our own identity carries no LEGO marks.** No "LEGO", "SPIKE" or other LEGO trademarks in the
+   app name, repository name, package identifiers, icon, logo, domain or URL path.
+2. **Describing compatibility is fine, also prominently.** "LEGO®" and the product names
+   ("SPIKE™ Prime", "SPIKE™ Essential") may appear in headings, marketing text on the website,
+   help texts and in the app where they name the hardware, e.g. "Drive your LEGO® Education
+   SPIKE™ Prime hub" or "Recognised as SPIKE™ Prime hub". Always as a description of the hardware,
+   never as part of our name or a slogan that suggests a partnership.
+3. **Symbols:** use ® for LEGO and ™ for SPIKE at least at the first mention on a page or screen.
+4. **Disclaimer:** every page or screen set that uses a LEGO trademark carries it (on the website
+   in the footer, in the app in Settings → About):
    "LEGO® and SPIKE™ are trademarks of the LEGO Group, which does not sponsor, authorize or
    endorse this project."
-4. No LEGO logo, minifigure, brick or stud imagery, product photos from LEGO, or screenshots of
-   LEGO apps. No red-and-yellow brick look for the UI or icon.
-5. Store metadata (name, subtitle, short description, keywords, screenshots) carries no
-   third-party marks. Compatibility goes in the long description only.
-6. Keep `THIRD-PARTY-NOTICES.md`, `licenses/` and the comment at the top of `src/base.html` when
+5. **No suggestion of endorsement:** no "official", "certified", "by LEGO", and no co-branding.
+6. **No LEGO imagery:** no LEGO logo, minifigure, brick or stud imagery, product photos from
+   LEGO, screenshots of LEGO apps, or LEGO's red-and-yellow look. Screenshots of our own app are
+   fine.
+7. **App stores are stricter than the law:** the store name, subtitle, short description and
+   keywords carry no third-party marks (Apple guideline 2.3.7, Google Play impersonation policy).
+   Compatibility goes in the long description, with symbols and the disclaimer.
+8. **Other brands:** no Apple or Google store badges until there is a published store app (their
+   badge rules only allow them for live apps); "Scratch" and its cat are MIT trademarks and are not
+   used. Plain words like "App Store", "Google Play", "iPhone", "Android" may describe availability.
+9. Keep `THIRD-PARTY-NOTICES.md`, `licenses/` and the comment at the top of `src/base.html` when
    redistributing.
-7. A disclaimer does not make an otherwise misleading use acceptable.
+10. A disclaimer does not make an otherwise misleading use acceptable.
 
 ## Why
 
-- Fair Play is written for non-commercial references to LEGO products; the LEGO Group says it
-  watches commercial use of its trademarks closely. A free app is the lowest-risk form.
-- Apple's review guideline 2.3.7 forbids packing metadata with trademarked terms; apps have been
-  rejected for a third-party product name in the subtitle.
-- Google Play treats prominent third-party brand names in a title as impersonation, and says an
-  "unofficial" label does not fix that.
+- Trademark law (EU: art. 14 of the EU Trade Mark Regulation; US: nominative fair use) allows
+  naming another company's product to indicate what yours is for, as long as it is honest and does
+  not suggest a connection. Charging money does not by itself change that; implying endorsement
+  or copying the look does.
+- The LEGO Group's Fair Play page is its policy for fan use, not the legal limit; it does watch
+  commercial use, so the rules above stay on the safe side of referential use.
+- Apple and Google reject apps with third-party brand names in store titles, even with an
+  "unofficial" label.
 
 ## Money
 
 - A free app with an optional donation is fine in principle. Keep the donation tied to the
-  developer ("Support the developer of Hub Remote"), never to a LEGO trademark, and do not put
-  features behind it.
-- Put the donation link on the website. Apple requires in-app purchase for tips inside an app,
+  developer ("Support the developer of Hub Remote"), never to a LEGO trademark.
+- Paid features or licences (as Pybricks does for block coding) do not change the rules above,
+  but make the project more visible: have a trademark lawyer look at it before charging.
+- Put a donation link on the website. Apple requires in-app purchase for tips inside an app,
   and Google Play has removed apps for external donation links.
-- Before selling the app or bundling it with a paid product, have a trademark lawyer look at it.
 
 ## Technical caveat (not a trademark issue)
 

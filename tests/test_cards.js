@@ -1,6 +1,6 @@
 // Runs the programming-card runner from the built page against a fake io with a simulated clock.
 const fs = require('fs'), vm = require('vm'), assert = require('assert'), path = require('path');
-const html = fs.readFileSync(path.join(__dirname, '..', 'site', 'index.html'), 'utf8');
+const html = fs.readFileSync(path.join(__dirname, '..', 'site', 'app', 'index.html'), 'utf8');
 const src = html.match(/<script id="cards">([\s\S]*?)<\/script>/)[1];
 const ctx = { module: { exports: {} }, Math, Promise, Map, Object, Array, String, Number, JSON, isFinite, setTimeout };
 vm.runInNewContext(src, ctx);

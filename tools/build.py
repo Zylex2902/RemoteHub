@@ -1,14 +1,17 @@
 #!/usr/bin/env python3
-"""Builds site/index.html from src/ (everything inlined into one page).
+"""Builds the app (site/app/index.html, everything inlined into one page) and the landing page
+(site/index.html) from src/.
 
-  python3 tools/build.py                    -> site/index.html (fonts loaded from site/fonts/)
+  python3 tools/build.py                    -> site/app/index.html (fonts loaded from site/app/fonts/)
+                                               and site/index.html (the landing page)
   python3 tools/build.py --standalone FILE  -> also writes FILE with the fonts embedded,
                                                a single file that works on its own
 """
 import base64, pathlib, sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-SRC, SITE = ROOT / "src", ROOT / "site"
+SRC, SITE = ROOT / "src", ROOT / "site" / "app"
+LANDING = ROOT / "site" / "index.html"
 rd = lambda p: p.read_text(encoding="utf8")
 
 
@@ -35,6 +38,13 @@ def build():
     return html
 
 
+def landing():
+    # De website rond de app: src/landing.html met src/landing.css erin.
+    html, css = rd(SRC / "landing.html"), rd(SRC / "landing.css")
+    assert html.count("{{CSS}}") == 1 and "</style>" not in css
+    return html.replace("{{CSS}}", css)
+
+
 def embed_fonts(html):
     for font in sorted((SITE / "fonts").glob("*.woff2")):
         ref = "url(fonts/" + font.name + ")"
@@ -46,7 +56,10 @@ def embed_fonts(html):
 if __name__ == "__main__":
     page = build()
     (SITE / "index.html").write_text(page, encoding="utf8")
-    print("built site/index.html", len(page.encode()), "bytes")
+    print("built site/app/index.html", len(page.encode()), "bytes")
+    land = landing()
+    LANDING.write_text(land, encoding="utf8")
+    print("built site/index.html (landing)", len(land.encode()), "bytes")
     if "--standalone" in sys.argv:
         out = pathlib.Path(sys.argv[sys.argv.index("--standalone") + 1])
         out.parent.mkdir(parents=True, exist_ok=True)

@@ -1,18 +1,20 @@
-# Netlify serves the prebuilt app in site/. CI checks that site/index.html matches src/,
-# so no build step runs here. Settings in this file override those in the Netlify UI.
+# Netlify serves the prebuilt site in site/: the landing page at / and the app at /app/.
+# CI checks that both pages match src/, so no build step runs here.
+# Settings in this file override those in the Netlify UI.
 [build]
   publish = "site"
   command = ""
 
 # Browsers only install the app with a correctly typed manifest.
 [[headers]]
-  for = "/manifest.webmanifest"
+  for = "/app/manifest.webmanifest"
   [headers.values]
     Content-Type = "application/manifest+json"
 
 # Always fetch the newest service worker, so updates reach installed apps.
+# (The old one at /sw.js is gone on purpose: browsers then unregister it.)
 [[headers]]
-  for = "/sw.js"
+  for = "/app/sw.js"
   [headers.values]
     Cache-Control = "no-cache"
 
