@@ -1,5 +1,5 @@
 // End-to-end test: runs the built page in headless Chrome against a simulated hub.
-// ONLY=AB node tests/test_page.js runs just those sections (A-I).
+// ONLY=AB node tests/test_page.js runs just those sections (A-J).
 const { chromium } = require('playwright');
 const jsQR = require('jsqr');
 const assert = require('assert');
@@ -736,6 +736,94 @@ let HTTP = '';
   assert.ok((await since(n0)).includes('beep'));
   await page.context().close();
   console.log('I ok: small hub recognised, ports A and B, sounds on the phone, no pictures, blocks run, setting overrides');
+  }
+  // ---------- J. Python on the hub ----------
+  if (RUN('J')) {
+  page = await open({ viewport: { width: 1366, height: 900 } });
+  page.on('dialog', (d) => d.accept());
+  const ev = () => page.evaluate(() => window.__hub.events.slice());
+  const out = () => page.$eval('#pyOut', (e) => e.textContent);
+  const runPy = async (src) => { await page.fill('#pyText', src); await page.click('#btnPlay'); };
+  const backReady = () => page.waitForFunction(() => document.getElementById('pill').dataset.phase === 'ready' && !document.body.classList.contains('running'), null, { timeout: 8000 });
+  await page.click('#btnConnect'); await waitPhase(page, 'ready');
+  await page.click('#modeSwitch .tab2[data-view="viewCode"]'); await page.waitForTimeout(500);
+  await page.click('#codeKind button[data-kind="python"]'); await page.waitForTimeout(300);
+  let r = await page.evaluate(() => ({ py: !!document.getElementById('pyBox').getClientRects().length, blocks: !!document.getElementById('blocklyDiv').getClientRects().length,
+    src: document.getElementById('pyText').value, kw: document.querySelectorAll('#pyHi .tk').length, fabIn: document.getElementById('btnPlay').parentNode.id,
+    help: document.getElementById('codeHelp').textContent, ex: [...document.querySelectorAll('#selPyEx option')].map((o) => o.value), cheat: document.querySelectorAll('#pyCheat code').length }));
+  assert.ok(r.py && !r.blocks, 'Python editor instead of blocks');
+  assert.ok(/runloop\.run\(main\(\)\)/.test(r.src) && /light_matrix\.write/.test(r.src), 'starts with the hello example');
+  assert.ok(r.kw > 3, 'keywords coloured'); assert.strictEqual(r.fabIn, 'pyEdit');
+  assert.ok(/slot 18/.test(r.help) && /slot 19/.test(r.help), r.help);
+  assert.deepStrictEqual(r.ex, ['', 'hello', 'square', 'wall', 'tilt', 'empty']); assert.ok(r.cheat > 10);
+  const fab = await rect(page, '#btnPlay'), box = await rect(page, '#pyEdit');
+  assert.ok(fab.x + fab.w <= box.x + box.w && fab.y + fab.h <= box.y + box.h && fab.y + fab.h <= 900, 'run button in the editor corner, on screen');
+  // typing: Enter keeps the indent and adds 4 after a colon; Tab gives spaces
+  await page.fill('#pyText', ''); await page.focus('#pyText');
+  await page.keyboard.type('for i in range(3):'); await page.keyboard.press('Enter'); await page.keyboard.type('x = i'); await page.keyboard.press('Enter');
+  await page.keyboard.press('Backspace'); await page.keyboard.press('Tab'); await page.keyboard.type('y');
+  assert.strictEqual(await page.$eval('#pyText', (e) => e.value), 'for i in range(3):\n    x = i\n    y');
+  assert.strictEqual(await page.$eval('#pyNums', (e) => e.textContent.trim().split('\n').length), 3);
+  // run: the code goes to slot 18, print() shows up, then the remote control in slot 19 starts again
+  let e0 = (await ev()).length;
+  await runPy("print('een')\nprint('twee')\n");
+  await page.waitForFunction(() => /twee/.test(document.getElementById('pyOut').textContent));
+  await page.waitForFunction(() => /Python-programma klaar/.test(document.getElementById('pyOut').textContent));
+  await backReady();
+  let evs = (await ev()).slice(e0);
+  assert.ok(evs.includes('upload:program.py:18') && evs.includes('start:18'), evs.join(' '));
+  assert.ok(evs.indexOf('start:19') > evs.indexOf('start:18'), 'remote control restarted after Python: ' + evs.join(' '));
+  assert.ok(!evs.includes('upload:program.py:19'), 'remote control not uploaded again');
+  assert.ok(await page.evaluate(() => window.__hub.running === 'control'));
+  assert.ok(/een\s*twee/.test(await out()));
+  // an error points at the line
+  await runPy("print('a')\nx = 1/0\n");
+  await page.waitForFunction(() => /Fout in je code op regel 2/.test(document.getElementById('toasts').textContent));
+  assert.strictEqual(await page.$eval('#pyNums .err', (e) => e.textContent), '2');
+  assert.ok(await page.$eval('#pyOut', (e) => !!e.querySelector('.err')));
+  await backReady();
+  // STOP (the round button) stops a program that keeps running
+  await runPy("while True:\n    pass\n");
+  await page.waitForFunction(() => window.__hub.running === 'python' && document.getElementById('pill').dataset.phase === 'python');
+  assert.ok(await page.$eval('#btnPlay', (e) => e.classList.contains('running')));
+  assert.ok(await page.$eval('#drive', (e) => e.classList.contains('idle')), 'no driving while Python runs');
+  e0 = (await ev()).length;
+  await page.click('#btnPlay');
+  await page.waitForFunction(() => /Python-programma gestopt/.test(document.getElementById('pyOut').textContent));
+  await backReady();
+  evs = (await ev()).slice(e0);
+  assert.strictEqual(evs[0], 'stop', evs.join(' ')); assert.ok(evs.includes('start:19'));
+  // leaving the Code screen stops it too
+  await runPy("while True:\n    pass\n");
+  await page.waitForFunction(() => window.__hub.running === 'python');
+  await page.click('#modeSwitch .tab2[data-view="viewDrive"]');
+  await page.waitForFunction(() => window.__hub.running === 'control', null, { timeout: 8000 });
+  await backReady();
+  // an example uses the robot's ports; code and mode are kept after a reload
+  await page.click('#modeSwitch .tab2[data-view="viewCode"]'); await page.waitForTimeout(400);
+  await page.selectOption('#selPyEx', 'square'); await page.waitForTimeout(100);
+  r = await page.evaluate(() => ({ src: document.getElementById('pyText').value, l: document.getElementById('selLeft').value, rr: document.getElementById('selRight').value }));
+  assert.ok(r.src.includes('motor_pair.pair(motor_pair.PAIR_1, port.' + r.l + ', port.' + r.rr + ')'), r.src);
+  await page.click('#btnProgNew'); await page.fill('#pyText', "print('bewaard')\n"); await page.waitForTimeout(500);
+  await page.reload(); await page.waitForTimeout(500);
+  await page.click('#modeSwitch .tab2[data-view="viewCode"]'); await page.waitForTimeout(500);
+  r = await page.evaluate(() => ({ src: document.getElementById('pyText').value, n: document.getElementById('selProg').options.length, py: !!document.getElementById('pyBox').getClientRects().length }));
+  assert.ok(r.py && r.src === "print('bewaard')\n" && r.n === 2, JSON.stringify(r));
+  // back to blocks: Blockly and its run button return
+  await page.click('#codeKind button[data-kind="blocks"]'); await page.waitForTimeout(600);
+  assert.strictEqual(await page.$eval('#btnPlay', (e) => e.parentNode.id), 'blocklyDiv');
+  assert.ok(await page.evaluate(() => Blockly.getMainWorkspace().getTopBlocks().length > 0));
+  // the run button stays on screen in Python mode on phones, landscape and tablets
+  await page.click('#codeKind button[data-kind="python"]'); await page.waitForTimeout(300);
+  for (const [w, h] of [[320, 568], [390, 844], [844, 390], [768, 1024], [1366, 700]]) {
+    await page.setViewportSize({ width: w, height: h }); await page.waitForTimeout(350);
+    if (w < 900 && !(await page.$eval('#viewCode', (e) => e.classList.contains('active')))) { await page.click('.tab[data-view="viewCode"]'); await page.waitForTimeout(400); }
+    await page.evaluate(() => document.getElementById('main').scrollTo(0, 0));
+    const b = await rect(page, '#btnPlay');
+    assert.ok(b.y >= 0 && b.y + b.h <= h && b.x + b.w <= w, w + 'x' + h + ' Python run button visible: ' + JSON.stringify(b));
+  }
+  await page.context().close();
+  console.log('J ok: Python editor, run in its own slot, output, error line, STOP, view switch, examples, kept after reload, run button on every size');
   }
   await browser.close(); server.close();
   assert.deepStrictEqual(errors, [], 'page errors: ' + errors.join('\n'));

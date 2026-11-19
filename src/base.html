@@ -119,11 +119,18 @@
   <div class="side" id="side">
   <section class="view" id="viewCode">
     <div class="card codebar" id="codebar">
+      <!-- Blokken of Python: twee manieren van programmeren met elk hun eigen programma's. -->
+      <div class="codehead">
+      <div class="codekind" id="codeKind" role="tablist">
+        <button type="button" data-kind="blocks" role="tab" data-i18n="code.blocks">Blokken</button>
+        <button type="button" data-kind="python" role="tab" data-i18n="code.python">Python</button>
+      </div>
       <div class="codetop">
         <select id="selProg" data-i18n-aria="code.rename" aria-label="Programma"></select>
         <button class="btn sm" id="btnProgNew" data-i18n="code.new">Nieuw</button>
         <button class="btn sm" id="btnProgRename" data-i18n="code.rename">Naam</button>
         <button class="btn sm danger" id="btnProgDel" data-i18n="code.delete">Weg</button>
+      </div>
       </div>
       <div class="small codestatus" id="codeStatus" aria-live="polite"></div>
     </div>
@@ -134,7 +141,29 @@
         <svg class="halt" viewBox="0 0 24 24" aria-hidden="true"><rect x="5.5" y="5.5" width="13" height="13" rx="2.5" fill="currentColor"/></svg>
       </button>
     </div>
-    <p class="small" style="margin:0 4px" data-i18n="code.help"></p>
+    <!-- Python: echte MicroPython die op de hub draait. Tekstvak met kleuren eronder, regelnummers en de uitvoer van de hub. -->
+    <div class="pybox hide" id="pyBox">
+      <div class="pyedit" id="pyEdit">
+        <pre class="pynums" id="pyNums" aria-hidden="true"></pre>
+        <div class="pycode">
+          <pre class="pyhi" id="pyHi" aria-hidden="true"></pre>
+          <textarea id="pyText" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" wrap="off" data-i18n-aria="code.python" aria-label="Python"></textarea>
+        </div>
+      </div>
+      <div class="pyout">
+        <div class="pyouthead">
+          <b data-i18n="py.output">Uitvoer van de hub</b>
+          <select id="selPyEx" data-i18n-aria="py.examples" aria-label="Voorbeelden"></select>
+          <button type="button" class="linkbtn" id="btnPyClear" data-i18n="py.clear">Wissen</button>
+        </div>
+        <pre id="pyOut" aria-live="polite"></pre>
+      </div>
+    </div>
+    <p class="small" style="margin:0 4px" id="codeHelp" data-i18n="code.help"></p>
+    <details class="card pyhelp hide" id="pyHelp">
+      <summary data-i18n="py.cheat">Spiekbriefje</summary>
+      <div id="pyCheat"></div>
+    </details>
   </section>
 
   <section class="view" id="viewPlay">

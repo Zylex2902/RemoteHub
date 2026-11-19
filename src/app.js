@@ -15,7 +15,9 @@
   const newProfile = (name) => ({ id: uid(), name, left: 'A', right: 'B', invL: true, invR: false, speed: 60, turn: 60, trim: 0, userPorts: false,
     aux: [newAux(), newAux()], guard: false, guardCm: 20 });
   const G = { lang: 'auto', theme: 'light', sound: true, haptic: true, slot: 19, mode: 'joy', active: '', profiles: [],
-    hubVol: 60, voice: 'normal', react: true, song: [], path: [], programs: [], progActive: '', hubKind: 'auto' };
+    hubVol: 60, voice: 'normal', react: true, song: [], path: [], programs: [], progActive: '', hubKind: 'auto',
+    codeMode: 'blocks', py: [], pyActive: '' };
+  const PY_MAX = 30000;   // tekens Python per programma
   const curLang = () => (G.lang === 'nl' || G.lang === 'en') ? G.lang : ((navigator.language || 'en').toLowerCase().startsWith('nl') ? 'nl' : 'en');
   const t = (k, ...a) => {
     let s = (I18N[curLang()] || I18N.en)[k];
@@ -61,6 +63,10 @@
         id: typeof x.id === 'string' && x.id ? x.id.slice(0, 12) : Math.random().toString(36).slice(2, 9), name: String(x.name || t('code.default')).slice(0, 30),
         ws: x.ws && typeof x.ws === 'object' ? x.ws : Cards.toBlocks(Cards.cleanProgram(x)) }));
       G.progActive = typeof raw.progActive === 'string' ? raw.progActive : '';
+      G.codeMode = raw.codeMode === 'python' ? 'python' : 'blocks';
+      G.py = (Array.isArray(raw.py) ? raw.py : []).slice(0, 30).filter((x) => x && typeof x === 'object' && typeof x.src === 'string').map((x) => ({
+        id: typeof x.id === 'string' && x.id ? x.id.slice(0, 12) : uid(), name: String(x.name || 'Python').slice(0, 30), src: x.src.slice(0, PY_MAX) }));
+      G.pyActive = typeof raw.pyActive === 'string' ? raw.pyActive : '';
       G.profiles = (Array.isArray(raw.profiles) ? raw.profiles : []).map(cleanProfile);
       G.active = raw.active;
     } else {
@@ -257,18 +263,18 @@
   function phaseTexts() {
     const p = st.phase, busy = p === 'connecting' || p === 'uploading' || p === 'reconnecting';
     setText($('pillText'), t('phase.' + p));
-    setText($('btnConnectText'), t(p === 'stopped' ? 'btn.start' : p === 'ready' ? 'btn.connected' : busy ? 'btn.busy' : 'btn.connect'));
+    setText($('btnConnectText'), t(p === 'stopped' ? 'btn.start' : p === 'ready' || p === 'python' ? 'btn.connected' : busy ? 'btn.busy' : 'btn.connect'));
     return busy;
   }
   function setPhase(p) {
     st.phase = p;
     $('pill').dataset.phase = p; document.body.dataset.phase = p;
     const busy = phaseTexts();
-    $('btnConnect').disabled = busy || p === 'ready' || !navigator.bluetooth;
+    $('btnConnect').disabled = busy || p === 'ready' || p === 'python' || !navigator.bluetooth;
     $('btnDisconnect').classList.toggle('hide', p === 'idle' || p === 'connecting');
     $('bar').classList.toggle('on', p === 'uploading');
     $('drive').classList.toggle('idle', p !== 'ready');
-    keepAwake(p === 'ready');
+    keepAwake(p === 'ready' || p === 'python');
     if (p !== 'ready' && st.rec) finishRec();
     if (p !== 'ready' && st.run) st.run.stop();
     $('playWhere').textContent = whereText();
@@ -375,10 +381,12 @@
       }
       if (text) log(t('msg.hub', text), 'hub');
     } else if (id === 0x21) {
-      const text = Proto.parseConsole(msg).replace(/\s+$/, '');
+      const raw = Proto.parseConsole(msg), text = raw.replace(/\s+$/, '');
+      if (st.py) pyPrint(raw);
       if (text) log(t('msg.hub', text), /Error|Traceback/.test(text) ? 'err' : 'hub');
     } else if (id === 0x20) {
-      if (msg[1] === 1 && st.phase === 'ready' && !st.closing) {
+      if (msg[1] === 1 && st.py && st.py.state === 'running') pyEnded();
+      else if (msg[1] === 1 && st.phase === 'ready' && !st.closing) {
         halt(); setPhase('stopped'); setHint('hint.stopped');
         log(t('msg.progStopped') + '.', 'warn'); toast(t('msg.progStopped'), 'warn'); sfx.lost();
       }
@@ -419,12 +427,15 @@
     resetDrive();
   }
 
-  async function upload() {
-    const src = enc.encode($('hub-program').textContent.replace(/^\s*\n/, ''));
-    $('barFill').style.width = '0%';
-    await hub.request(Proto.programFlow(true, G.slot), 0x1f, 1500).catch(() => {});
-    await hub.request(Proto.clearSlot(G.slot), 0x47, 3000).catch(() => {});
-    let r = await hub.request(Proto.startFileUpload('program.py', G.slot, Proto.crc(src)), 0x0d);
+  // Een Python-bestand in een slot zetten (standaard: het besturingsprogramma in het gekozen slot).
+  async function upload(text, slot, progress) {
+    if (slot === undefined) slot = G.slot;
+    const src = enc.encode(text !== undefined ? text : $('hub-program').textContent.replace(/^\s*\n/, ''));
+    const show = progress || ((pct) => { $('barFill').style.width = pct + '%'; });
+    show(0);
+    await hub.request(Proto.programFlow(true, slot), 0x1f, 1500).catch(() => {});
+    await hub.request(Proto.clearSlot(slot), 0x47, 3000).catch(() => {});
+    let r = await hub.request(Proto.startFileUpload('program.py', slot, Proto.crc(src)), 0x0d);
     if (r[1] !== 0) throw new Error(t('err.refuse'));
     let running = 0;
     for (let off = 0; off < src.length; off += hub.chunk) {
@@ -432,18 +443,17 @@
       running = Proto.crc(part, running);
       r = await hub.request(Proto.transferChunk(running, part), 0x11);
       if (r[1] !== 0) throw new Error(t('err.upload', off));
-      $('barFill').style.width = Math.round(((off + part.length) / src.length) * 100) + '%';
+      show(Math.round(((off + part.length) / src.length) * 100));
     }
-    log(t('msg.loaded', src.length, G.slot));
+    log(t('msg.loaded', src.length, slot));
   }
 
   // Upload met terugval: lukt het niet met grote BLE-pakketten (telefoons staan vaak minder toe), dan opnieuw met 20 bytes.
-  async function install() {
-    setPhase('uploading'); setHint('hint.upload', G.slot);
+  async function uploadSafe(text, slot, progress) {
     const sizes = hub.packet > 20 ? [hub.packet, 20] : [20];
     for (let i = 0; i < sizes.length; i++) {
       hub.packet = sizes[i];
-      try { await upload(); break; }
+      try { await upload(text, slot, progress); break; }
       catch (e) {
         if (i === sizes.length - 1 || !hub.connected) throw e;
         log(t('msg.retry20', sizes[i]), 'warn');
@@ -451,6 +461,10 @@
         await sleep(400);
       }
     }
+  }
+  async function install() {
+    setPhase('uploading'); setHint('hint.upload', G.slot);
+    await uploadSafe();
     await startProgram();
   }
 
@@ -552,14 +566,16 @@
       if (hub.connected && was === 'ready') {
         await hub.text(zeroText()).catch(() => {});
         await hub.request(Proto.programFlow(true, G.slot), 0x1f, 1000).catch(() => {});
-      }
+      } else if (hub.connected && was === 'python') await hub.request(Proto.programFlow(true, pySlot()), 0x1f, 1000).catch(() => {});
     } finally {
-      hub.close(); st.closing = false; setPhase('idle'); setHint('hint.disconnected'); log(t('msg.disconnected')); sfx.lost();
+      pyClear(); hub.close(); st.closing = false; setPhase('idle'); setHint('hint.disconnected'); log(t('msg.disconnected')); sfx.lost();
     }
   }
 
   hub.onMessage = onHubMessage;
   hub.onLost = () => {
+    // Een Python-programma op de hub loopt door zonder verbinding (het heeft geen eigen noodstop).
+    if (st.py && !st.closing) { const m = t('py.lost'); pyPrint(m + '\n', 'err'); log(m, 'err'); toast(m, 'err'); pyClear(); setPhase('ready'); }
     halt();
     if (st.closing) return;
     if (st.phase === 'connecting' || st.phase === 'uploading') log(t('dbg.lost', t('dbg.' + (hub.lostStep || 'linked'))), 'warn');
@@ -580,6 +596,7 @@
     st.tank.l = stick(); st.tank.r = stick(); st.tilt.on = false; st.aux = [0, 0]; st.jog = [0, 0]; st.cur.l = 0; st.cur.r = 0; st.test = null;
     if (st.macro) endMacro(false);
     if (st.run) st.run.stop();
+    if (st.py) stopPython();
     setTurbo(false);
     $('knob').style.transform = ''; $('pad').classList.remove('grab');
     qsa('.vstick').forEach((v) => { v.classList.remove('grab'); v.querySelector('.vknob').style.transform = ''; });
@@ -1216,6 +1233,7 @@
       const size = 64, v = metrics.viewMetrics, a = metrics.absoluteMetrics;
       const left = a.left + v.width - size - 30, top = a.top + v.height - size - 30;
       this.rect = new Blockly.utils.Rect(top, top + size, left, left + size);
+      if (fab.parentNode !== $('blocklyDiv')) return;
       fab.style.left = left + 'px'; fab.style.top = top + 'px'; fab.style.right = 'auto'; fab.style.bottom = 'auto';
     },
   };
@@ -1273,6 +1291,7 @@
   const varMap = () => code.ws.getVariableMap();
   function ensureEditor() {
     const div = $('blocklyDiv');
+    if (G.codeMode === 'python') { resizeEditor(); return; }
     if (code.ws) { resizeEditor(); return; }
     if (!div.getClientRects().length) return;   // nog niet in beeld: later
     defineBlocks();
@@ -1323,7 +1342,7 @@
     // Code staat altijd alleen in beeld (telefoon: eigen tab; breed: hele scherm), dus vult de editor de rest.
     const div = $('blocklyDiv'), gap = parseFloat(getComputedStyle($('viewCode')).rowGap) || 12;
     const h = Math.max(260, $('main').clientHeight - $('codebar').offsetHeight - gap * 3);
-    div.style.height = h + 'px';
+    div.style.height = h + 'px'; $('pyBox').style.height = h + 'px';
     if (!only && code.ws) Blockly.svgResize(code.ws);
   }
   function rebuildEditor() {
@@ -1336,10 +1355,10 @@
   // Verandert het vak van de editor (kolom, draaien van het scherm), dan tekent Blockly opnieuw.
   if (window.ResizeObserver) new ResizeObserver(() => { if (code.ws) Blockly.svgResize(code.ws); }).observe($('blocklyDiv'));
   function renderProgs() {
-    const sel = $('selProg');
+    const sel = $('selProg'), py = G.codeMode === 'python';
     sel.textContent = '';
-    for (const p of G.programs) { const o = el('option'); o.value = p.id; o.textContent = p.name; sel.appendChild(o); }
-    sel.value = prog().id;
+    for (const p of (py ? G.py : G.programs)) { const o = el('option'); o.value = p.id; o.textContent = p.name; sel.appendChild(o); }
+    sel.value = (py ? pyProg() : prog()).id;
   }
   function miniImg(img) {
     const g = el('span', 'mini');
@@ -1377,8 +1396,12 @@
 
   /* programma's: nieuw, naam, weg */
   const emptyProgram = (name) => ({ id: Math.random().toString(36).slice(2, 9), name, ws: Cards.toBlocks(Cards.cleanProgram(null)) });
-  $('selProg').addEventListener('change', (e) => { if (st.run) st.run.stop(); G.progActive = e.target.value; save(); loadWorkspace(); e.target.blur(); });
+  $('selProg').addEventListener('change', (e) => {
+    if (G.codeMode === 'python') { if (st.py) stopPython(); G.pyActive = e.target.value; save(); loadPy(); e.target.blur(); return; }
+    if (st.run) st.run.stop(); G.progActive = e.target.value; save(); loadWorkspace(); e.target.blur();
+  });
   $('btnProgNew').addEventListener('click', () => {
+    if (G.codeMode === 'python') { pyNew(); return; }
     if (st.run) st.run.stop();
     const names = new Set(G.programs.map((p) => p.name));
     let name = t('code.default'), n = 2;
@@ -1387,13 +1410,21 @@
     G.programs.push(p); G.progActive = p.id; save(); renderProgs(); loadWorkspace(); sfx.open();
   });
   $('btnProgRename').addEventListener('click', () => {
-    const name = (window.prompt(t('code.renamePrompt'), prog().name) || '').trim().slice(0, 30);
-    if (name) { prog().name = name; save(); renderProgs(); }
+    const p = G.codeMode === 'python' ? pyProg() : prog();
+    const name = (window.prompt(t('code.renamePrompt'), p.name) || '').trim().slice(0, 30);
+    if (name) { p.name = name; save(); renderProgs(); }
   });
   $('btnProgDel').addEventListener('click', () => {
     const b = $('btnProgDel');
     if (!b.classList.contains('sure')) { b.classList.add('sure'); b.textContent = t('code.deleteSure'); setTimeout(() => { b.classList.remove('sure'); b.textContent = t('code.delete'); }, 3000); return; }
     b.classList.remove('sure'); b.textContent = t('code.delete');
+    if (G.codeMode === 'python') {
+      if (st.py) stopPython();
+      G.py = G.py.filter((p) => p.id !== pyProg().id);
+      if (!G.py.length) G.py.push(pyExample('hello'));
+      G.pyActive = G.py[0].id; save(); renderProgs(); loadPy(); sfx.stop();
+      return;
+    }
     if (st.run) st.run.stop();
     G.programs = G.programs.filter((p) => p.id !== prog().id);
     if (!G.programs.length) G.programs.push(emptyProgram(t('code.default')));
@@ -1521,7 +1552,10 @@
     r.start();
   }
   // De ronde knop: start als er niets loopt, stopt (meteen bij aanraken) als het programma loopt.
-  function playToggle() { if (st.run) emergencyStop(); else runProgram(); }
+  function playToggle() {
+    if (G.codeMode === 'python') { if (st.py) { sfx.stop(); buzz(40); stopPython(); } else runPython(); return; }
+    if (st.run) emergencyStop(); else runProgram();
+  }
   fab.addEventListener('pointerdown', (e) => {
     if (e.button > 0) return;
     e.preventDefault(); e.stopPropagation();   // niet ook een sleepbeweging in de editor beginnen
@@ -1531,10 +1565,269 @@
   // Toetsenbord (Enter) geeft alleen een click; een click na pointerdown niet nog eens uitvoeren.
   fab.addEventListener('click', () => { if (fab.dataset.down) { delete fab.dataset.down; return; } playToggle(); });
   function showPlay() {
-    const on = !!st.run;
+    const on = G.codeMode === 'python' ? !!st.py : !!st.run;
     fab.classList.toggle('running', on);
     fab.setAttribute('aria-label', t(on ? 'code.stop' : 'code.run'));
   }
+
+  /* ---------- code: Python op de hub ---------- */
+  // Je code gaat naar een eigen slot, net onder dat van de afstandsbediening; daarna start de hub hem.
+  const pySlot = () => (G.slot > 0 ? G.slot - 1 : 1);
+  function pyProg() {
+    if (!G.py.length) { G.py.push(pyExample('hello')); G.pyActive = G.py[0].id; save(); }
+    return G.py.find((p) => p.id === G.pyActive) || G.py[0];
+  }
+  const pyText = $('pyText'), pyHi = $('pyHi'), pyNums = $('pyNums'), pyOut = $('pyOut');
+  const PY_KW = new Set('False None True and as assert async await break class continue def del elif else except finally for from global if import in is lambda nonlocal not or pass raise return try while with yield'.split(' '));
+  const PY_BI = new Set('print range len int float str abs min max round list dict tuple set bool sum enumerate zip isinstance sorted reversed map filter any all'.split(' '));
+  const escHtml = (x) => x.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  // Kleuren voor de code: sleutelwoorden, tekst, opmerkingen, getallen, ingebouwde functies, aanroepen.
+  function pyHighlight(src) {
+    const re = /(#[^\n]*)|('''[\s\S]*?(?:'''|$)|"""[\s\S]*?(?:"""|$)|'(?:\\.|[^'\\\n])*'?|"(?:\\.|[^"\\\n])*"?)|(\b\d+(?:\.\d+)?\b)|([A-Za-z_]\w*)/g;
+    let out = '', last = 0, m;
+    while ((m = re.exec(src))) {
+      out += escHtml(src.slice(last, m.index));
+      const w = m[0], cls = m[1] ? 'c' : m[2] ? 's' : m[3] ? 'n' : PY_KW.has(w) ? 'k' : PY_BI.has(w) ? 'b' : /^\s*\(/.test(src.slice(re.lastIndex, re.lastIndex + 3)) ? 'f' : '';
+      out += cls ? '<span class="t' + cls + '">' + escHtml(w) + '</span>' : escHtml(w);
+      last = re.lastIndex;
+    }
+    return out + escHtml(src.slice(last)) + '\n';
+  }
+  function pyPaint() {
+    const src = pyText.value, n = src.split('\n').length, bad = st.pyErrLine || 0;
+    pyHi.innerHTML = pyHighlight(src);
+    let nums = '';
+    for (let i = 1; i <= n; i++) nums += (i === bad ? '<span class="err">' + i + '</span>' : i) + '\n';
+    pyNums.innerHTML = nums;
+    pyScroll();
+  }
+  function pyScroll() {
+    pyHi.style.transform = 'translate(' + -pyText.scrollLeft + 'px,' + -pyText.scrollTop + 'px)';
+    pyNums.style.transform = 'translateY(' + -pyText.scrollTop + 'px)';
+  }
+  pyText.addEventListener('scroll', pyScroll);
+  pyText.addEventListener('input', () => {
+    if (pyText.value.length > PY_MAX) pyText.value = pyText.value.slice(0, PY_MAX);
+    pyProg().src = pyText.value; st.pyErrLine = 0; pyPaint(); saveSoon();
+  });
+  // Tekst invoegen zodat ongedaan maken (Ctrl+Z) blijft werken.
+  function pyInsert(text, from, to) {
+    pyText.setSelectionRange(from, to);
+    if (!document.execCommand || !document.execCommand('insertText', false, text)) {
+      pyText.setRangeText(text, from, to, 'end');
+      pyText.dispatchEvent(new Event('input'));
+    }
+  }
+  pyText.addEventListener('keydown', (e) => {
+    const v = pyText.value, a = pyText.selectionStart, b = pyText.selectionEnd;
+    const lineStart = v.lastIndexOf('\n', a - 1) + 1, indent = /^[ ]*/.exec(v.slice(lineStart))[0];
+    if (e.key === 'Escape') { pyText.blur(); return; }
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      if (a === b && !e.shiftKey) { pyInsert('    '.slice((a - lineStart) % 4), a, b); return; }
+      // Meerdere regels (of Shift+Tab): inspringen of terugzetten.
+      const end = v.indexOf('\n', b - (b > a && v[b - 1] === '\n' ? 1 : 0)), stop = end < 0 ? v.length : end;
+      const block = v.slice(lineStart, stop).split('\n').map((l) => (e.shiftKey ? l.replace(/^ {1,4}/, '') : '    ' + l)).join('\n');
+      pyInsert(block, lineStart, stop);
+      pyText.setSelectionRange(lineStart, lineStart + block.length);
+      return;
+    }
+    if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
+      // Zelfde inspringing als de regel erboven, en 4 extra na een dubbele punt.
+      e.preventDefault();
+      const before = v.slice(lineStart, a).replace(/#.*$/, '').trimEnd();
+      pyInsert('\n' + indent + (before.endsWith(':') ? '    ' : ''), a, b);
+      return;
+    }
+    if (e.key === 'Backspace' && a === b && a > lineStart && /^ +$/.test(v.slice(lineStart, a))) {
+      // Terug naar de vorige inspringing: de spaties selecteren, de browser wist ze (ongedaan maken blijft werken).
+      const col = a - lineStart;
+      pyText.setSelectionRange(a - (col % 4 || 4), a);
+    }
+  });
+
+  /* voorbeelden: gebruiken de poorten van het gekozen robotprofiel */
+  const PY_EX = ['hello', 'square', 'wall', 'tilt', 'empty'];
+  function pyExampleSrc(k) {
+    const L = S.left, R = S.right, big = !smallHub(), c = (key, ...a) => '# ' + t(key, ...a);
+    const free = (st.sensors || []).find((x) => x.type === 'distance');
+    const dport = free ? free.port : PORTS.find((p) => p !== L && p !== R && p !== 'A' && p !== 'B') || 'C';
+    const say = (k2) => "    print('" + t(k2).replace(/'/g, '') + "')";
+    const run = ['', 'runloop.run(main())', ''];
+    if (k === 'hello') return (big ? [
+      'from hub import light_matrix, sound, port', 'import motor, runloop', '', 'async def main():', '    ' + c('py.x.hello'),
+      "    await light_matrix.write('Hi!')", '    light_matrix.show_image(light_matrix.IMAGE_HAPPY)', '    await sound.beep(523, 200, 80)', '    await sound.beep(784, 300, 80)',
+      '    ' + c('py.x.spin', L), '    await motor.run_for_degrees(port.' + L + ', 360, 500)', say('py.hello'),
+    ] : [
+      'from hub import port', 'import motor, runloop', '', 'async def main():', '    ' + c('py.x.spin', L), '    await motor.run_for_degrees(port.' + L + ', 360, 500)',
+      '    ' + c('py.x.spin', R), '    await motor.run_for_degrees(port.' + R + ', -360, 500)', say('py.hello'),
+    ]).concat(run).join('\n');
+    if (k === 'square') return [
+      'from hub import port', 'import motor_pair, runloop', '', 'async def main():', '    ' + c('py.x.pair', L, R),
+      '    motor_pair.pair(motor_pair.PAIR_1, port.' + L + ', port.' + R + ')', '    for i in range(4):', '        ' + c('py.x.side'),
+      '        await motor_pair.move_for_degrees(motor_pair.PAIR_1, 720, 0, velocity=400)', '        await motor_pair.move_for_degrees(motor_pair.PAIR_1, 180, 100, velocity=300)', say('py.done'),
+    ].concat(run).join('\n');
+    if (k === 'wall') return [
+      'from hub import port', 'import motor_pair, distance_sensor, runloop', '', 'async def main():', '    ' + c('py.x.wall', dport),
+      '    motor_pair.pair(motor_pair.PAIR_1, port.' + L + ', port.' + R + ')', '    motor_pair.move(motor_pair.PAIR_1, 0, velocity=300)', '    while True:',
+      '        d = distance_sensor.distance(port.' + dport + ')  ' + c('py.x.mm'), '        if 0 <= d < 100:', '            break', '        await runloop.sleep_ms(50)',
+      '    motor_pair.stop(motor_pair.PAIR_1)', '    print(d)', say('py.done'),
+    ].concat(run).join('\n');
+    if (k === 'tilt') return [
+      'from hub import motion_sensor', 'import runloop', '', 'async def main():', '    ' + c('py.x.tilt'), '    for i in range(20):',
+      '        yaw, pitch, roll = motion_sensor.tilt_angles()  ' + c('py.x.tenths'), '        print(yaw, pitch, roll)', '        await runloop.sleep_ms(500)',
+    ].concat(run).join('\n');
+    return ['from hub import port', 'import motor, runloop', '', 'async def main():', '    ' + c('py.x.start'), '    pass'].concat(run).join('\n');
+  }
+  const pyExample = (k, name) => ({ id: uid(), name: name || t('py.default'), src: pyExampleSrc(k) });
+  function pyExamples() {
+    const sel = $('selPyEx');
+    sel.textContent = '';
+    const first = el('option'); first.value = ''; first.textContent = t('py.exPick'); sel.appendChild(first);
+    PY_EX.filter((k) => !(k === 'wall' && smallHub())).forEach((k) => { const o = el('option'); o.value = k; o.textContent = t('py.ex.' + k); sel.appendChild(o); });
+    sel.value = '';
+  }
+  $('selPyEx').addEventListener('change', (e) => {
+    const k = e.target.value;
+    e.target.value = ''; e.target.blur();
+    if (!k) return;
+    if (pyText.value.trim() && !window.confirm(t('py.exConfirm', t('py.ex.' + k)))) return;
+    pyText.focus(); pyInsert(pyExampleSrc(k), 0, pyText.value.length); pyText.setSelectionRange(0, 0); pyText.scrollTop = 0; pyText.blur();
+    sfx.open();
+  });
+  function pyNew() {
+    if (st.py) stopPython();
+    const names = new Set(G.py.map((p) => p.name));
+    let name = t('py.default'), n = 2;
+    while (names.has(name)) name = t('py.default') + ' ' + n++;
+    const p = pyExample('empty', name);
+    G.py.push(p); G.pyActive = p.id; save(); renderProgs(); loadPy(); sfx.open();
+  }
+  function loadPy() {
+    if (!G.py.length) { G.py.push(pyExample('hello')); G.pyActive = G.py[0].id; save(); }
+    pyText.value = pyProg().src; st.pyErrLine = 0; pyText.scrollTop = 0; pyText.scrollLeft = 0; pyPaint();
+  }
+
+  /* spiekbriefje */
+  const PY_CHEAT = [['from hub import port, light_matrix, sound\nimport motor, motor_pair, runloop', 'import'],
+    ['async def main():\n    ...\nrunloop.run(main())', 'main'], ['await runloop.sleep_ms(500)', 'sleep'], ['print(\'hoi\', 42)', 'print'],
+    ['motor.run(port.A, 500)', 'motor'], ['await motor.run_for_degrees(port.A, 360, 500)', 'deg'], ['motor.stop(port.A)', 'stop'], ['motor.relative_position(port.A)', 'pos'],
+    ['motor_pair.pair(motor_pair.PAIR_1, port.A, port.B)', 'pair'], ['motor_pair.move(motor_pair.PAIR_1, 0, velocity=300)', 'move'],
+    ['await motor_pair.move_for_degrees(motor_pair.PAIR_1, 360, 0)', 'moveDeg'], ["await light_matrix.write('Hi')", 'text'], ['light_matrix.show_image(light_matrix.IMAGE_HAPPY)', 'img'],
+    ['await sound.beep(440, 300, 80)', 'beep'], ['distance_sensor.distance(port.C)', 'dist'], ['color_sensor.color(port.E)', 'color'],
+    ['motion_sensor.tilt_angles()', 'tilt'], ['button.pressed(button.LEFT)', 'btn']];
+  function pyCheat() {
+    const box = $('pyCheat'); box.textContent = '';
+    PY_CHEAT.forEach(([codeText, k]) => {
+      const cd = el('code'); cd.textContent = k === 'print' ? "print('" + (curLang() === 'nl' ? 'hoi' : 'hi') + "', 42)" : codeText;
+      const d = el('span'); d.textContent = t('py.c.' + k);
+      box.append(cd, d);
+    });
+  }
+
+  /* uitvoer van de hub */
+  function pyPrint(text, cls) {
+    const line = el('span', cls || (/Traceback|Error|Exception/.test(text) ? 'err' : ''));
+    line.textContent = text.replace(/\r/g, '');
+    pyOut.appendChild(line);
+    while (pyOut.childNodes.length > 400) pyOut.firstChild.remove();
+    pyOut.scrollTop = pyOut.scrollHeight;
+    // Foutmelding van Python: de regel in de code aanwijzen.
+    if (st.py) st.py.out = (st.py.out + text).slice(-600);
+    const m = st.py && /File "[^"]*", line (\d+)[^\n]*\n(?![\s\S]*File ")/.exec(st.py.out);
+    if (m && st.py.errLine !== +m[1]) {
+      st.py.errLine = +m[1]; st.pyErrLine = +m[1]; pyPaint();
+      const msg = t('py.error', m[1]); toast(msg, 'err'); log(msg, 'err'); sfx.err();
+    }
+  }
+  $('btnPyClear').addEventListener('click', () => { pyOut.textContent = ''; st.pyErrLine = 0; pyPaint(); });
+  const pyStatus = (text) => { $('codeStatus').textContent = text || ''; };
+
+  /* starten en stoppen */
+  async function runPython() {
+    if (st.py || !needReady()) return;
+    const src = pyText.value.replace(/\s+$/, '') + '\n';
+    if (!src.trim()) { toast(t('py.empty'), 'warn'); sfx.err(); return; }
+    halt();
+    const my = st.session, slot = pySlot();
+    const p = st.py = { slot, state: 'loading', stopped: false, out: '', errLine: 0 };
+    const alive = () => st.py === p && my === st.session;
+    st.pyErrLine = 0; pyPaint();
+    setPhase('python'); showPlay(); document.body.classList.add('running'); buzz(15);
+    pyPrint('--- ' + new Date().toLocaleTimeString() + ' ---\n', 'sys');
+    try {
+      // Eerst de afstandsbediening stoppen; zijn motoren staan dan stil.
+      await hub.text(zeroText()).catch(() => {});
+      await hub.request(Proto.programFlow(true, G.slot), 0x1f, 1500).catch(() => {});
+      if (alive() && !p.stopped) await uploadSafe(src, slot, (pct) => { if (!p.stopped) pyStatus(t('py.loading', pct)); });
+      if (!alive()) return;
+      if (p.stopped) { pyEnded(); return; }   // STOP tijdens het laden: niet meer starten
+      const r = await hub.request(Proto.programFlow(false, slot), 0x1f);
+      if (r[1] !== 0) throw new Error(t('err.noStart'));
+      if (!alive()) return;
+      p.state = 'running';
+      if (p.stopped) { sendPyStop(p); return; }
+      pyStatus(t('py.running')); log(t('py.started', slot), 'ok'); sfx.ready();
+    } catch (e) {
+      if (!alive()) return;
+      const m = t('py.failed', e.message || e); pyPrint(m + '\n', 'err'); log(m, 'err'); toast(m, 'err'); sfx.err();
+      pyEnded(true);
+    }
+  }
+  // STOP, ander scherm, venster weg: het programma op de hub stoppen. De hub meldt dat het gestopt is; dan terug.
+  function stopPython() {
+    const p = st.py;
+    if (!p || p.stopped || p.state === 'back') return;
+    p.stopped = true;
+    pyStatus(t('py.back'));
+    if (p.state === 'running') sendPyStop(p);   // tijdens het laden handelt runPython het af
+  }
+  function sendPyStop(p) {
+    if (!hub.connected) return;
+    hub.request(Proto.programFlow(true, p.slot), 0x1f, 1500).catch(() => {});
+    // Meldt de hub niet dat het programma gestopt is, dan zelf verder.
+    setTimeout(() => { if (st.py === p && p.state === 'running') pyEnded(); }, 1500);
+  }
+  // Het Python-programma is klaar of gestopt: de afstandsbediening weer starten.
+  async function pyEnded(failed) {
+    const p = st.py;
+    if (!p || p.state === 'back') return;
+    p.state = 'back';
+    if (!failed) { const m = t(p.stopped ? 'py.stopped' : 'py.ended'); pyPrint('--- ' + m + ' ---\n', 'sys'); log(m + '.'); if (!p.stopped && !p.errLine) { toast(m, 'ok'); sfx.ready(); } }
+    pyStatus(t('py.back'));
+    const my = st.session;
+    try {
+      if (!hub.connected) throw new Error('link');
+      await startProgram();
+      if (my !== st.session || st.py !== p) return;
+      pyClear(); goReady();
+    } catch (e) {
+      if (my !== st.session || st.py !== p) return;
+      pyClear();
+      if (!hub.connected) return;
+      log(t('msg.err', e.message), 'err'); setPhase('stopped'); setHint('hint.stopped');
+    }
+  }
+  function pyClear() { st.py = null; pyStatus(''); document.body.classList.remove('running'); showPlay(); }
+
+  /* blokken of Python */
+  function showCodeMode() {
+    const py = G.codeMode === 'python';
+    qsa('#codeKind button').forEach((b) => { const on = (b.dataset.kind === 'python') === py; b.classList.toggle('on', on); b.setAttribute('aria-selected', String(on)); });
+    $('blocklyDiv').classList.toggle('hide', py); $('pyBox').classList.toggle('hide', !py); $('pyHelp').classList.toggle('hide', !py);
+    $('codeHelp').textContent = py ? t('py.help', pySlot(), G.slot) : t('code.help');
+    if (py) { $('pyEdit').appendChild(fab); fab.style.left = fab.style.top = fab.style.right = fab.style.bottom = ''; if (pyText.value !== pyProg().src || !pyHi.firstChild) loadPy(); pyExamples(); pyCheat(); }
+    else if (fab.parentNode !== $('blocklyDiv')) { $('blocklyDiv').appendChild(fab); if (code.ws) code.ws.resize(); }
+    renderProgs(); showPlay();
+    if (st.view === 'viewCode') ensureEditor();
+  }
+  qsa('#codeKind button').forEach((b) => b.addEventListener('click', () => {
+    const kind = b.dataset.kind;
+    if (kind === G.codeMode) return;
+    if (st.run) st.run.stop();
+    if (st.py) stopPython();
+    G.codeMode = kind; save(); sfx.tab(); buzz(8); showCodeMode();
+  }));
 
   /* ---------- tabs ---------- */
   const tabs = qsa('.tab');
@@ -1787,7 +2080,7 @@
     if (st.songRec) $('btnSongRec').textContent = t('piano.stopRec');
     $('pillText').dataset.t = ''; $('btnConnectText').dataset.t = ''; $('hint').dataset.t = '';
     phaseTexts(); setText($('hint'), t(...st.hint));
-    fillStatic(); fillProfiles(); renderAuxSettings(); syncSettings(); showChips(); renderProgs(); rebuildEditor(); showPlay();
+    fillStatic(); fillProfiles(); renderAuxSettings(); syncSettings(); showChips(); rebuildEditor(); showCodeMode();
     showSensors(st.sensors);
     showBle();
   }

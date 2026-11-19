@@ -535,3 +535,40 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border:3px solid #fff
 .playfab.running .go{display:none}
 .playfab.running .halt{display:block}
 @keyframes fabpulse{70%{box-shadow:0 5px 0 var(--danger-deep),0 0 0 14px transparent}}
+/* ---- versie 5.2: Python ---- */
+#pyBox.hide,#pyHelp.hide,#blocklyDiv.hide,#codeHelp.hide{display:none !important}
+.codekind{display:flex;gap:4px;padding:4px;border-radius:999px;border:2px solid var(--line);background:var(--panel2);align-self:flex-start}
+.codekind button{font:600 14px var(--head);padding:6px 18px;border:0;border-radius:999px;background:none;color:var(--muted);cursor:pointer;transition:background .2s var(--ease),color .2s var(--ease)}
+.codekind button.on{background:var(--accent);color:var(--accent-ink)}
+.pybox{display:flex;flex-direction:column;gap:10px;height:420px;min-height:0}
+.pyedit{--py-bg:#fbfcff;--py-k:#7b30d0;--py-s:#0f8a4a;--py-c:#7d8799;--py-n:#c2410c;--py-b:#1565c0;--py-f:#0e7490;
+  position:relative;flex:1 1 auto;min-height:150px;display:flex;border-radius:18px;overflow:hidden;border:2px solid var(--line);background:var(--py-bg)}
+html[data-theme="dark"] .pyedit{--py-bg:#11151b;--py-k:#c792ea;--py-s:#9ece6a;--py-c:#6b778a;--py-n:#ff9e64;--py-b:#7aa2f7;--py-f:#7dcfff}
+.pyedit pre,.pyedit textarea{margin:0;font:14px/1.5 var(--mono);tab-size:4;white-space:pre;letter-spacing:0}
+.pynums{flex:none;padding:12px 8px 12px 10px;min-width:40px;text-align:right;color:var(--muted);opacity:.7;background:var(--panel2);border-right:1px solid var(--line);overflow:hidden}
+.pynums .err{color:#fff;background:var(--danger);border-radius:4px;opacity:1;padding:0 3px;margin-right:-3px}
+.pycode{position:relative;flex:1;min-width:0;overflow:hidden}
+.pyhi{position:absolute;left:0;top:0;padding:12px 14px 80px;color:var(--text);pointer-events:none;will-change:transform}
+.pycode textarea{position:absolute;inset:0;width:100%;height:100%;padding:12px 14px 80px;border:0;outline:0;resize:none;overflow:auto;
+  background:transparent;color:transparent;caret-color:var(--text);-webkit-user-select:text;user-select:text;-webkit-text-fill-color:transparent}
+.pycode textarea::selection{background:var(--accent-soft);-webkit-text-fill-color:transparent}
+.pyedit:focus-within{border-color:var(--accent-line)}
+.tk{color:var(--py-k);font-weight:700}.ts{color:var(--py-s)}.tc{color:var(--py-c);font-style:italic}.tn{color:var(--py-n)}.tb{color:var(--py-b)}.tf{color:var(--py-f)}
+.pyout{flex:none;display:flex;flex-direction:column;height:30%;min-height:96px;max-height:220px;border-radius:14px;border:2px solid var(--line);background:var(--log-bg);overflow:hidden}
+.pyouthead{display:flex;align-items:center;gap:8px;padding:6px 8px 6px 12px;border-bottom:1px solid var(--line);font-size:13px}
+.pyouthead b{flex:1;font-family:var(--head);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pyouthead select{width:auto;max-width:min(220px,46%);padding:4px 34px 4px 10px;font-size:13px}
+#pyOut{flex:1;margin:0;padding:8px 12px;overflow:auto;font:13px/1.45 var(--mono);white-space:pre-wrap;word-break:break-word;-webkit-user-select:text;user-select:text}
+#pyOut .err{color:var(--danger)}#pyOut .sys{color:var(--muted);font-style:italic}
+.pybox .playfab{right:22px;bottom:22px}
+.pyhelp{padding:12px 16px}
+.pyhelp summary{cursor:pointer;font-family:var(--head);font-weight:600}
+#pyCheat{display:grid;grid-template-columns:minmax(0,auto) minmax(0,1fr);gap:6px 14px;margin-top:10px;font-size:13px}
+#pyCheat code{font:12.5px/1.4 var(--mono);color:var(--accent-deep);white-space:pre-wrap;word-break:break-word;-webkit-user-select:text;user-select:text}
+html[data-theme="dark"] #pyCheat code{color:var(--accent-hi)}
+.pill[data-phase="python"]{border-color:var(--accent-line)}
+.pill[data-phase="python"] i{background:var(--accent);animation:pulse 1.2s ease-in-out infinite}
+@media (max-width:600px){.pyedit pre,.pyedit textarea{font-size:16px}#pyCheat{grid-template-columns:1fr}}
+.codehead{display:flex;flex-wrap:wrap;align-items:center;gap:10px 12px}
+.codehead .codetop{flex:1 1 330px;min-width:0}
+.codehead .codekind{align-self:center}

@@ -33,7 +33,7 @@ const launchOptions = (extraArgs) => ({
 // A simulated hub behind a fake navigator.bluetooth (runs in the page via addInitScript).
 // Also used by tools/screenshots.js for the pictures on the landing page.
 const fakeHub = (opts) => {
-  const H = (window.__hub = { tunnel: [], file: [], announced: null, started: false, events: [], writes: 0, maxWrite: 0, battery: 87, connects: 0, dist: 350, color: 9, force: 40,
+  const H = (window.__hub = { tunnel: [], file: [], files: {}, running: null, announced: null, started: false, events: [], writes: 0, maxWrite: 0, battery: 87, connects: 0, dist: 350, color: 9, force: 40,
     imu: { face: 0, yaw: 0, pitch: 0, roll: 0 }, m: {} });
   // the big hub has its motors on C and D; the small hub (2 ports) on A and B
   const MP = opts.small ? [['A', 0], ['B', 1]] : [['C', 2], ['D', 3]];
@@ -51,6 +51,7 @@ const fakeHub = (opts) => {
   };
   const status = (id, ok) => notify(Uint8Array.of(id, ok ? 0 : 1));
   const tun = (t) => notify(Proto.tunnel(new TextEncoder().encode(t)));
+  const con = (t) => notify(Uint8Array.from([0x21, ...new TextEncoder().encode(t), 0]));
   const onMsg = (m) => {
     const v = new DataView(m.buffer, m.byteOffset, m.byteLength);
     switch (m[0]) {
@@ -58,15 +59,25 @@ const fakeHub = (opts) => {
         d.setUint16(9, opts.maxPacket, true); d.setUint16(11, 2048, true); d.setUint16(13, 102, true); d.setUint16(15, opts.small ? 1 : 0, true); notify(r);
         if (opts.dropAfterInfo > 0) { opts.dropAfterInfo--; setTimeout(() => H.drop(), 20); }   // seen in Bluefy on iPhone
         break; }
-      case 0x1e: if (m[1] === 1) { H.events.push('stop'); status(0x1f, H.started); if (H.started) notify(Uint8Array.of(0x20, 1)); H.started = false; }
+      case 0x1e: if (m[1] === 1) { H.events.push('stop'); clearTimeout(H.pyTimer); status(0x1f, H.started); if (H.started) notify(Uint8Array.of(0x20, 1)); H.started = false; H.running = null; }
         else { H.events.push('start:' + m[2]);
-          const all = Uint8Array.from(H.file); H.fileOk = !!H.announced && Proto.crc(all) === H.announced.crc; H.program = new TextDecoder().decode(all);
+          // every slot keeps its own file; the control program answers on the tunnel, anything else is a user's Python program
+          const f = H.files[m[2]] || { bytes: [], crc: -1 }, all = Uint8Array.from(f.bytes);
+          H.fileOk = Proto.crc(all) === f.crc; H.program = new TextDecoder().decode(all);
           status(0x1f, H.fileOk); H.started = H.fileOk; notify(Uint8Array.of(0x20, 0));
-          if (H.fileOk) setTimeout(() => { tun('rdy 6'); tun(hwLine); }, 30); }
+          if (!H.fileOk) break;
+          if (H.program.startsWith('import hub, motor, runloop, time')) { H.running = 'control'; setTimeout(() => { tun('rdy 6'); tun(hwLine); }, 30); break; }
+          // Python: print('...') lines come back as console output, 1/0 gives a traceback, while True keeps running
+          H.running = 'python'; H.pyRuns = (H.pyRuns || 0) + 1;
+          const prints = [...H.program.matchAll(/print\('([^']*)'\)/g)].map((x) => x[1]);
+          prints.forEach((p, i) => setTimeout(() => { if (H.running === 'python') con(p + '\r\n'); }, 40 + i * 30));
+          const bad = H.program.split('\n').findIndex((l) => /1\s*\/\s*0/.test(l));
+          if (bad >= 0) setTimeout(() => con('Traceback (most recent call last):\r\n  File "program.py", line ' + (bad + 1) + ', in <module>\r\nZeroDivisionError: divide by zero\r\n'), 60 + prints.length * 30);
+          if (!/while True/.test(H.program)) H.pyTimer = setTimeout(() => { if (H.running === 'python') { H.started = false; H.running = null; notify(Uint8Array.of(0x20, 1)); } }, 300 + prints.length * 30); }
         break;
       case 0x46: H.events.push('clear:' + m[1]); status(0x47, false); break;
       case 0x0c: { let e = m.indexOf(0, 1); H.announced = { name: new TextDecoder().decode(m.subarray(1, e)), slot: m[e + 1], crc: v.getUint32(e + 2, true) };
-        H.events.push('upload:' + H.announced.name + ':' + H.announced.slot); H.file = []; running = 0; status(0x0d, true); break; }
+        H.events.push('upload:' + H.announced.name + ':' + H.announced.slot); H.file = []; H.files[H.announced.slot] = { bytes: H.file, crc: H.announced.crc }; running = 0; status(0x0d, true); break; }
       case 0x10: { if (m.length < 7) { status(0x11, false); break; }
         const crc = v.getUint32(1, true), size = v.getUint16(5, true), chunk = m.subarray(7, 7 + size);
         const next = Proto.crc(chunk, running); const ok = next === crc && size === m.length - 7 && size <= 102;
@@ -92,7 +103,7 @@ const fakeHub = (opts) => {
         if (parts[0] === 'deg') parts.slice(1).forEach((tok) => { const [p, d, sp] = tok.split(':'); const mo = H.m[p]; if (mo) { mo.last = 0; mo.spd = 0; mo.goal = mo.pos + +d; mo.rate = +sp * 10; } });
         else if (parts[0] === 'halt') Object.values(H.m).forEach((mo) => { mo.spd = 0; mo.last = 0; mo.goal = null; });
         else if (/^[A-F]:-?\d+$/.test(parts[0])) parts.forEach((tok) => { const [p, v] = tok.split(':'); const mo = H.m[p]; if (mo && mo.last !== +v) { mo.last = +v; mo.spd = +v; mo.goal = null; } });
-        if (H.started && text === '?') { tun('rdy 6'); tun(hwLine); } break; }
+        if (H.started && H.running === 'control' && text === '?') { tun('rdy 6'); tun(hwLine); } break; }
     }
   };
   const ch = (name) => ({
@@ -113,7 +124,7 @@ const fakeHub = (opts) => {
       disconnect: () => { if (device.gatt.connected) H.events.push('gatt-disconnect'); device.gatt.connected = false; clearInterval(timer); } } };
   H.drop = () => { device.gatt.connected = false; clearInterval(timer); listeners.dev.forEach((f) => f({})); };
   H.say = (text) => tun(text);
-  H.hubStop = () => { H.started = false; notify(Uint8Array.of(0x20, 1)); };
+  H.hubStop = () => { H.started = false; H.running = null; notify(Uint8Array.of(0x20, 1)); };
   Object.defineProperty(navigator, 'bluetooth', { value: { requestDevice: async () => { H.choosers = (H.choosers || 0) + 1; return device; } }, configurable: true });
 };
 

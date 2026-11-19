@@ -68,7 +68,7 @@ main{max-width:1180px;margin:0 auto;padding:0 var(--gap)}
 .soon{font-size:14px;font-style:italic}
 .url{word-break:break-all}
 
-.features{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.features{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
 .feat{padding:22px;border-radius:20px;background:var(--panel);border:2px solid var(--line)}
 .feat h3{font-size:19px;margin:10px 0 6px}
 .feat p{margin:0;color:var(--muted);font-size:15.5px}

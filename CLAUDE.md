@@ -69,16 +69,27 @@ no App Store or Google Play badges before then.
 - Wide layouts (>= 900 px and both fold postures) have no tab bar: a header switch (`#modeSwitch`)
   toggles `body.codefull`. The overview never shows the editor; Code fills the screen. Programs
   and driving are never on screen together, and drive keys are ignored in the Code view.
+- Code has two modes (`G.codeMode`): Blocks and Python. Python programs (`G.py[]`, plain text) run ON
+  the hub: `runPython()` stops the control program, uploads to `pySlot()` (control slot - 1), starts it,
+  shows console messages (0x21) in `#pyOut` and marks the traceback line. A stop notification (0x20)
+  or STOP/halt() (`stopPython()`) leads to `pyEnded()`, which starts the control slot again (no upload).
+  This is the one place without the 800 ms failsafe: link loss leaves the Python program running, and
+  the page says so; reconnecting stops it by uploading the control program. Phase is `python` meanwhile
+  (no driving). The fake hub keeps a file per slot and treats anything not starting with the control
+  program's first line as Python (print('...') echoes, `1/0` gives a traceback, `while True` keeps running).
 - In Code, start and STOP are one round button (`#btnPlay`) in the editor's bottom-right corner.
   It acts on pointer down (start when idle, STOP while running) and is registered with Blockly's
   component manager as a positionable, so Blockly moves its trash can and zoom buttons above it.
+  In Python mode it moves into `#pyEdit` (`showCodeMode()`) and back into `#blocklyDiv` after.
 - Layout must keep STOP visible without scrolling on every size in `tests/test_page.js` section E
   and both fold postures in `tests/test_fold.js`.
 
 ## Status and open work
 
-- v1 (connect, upload, drive) was confirmed on a real hub by the owner. v2 to v5 features
-  are tested only against the simulated hub.
+- v1 (connect, upload, drive) was confirmed on a real hub by the owner. v2 to v5 features and
+  Python mode are tested only against the simulated hub. To confirm for Python: upload to a second
+  slot, the 0x20 stop notification when a program ends, console text in 0x21, and that restarting
+  the control slot works without an upload.
 - To confirm on hardware: horn, gripper moves, sensors and obstacle guard, reconnect, battery,
   v4 songs and moods (does each short `sound.beep` play cleanly one after another?), faces,
   dances, recorded routes.

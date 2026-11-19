@@ -29,6 +29,11 @@ no light matrix) sounds play on the phone and pictures are skipped.
   loops and if/else, number and true/false blocks that fit in slots (sums, random numbers, sensor
   values, and/or/not), variables, pictures you draw, and several stacks that start on events; the
   running block lights up
+- Python: switch the Code tab to Python and write real MicroPython that runs on the hub, with the
+  same modules as the official app's Python (`motor`, `motor_pair`, `light_matrix`, `sound`,
+  `distance_sensor`, `runloop`, ...). A coloured editor with line numbers and auto-indent, examples
+  that use your robot's ports, a cheat sheet, and the hub's `print()` output and error messages
+  (the line with the error is marked)
 - Play tab: public-domain songs and a one-octave piano on the hub's speaker, robot moods with a face
   on the hub's light matrix, and robot language: the hub says a typed sentence in beeps (one per
   syllable, a question rises) while it moves its mouth
@@ -128,6 +133,12 @@ motors, any move over degrees still under way, and the queued notes.
 
 Programs made with blocks run in the page (`src/cards.js`), not on the hub: the page sends the commands
 above and reads motor positions and the motion sensor from the hub's status messages.
+
+Python programs do run on the hub. The page stops the remote-control program, uploads the code to the
+slot below it (18 by default), starts it and shows the console output. When the program ends or is
+stopped (STOP, another screen, the window losing focus) the page starts the remote-control program again
+without uploading it. A Python program has no 800 ms failsafe: if the connection drops while it runs, it
+keeps running until it ends or is stopped with the button on the hub.
 
 ## Contributing
 
