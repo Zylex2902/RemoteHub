@@ -24,7 +24,14 @@ jobs:
         with:
           node-version: 20
       - run: npm ci
-      - run: npx playwright install --with-deps chromium
+      # Ubuntu's package mirrors sometimes answer 503; try again before giving up.
+      - name: Install Chrome for the browser tests
+        run: |
+          for i in 1 2 3; do
+            npx playwright install --with-deps chromium && exit 0
+            echo "install failed (attempt $i), retrying in 30 s"; sleep 30
+          done
+          exit 1
       - run: npm run build
       - name: Built page is committed and up to date
         run: git diff --exit-code site/app/index.html site/index.html
