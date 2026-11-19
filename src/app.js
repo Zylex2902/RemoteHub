@@ -1181,6 +1181,18 @@
   let saveTimer = null;
   const saveSoon = () => { clearTimeout(saveTimer); saveTimer = setTimeout(save, 300); };
   const code = { ws: null, img: null, imgSet: null, loading: false, lit: {}, themes: {} };
+  const fab = $('btnPlay');
+  // De startknop als onderdeel van Blockly's indeling: Blockly schuift prullenbak en zoomknoppen erboven.
+  const fabUi = {
+    id: 'hubremotePlay', rect: null,
+    getBoundingRectangle() { return this.rect; },
+    position(metrics) {
+      const size = 64, v = metrics.viewMetrics, a = metrics.absoluteMetrics;
+      const left = a.left + v.width - size - 30, top = a.top + v.height - size - 30;
+      this.rect = new Blockly.utils.Rect(top, top + size, left, left + size);
+      fab.style.left = left + 'px'; fab.style.top = top + 'px'; fab.style.right = 'auto'; fab.style.bottom = 'auto';
+    },
+  };
   const CAT_COL = { event: '#1fa855', move: '#6a4cf5', motor: '#2f7cf6', light: '#d99a00', sound: '#d9408f', control: '#f2711c', sensor: '#0aa1bd', op: '#5aa832', var: '#d6336c' };
   function mixHex(a, b, f) {
     const p = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
@@ -1257,6 +1269,9 @@
       if (code.loading || e.isUiEvent) return;
       prog().ws = Blockly.serialization.workspaces.save(code.ws); saveSoon();
     });
+    div.appendChild(fab);
+    code.ws.getComponentManager().addComponent({ component: fabUi, weight: 0, capabilities: [Blockly.ComponentManager.Capability.POSITIONABLE] });
+    code.ws.resize();
     loadWorkspace();
   }
   function loadWorkspace() {
@@ -1457,7 +1472,7 @@
     },
     done: () => {
       const r = st.run; st.run = null;
-      document.body.classList.remove('running'); $('codeStatus').textContent = '';
+      document.body.classList.remove('running'); $('codeStatus').textContent = ''; showPlay();
       if (r && r.stopped) { log(t('code.stopped')); } else { toast(t('code.done'), 'ok'); log(t('code.done'), 'ok'); sfx.ready(); }
     },
   };
@@ -1472,14 +1487,27 @@
     st.run = r;
     const stop = r.stop.bind(r);
     r.stop = () => { r.stopped = true; stop(); };
-    document.body.classList.add('running');
+    document.body.classList.add('running'); showPlay();
     $('codeStatus').textContent = t(p.stacks.some((s) => s[0].t !== 'start') ? 'code.listening' : 'code.running');
     hub.request(Proto.deviceNotificationRequest(50), 0x29, 2000).catch(() => {});
     sfx.ready(); buzz(15);
     r.start();
   }
-  $('btnRun').addEventListener('click', runProgram);
-  $('btnProgStop').addEventListener('pointerdown', (e) => { e.preventDefault(); emergencyStop(); });
+  // De ronde knop: start als er niets loopt, stopt (meteen bij aanraken) als het programma loopt.
+  function playToggle() { if (st.run) emergencyStop(); else runProgram(); }
+  fab.addEventListener('pointerdown', (e) => {
+    if (e.button > 0) return;
+    e.preventDefault(); e.stopPropagation();   // niet ook een sleepbeweging in de editor beginnen
+    fab.dataset.down = '1'; setTimeout(() => { delete fab.dataset.down; }, 700);
+    playToggle();
+  });
+  // Toetsenbord (Enter) geeft alleen een click; een click na pointerdown niet nog eens uitvoeren.
+  fab.addEventListener('click', () => { if (fab.dataset.down) { delete fab.dataset.down; return; } playToggle(); });
+  function showPlay() {
+    const on = !!st.run;
+    fab.classList.toggle('running', on);
+    fab.setAttribute('aria-label', t(on ? 'code.stop' : 'code.run'));
+  }
 
   /* ---------- tabs ---------- */
   const tabs = qsa('.tab');
@@ -1729,7 +1757,7 @@
     if (st.songRec) $('btnSongRec').textContent = t('piano.stopRec');
     $('pillText').dataset.t = ''; $('btnConnectText').dataset.t = ''; $('hint').dataset.t = '';
     phaseTexts(); setText($('hint'), t(...st.hint));
-    fillStatic(); fillProfiles(); renderAuxSettings(); syncSettings(); showChips(); renderProgs(); rebuildEditor();
+    fillStatic(); fillProfiles(); renderAuxSettings(); syncSettings(); showChips(); renderProgs(); rebuildEditor(); showPlay();
     showSensors(st.sensors);
     showBle();
   }

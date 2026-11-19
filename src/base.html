@@ -125,13 +125,15 @@
         <button class="btn sm" id="btnProgRename" data-i18n="code.rename">Naam</button>
         <button class="btn sm danger" id="btnProgDel" data-i18n="code.delete">Weg</button>
       </div>
-      <div class="coderun">
-        <button class="btn primary run" id="btnRun"><svg class="ico" viewBox="0 0 24 24"><path d="M7 4v16l13-8z" fill="currentColor"/></svg><span data-i18n="code.run">Start</span></button>
-        <button class="stop progstop" id="btnProgStop"><svg class="ico" viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="2" fill="currentColor"/></svg>STOP</button>
-      </div>
       <div class="small codestatus" id="codeStatus" aria-live="polite"></div>
     </div>
-    <div class="blockly" id="blocklyDiv"></div>
+    <div class="blockly" id="blocklyDiv">
+      <!-- Eén ronde knop rechtsonder in de editor: start als er niets loopt, STOP als het programma loopt. -->
+      <button class="playfab" id="btnPlay" data-i18n-aria="code.run" aria-label="Start">
+        <svg class="go" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13c0 .8.9 1.3 1.6.8l10-6.5a1 1 0 0 0 0-1.6l-10-6.5c-.7-.5-1.6 0-1.6.8z" fill="currentColor"/></svg>
+        <svg class="halt" viewBox="0 0 24 24" aria-hidden="true"><rect x="5.5" y="5.5" width="13" height="13" rx="2.5" fill="currentColor"/></svg>
+      </button>
+    </div>
     <p class="small" style="margin:0 4px" data-i18n="code.help"></p>
   </section>
 

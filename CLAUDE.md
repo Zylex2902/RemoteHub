@@ -57,6 +57,9 @@ CI (`.github/workflows/pages.yml`) fails if `site/index.html` is not rebuilt and
 - Wide layouts (>= 900 px and both fold postures) have no tab bar: a header switch (`#modeSwitch`)
   toggles `body.codefull`. The overview never shows the editor; Code fills the screen. Programs
   and driving are never on screen together, and drive keys are ignored in the Code view.
+- In Code, start and STOP are one round button (`#btnPlay`) in the editor's bottom-right corner.
+  It acts on pointer down (start when idle, STOP while running) and is registered with Blockly's
+  component manager as a positionable, so Blockly moves its trash can and zoom buttons above it.
 - Layout must keep STOP visible without scrolling on every size in `tests/test_page.js` section E
   and both fold postures in `tests/test_fold.js`.
 

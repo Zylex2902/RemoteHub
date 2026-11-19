@@ -642,7 +642,7 @@ const fakeHub = (opts) => {
   assert.strictEqual(await page.$$eval('.blocklyToolboxCategory', (e) => e.length), 9);
   await page.evaluate(() => { const ws = Blockly.getMainWorkspace(), o = ws.highlightBlock.bind(ws); window.__lit = []; ws.highlightBlock = (id, on) => { window.__lit.push([id, on]); return o(id, on); }; });
   let n0 = await count();
-  await page.click('#btnRun');
+  await page.click('#btnPlay');
   await toastHas(/Programma klaar/, 20000);
   let msgs = await since(n0);
   assert.deepStrictEqual(msgs.filter((x) => x.startsWith('deg ')), ['deg C:-206:50 D:206:50', 'deg C:206:50 D:-206:50'], msgs.join('|'));
@@ -687,7 +687,7 @@ const fakeHub = (opts) => {
   await page.click('#btnProgRename'); await page.waitForTimeout(200);
   assert.strictEqual(await page.$eval('#selProg', (e) => e.selectedOptions[0].textContent), 'Robotdans');
   n0 = await count();
-  await page.click('#btnRun'); await toastHas(/Programma klaar/, 15000);
+  await page.click('#btnPlay'); await toastHas(/Programma klaar/, 15000);
   msgs = await since(n0);
   assert.strictEqual(msgs.filter((x) => x === 'tune 523:200').length, 2, msgs.join('|'));
   assert.ok(msgs.indexOf('deg C:90:75') > msgs.lastIndexOf('tune 523:200'), 'motor after the beeps');
@@ -704,17 +704,20 @@ const fakeHub = (opts) => {
   // nothing to run without a When block
   await page.click('#btnProgNew'); await page.waitForTimeout(300);
   await wsLoad({ blocks: { languageVersion: 0, blocks: [{ type: 'moveStop', x: 20, y: 20 }] } });
-  await page.click('#btnRun'); await toastHas(/Wanneer-blok/);
+  await page.click('#btnPlay'); await toastHas(/Wanneer-blok/);
   // STOP and leaving the screen stop a program that drives
   await wsLoad({ blocks: { languageVersion: 0, blocks: [{ type: 'start', x: 20, y: 20, next: { block: { type: 'moveStart', fields: { dir: 'fw' }, next: { block: { type: 'wait', inputs: { n: sh(10) } } } } } }] } });
-  await page.click('#btnRun'); await page.waitForTimeout(700);
+  await page.click('#btnPlay'); await page.waitForTimeout(700);
   assert.notStrictEqual(await last(page), 'C:0 D:0', 'program drives');
   assert.strictEqual(await page.$eval('#codeStatus', (e) => e.textContent), 'Programma loopt');
+  // one round button: STOP while running, play again afterwards
+  assert.deepStrictEqual(await page.$eval('#btnPlay', (e) => [e.classList.contains('running'), e.getAttribute('aria-label')]), [true, 'STOP']);
   n0 = await count();
-  await page.dispatchEvent('#btnProgStop', 'pointerdown'); await page.waitForTimeout(400);
+  await page.dispatchEvent('#btnPlay', 'pointerdown'); await page.waitForTimeout(400);
+  assert.deepStrictEqual(await page.$eval('#btnPlay', (e) => [e.classList.contains('running'), e.getAttribute('aria-label')]), [false, 'Start']);
   assert.ok((await since(n0)).includes('halt')); assert.strictEqual(await last(page), 'C:0 D:0');
   assert.strictEqual(await page.evaluate(() => document.body.classList.contains('running')), false);
-  await page.click('#btnRun'); await page.waitForTimeout(500);
+  await page.click('#btnPlay'); await page.waitForTimeout(500);
   await page.click('.tab[data-view="viewPlay"]'); await page.waitForTimeout(400);
   assert.strictEqual(await last(page), 'C:0 D:0', 'view switch stops the program');
   // events: wait until something is close; when the hub button is pressed (a second stack)
@@ -723,7 +726,7 @@ const fakeHub = (opts) => {
     { type: 'start', x: 20, y: 20, next: { block: { type: 'waitUntil', inputs: { c: { block: { type: 'b_dist', fields: { op: '<' }, inputs: { n: sh(10) } } } }, next: { block: { type: 'beepFor', fields: { note: 'C5' }, inputs: { n: sh(0.5) } } } } } },
     { type: 'when', x: 20, y: 300, inputs: { c: { block: { type: 'b_and', inputs: { A: { block: { type: 'b_btn', fields: { b: 'L' } } }, B: { block: { type: 'b_not', inputs: { A: { block: { type: 'b_btn', fields: { b: 'R' } } } } } } } } } }, next: { block: { type: 'mood', fields: { mood: 'happy' } } } }] } });
   n0 = await count();
-  await page.click('#btnRun'); await page.waitForTimeout(500);
+  await page.click('#btnPlay'); await page.waitForTimeout(500);
   assert.strictEqual(await page.$eval('#codeStatus', (e) => e.textContent), 'Wacht op gebeurtenissen');
   assert.ok(!(await since(n0)).some((x) => x.startsWith('tune')), 'nothing yet');
   await page.evaluate(() => { window.__hub.dist = 60; }); await page.waitForTimeout(600);
@@ -732,7 +735,7 @@ const fakeHub = (opts) => {
   await page.evaluate(() => window.__hub.say('btn L 1')); await page.waitForTimeout(500);
   assert.ok((await since(n0)).some((x) => x.startsWith('tune ') && x !== 'tune 523:500'), 'mood on the hub button');
   await page.evaluate(() => { window.__hub.dist = 350; });
-  await page.dispatchEvent('#btnProgStop', 'pointerdown'); await page.waitForTimeout(300);
+  await page.dispatchEvent('#btnPlay', 'pointerdown'); await page.waitForTimeout(300);
   // drive keys do nothing while programming (arrows and letters belong to the editor)
   await page.keyboard.down('KeyW'); await page.waitForTimeout(400);
   assert.strictEqual(await last(page), 'C:0 D:0', 'W does not drive in the Code tab');
@@ -744,7 +747,7 @@ const fakeHub = (opts) => {
   assert.ok(ed.w > 1200 && ed.h >= 450, 'editor fills a laptop screen ' + JSON.stringify(ed));
   assert.strictEqual(await page.$eval('#viewDrive', (e) => getComputedStyle(e).display), 'none', 'no driving controls while programming');
   assert.ok(await page.$eval('#modeSwitch .tab2[data-view="viewCode"]', (e) => e.classList.contains('on')));
-  await page.click('#btnRun'); await page.waitForTimeout(500);
+  await page.click('#btnPlay'); await page.waitForTimeout(500);
   assert.notStrictEqual(await last(page), 'C:0 D:0', 'program drives');
   await page.click('#modeSwitch .tab2[data-view="viewDrive"]'); await page.waitForTimeout(500);
   assert.strictEqual(await last(page), 'C:0 D:0', 'switching to the overview stops the program');
@@ -755,7 +758,7 @@ const fakeHub = (opts) => {
   for (const [w, h] of [[280, 653], [844, 390], [375, 667], [390, 844]]) {
     await page.setViewportSize({ width: w, height: h }); await page.waitForTimeout(400);
     if (!(await page.$eval('#viewCode', (e) => e.classList.contains('active')))) { await page.click('.tab[data-view="viewCode"]'); await page.waitForTimeout(600); }
-    const b = await rect(page, '#btnProgStop'), e = await rect(page, '#blocklyDiv');
+    const b = await rect(page, '#btnPlay'), e = await rect(page, '#blocklyDiv');
     assert.ok(b.y >= 0 && b.y + b.h <= h && b.w > 60, w + 'x' + h + ' STOP visible: ' + JSON.stringify(b));
     assert.ok(e.h >= 250 && e.x >= 0 && e.x + e.w <= w + 0.5, w + 'x' + h + ' editor ' + JSON.stringify(e));
   }
