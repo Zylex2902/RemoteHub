@@ -36,7 +36,7 @@
       speed: num(p.speed, 10, 100, 60), turn: num(p.turn, 20, 100, 60), trim: num(p.trim, -20, 20, 0), userPorts: p.userPorts === true,
       guard: p.guard === true, guardCm: num(p.guardCm, 5, 60, 20),
       aux: [0, 1].map((i) => { const a = aux[i] && typeof aux[i] === 'object' ? aux[i] : {};
-        return { port: isPort(a.port) ? a.port : '-', name: String(a.name || '').slice(0, 20), speed: num(a.speed, 10, 100, 60), mode: a.mode === 'grip' ? 'grip' : 'hold', travel: num(a.travel, -720, 720, 90) }; }),
+        return { port: isPort(a.port) ? a.port : '-', name: String(a.name || '').slice(0, 20), speed: num(a.speed, 10, 100, 60), mode: ['grip', 'toggle'].includes(a.mode) ? a.mode : 'hold', travel: num(a.travel, -720, 720, 90) }; }),
     };
   }
   // Lijst van getallenparen (noten of routestappen) uit opslag controleren.
@@ -588,7 +588,7 @@
     auxPorts().forEach((port, i) => {
       if (!port) return;
       const a = S.aux[i];
-      if (a.mode === 'hold') out[port] = (st.aux[i] || st.jog[i]) * a.speed;
+      if (a.mode !== 'grip') out[port] = (st.aux[i] || st.jog[i]) * a.speed;
       else if (st.jog[i]) out[port] = st.jog[i] * 30; // grijper langzaam bijstellen
     });
     return out;
@@ -714,6 +714,7 @@
     } else if (a && auxPorts()[a[0]]) {
       e.preventDefault();
       if (S.aux[a[0]].mode === 'grip') { if (!e.repeat) { holdBtn(a[0], a[1], true); gripMove(a[0], a[1]); } }
+      else if (S.aux[a[0]].mode === 'toggle') { if (!e.repeat) toggleAux(a[0], a[1]); }
       else if (st.aux[a[0]] !== a[1]) { st.aux[a[0]] = a[1]; sfx.tick(); holdBtn(a[0], a[1], true); }
     }
   });
@@ -726,20 +727,30 @@
       st.codes.delete(e.code);
       for (const c of st.codes) if (KEYMAP[c] === k) return;
       st.keys.delete(k); qsa('.key[data-k="' + k + '"]').forEach((n) => n.classList.remove('on'));
-    } else if (a) { if (st.aux[a[0]] === a[1]) st.aux[a[0]] = 0; holdBtn(a[0], a[1], false); }
+    } else if (a) { if (S.aux[a[0]].mode === 'toggle') return; if (st.aux[a[0]] === a[1]) st.aux[a[0]] = 0; holdBtn(a[0], a[1], false); }
   });
   window.addEventListener('blur', halt);
   document.addEventListener('visibilitychange', () => { if (document.hidden) halt(); else keepAwake(st.phase === 'ready'); });
 
+  // Aan/uit-stand: één tik start de motor (of keert hem om), nog een tik in dezelfde richting stopt hem.
+  // STOP, wegklikken, een ander scherm en een verbroken verbinding zetten hem via halt() ook uit.
+  function toggleAux(i, dir) {
+    if (!needReady()) return;
+    st.aux[i] = st.aux[i] === dir ? 0 : dir;
+    qsa('.hold[data-aux="' + i + '"]').forEach((b) => b.classList.toggle('on', +b.dataset.dir === st.aux[i]));
+    sfx.tick(); buzz(10);
+  }
   function holdBtn(i, dir, on) {
     const n = document.querySelector('.hold[data-aux="' + i + '"][data-dir="' + dir + '"]');
     if (n) n.classList.toggle('on', on);
   }
   // Knop die een extra motor laat draaien zolang hij ingedrukt is (of de grijper een stand laat kiezen).
   function bindHold(btn, i, dir, slot) {
-    const up = () => { if (st[slot][i] === dir) st[slot][i] = 0; btn.classList.remove('on'); };
+    const toggles = () => slot === 'aux' && S.aux[i].mode === 'toggle';
+    const up = () => { if (toggles()) return; if (st[slot][i] === dir) st[slot][i] = 0; btn.classList.remove('on'); };
     btn.addEventListener('pointerdown', (e) => {
       e.preventDefault();
+      if (toggles()) { toggleAux(i, dir); return; }
       if (slot === 'aux' && S.aux[i].mode === 'grip') { btn.classList.add('on'); setTimeout(() => btn.classList.remove('on'), 220); gripMove(i, dir); return; }
       if (slot === 'jog' && !needReady()) return;
       try { btn.setPointerCapture(e.pointerId); } catch (x) {}
@@ -760,6 +771,7 @@
         const btn = el('button', 'btn hold'), k = el('kbd');
         btn.dataset.aux = i; btn.dataset.dir = dir; k.textContent = keys[j]; btn.appendChild(k);
         btn.appendChild(document.createTextNode(' ' + t(a.mode === 'grip' ? (dir < 0 ? 'aux.close' : 'aux.open') : (dir < 0 ? 'aux.minus' : 'aux.plus'))));
+        if (a.mode === 'toggle' && st.aux[i] === dir) btn.classList.add('on');
         bindHold(btn, i, dir, 'aux'); row.appendChild(btn);
       });
       box.appendChild(row);
@@ -951,7 +963,7 @@
     return totalMs(notes);
   }
   function quiet() {
-    stopLocal(); stopSpeak();
+    stopLocal(); endMouth();
     if (linked()) hub.text('hush').catch(() => {});
   }
   const moodNotes = (id) => { const m = MOODS.find((x) => x[0] === id); return m ? [m[3](), m[2]] : [[], null]; };
@@ -970,42 +982,56 @@
   funBtn($('songBtns'), 'song-quiet', '\u{1F92B}', 'music.stop', () => { quiet(); sfx.tick(); });
   MOODS.forEach(([id, emo]) => funBtn($('moodBtns'), 'mood-' + id, emo, 'mood.' + id, () => mood(id)));
 
-  /* praten: het toestel spreekt, de hub beweegt zijn mond */
-  const synth = window.speechSynthesis && window.SpeechSynthesisUtterance ? window.speechSynthesis : null;
+  /* robottaal: de hub zegt je zin zelf in piepjes, één piepje per lettergreep, met bewegende mond */
+  const VOWEL_PITCH = { i: 1.35, y: 1.25, e: 1.18, a: 1, o: 0.84, u: 0.74 };
+  function robotWords(text) {
+    const base = G.voice === 'high' ? 1050 : G.voice === 'low' ? 330 : 620, pace = G.voice === 'high' ? 0.85 : G.voice === 'low' ? 1.25 : 1;
+    const plain = String(text || '').slice(0, 160).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const out = [];
+    for (const word of plain.split(/\s+/)) {
+      const end = (/[.,!?;:]+$/.exec(word) || [''])[0], letters = word.replace(/[^a-z0-9]/g, '');
+      if (!letters) continue;
+      // Lettergrepen ruwweg: een groep klinkers met de medeklinkers erna. Klinker bepaalt de toon.
+      const groups = letters.match(/[aeiouy]+[^aeiouy]*/g) || [letters];
+      groups.forEach((g, i) => {
+        let h = 0;
+        for (const c of g) h = (h * 31 + c.charCodeAt(0)) % 997;   // zelfde zin klinkt altijd hetzelfde
+        let f = base * (VOWEL_PITCH[g[0]] || 0.95) * (0.92 + (h % 17) / 100);
+        const ms = (70 + 10 * Math.min(3, g.length - 1)) * pace, last = i === groups.length - 1;
+        if (last && end.includes('!')) f *= 1.15;
+        if (last && end.includes('?')) out.push([f, ms * 0.5], [f * 1.15, ms * 0.4], [f * 1.35, ms * 0.6]);   // vraag: toon omhoog
+        else out.push([f * 0.9, ms * 0.35], [f, ms * 0.65]);
+        out.push([0, 25]);
+      });
+      out.push([0, !end ? 80 : end.includes(',') ? 200 : 300]);
+      if (out.length > 280) break;
+    }
+    while (out.length && !out[out.length - 1][0]) out.pop();
+    return out.map(([f, ms]) => [f ? Math.round(clamp(f, 120, 4000)) : 0, Math.max(10, Math.round(ms))]);
+  }
   let mouth = null;
-  function startMouth() {
-    if (mouth || !linked()) return;
-    const frames = ['mOpen', 'mHalf', 'mShut', 'mHalf'];
-    let i = 0;
-    mouth = setInterval(() => {
-      if (i > 3 && !(synth && synth.speaking)) { endMouth(); return; }
-      showFace(frames[i++ % 4]);
-    }, 170);
-  }
   function endMouth() { if (!mouth) return; clearInterval(mouth); mouth = null; showFace('smile'); }
-  function stopSpeak() { if (synth && (synth.speaking || synth.pending)) synth.cancel(); endMouth(); }
-  function speak(text) {
-    text = String(text || '').trim().slice(0, 200);
-    if (!text || !synth) return;
-    stopSpeak();
-    const u = new SpeechSynthesisUtterance(text), lang = curLang();
-    u.lang = lang === 'nl' ? 'nl-NL' : 'en-US';
-    const v = synth.getVoices().find((x) => (x.lang || '').toLowerCase().replace('_', '-').startsWith(lang));
-    try { if (v) u.voice = v; } catch (e) {} // zonder passende stem kiest de browser zelf
-    u.pitch = G.voice === 'high' ? 1.9 : G.voice === 'low' ? 0.3 : 1;
-    u.rate = G.voice === 'high' ? 1.15 : G.voice === 'low' ? 0.85 : 1;
-    u.onend = endMouth; u.onerror = endMouth;
-    synth.speak(u);
-    startMouth();
+  function talk(text) {
+    const notes = robotWords(text);
+    if (!notes.length) return;
+    endMouth();
+    const ms = play(notes);
+    if (!linked()) return;
+    const frames = ['mOpen', 'mHalf', 'mShut', 'mHalf'], until = performance.now() + ms;
+    let i = 0;
+    showFace(frames[i++]);
+    mouth = setInterval(() => {
+      if (performance.now() > until || !linked()) { endMouth(); return; }
+      showFace(frames[i++ % 4]);
+    }, 160);
   }
-  $('btnSay').addEventListener('click', () => { buzz(10); speak($('inpSay').value); });
-  $('inpSay').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); speak($('inpSay').value); } });
+  $('btnSay').addEventListener('click', () => { buzz(10); talk($('inpSay').value); });
+  $('inpSay').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); talk($('inpSay').value); } });
   [1, 2, 3, 4].forEach((i) => {
     const b = el('button', 'btn sm');
     b.dataset.i18n = 'phrase.' + i; $('phrases').appendChild(b);
-    b.addEventListener('click', () => { buzz(10); speak(t('phrase.' + i)); });
+    b.addEventListener('click', () => { buzz(10); talk(t('phrase.' + i)); });
   });
-  if (!synth) { $('btnSay').disabled = true; $('inpSay').disabled = true; qsa('#phrases .btn').forEach((b) => { b.disabled = true; }); }
 
   /* piano: één octaaf, opnemen en terugspelen */
   const KEYS = ['C4', 'C#4', 'D4', 'D#4', 'E4', 'F4', 'F#4', 'G4', 'G#4', 'A4', 'A#4', 'B4', 'C5'];
@@ -1149,7 +1175,7 @@
   // Compacte code van een profiel voor in een link of QR.
   function encodeProfile(p) {
     const arr = [1, p.name, p.left, p.right, +p.invL, +p.invR, p.speed, p.turn, p.trim, +p.guard, p.guardCm];
-    for (const a of p.aux) arr.push(a.port, a.name, a.speed, a.mode === 'grip' ? 1 : 0, a.travel);
+    for (const a of p.aux) arr.push(a.port, a.name, a.speed, a.mode === 'grip' ? 1 : a.mode === 'toggle' ? 2 : 0, a.travel);
     let bin = '';
     enc.encode(JSON.stringify(arr)).forEach((b) => { bin += String.fromCharCode(b); });
     return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
@@ -1158,7 +1184,7 @@
     const bin = atob(code.replace(/-/g, '+').replace(/_/g, '/'));
     const a = JSON.parse(dec.decode(Uint8Array.from(bin, (c) => c.charCodeAt(0))));
     if (!Array.isArray(a) || a[0] !== 1 || a.length < 21) throw new Error('bad');
-    const aux = [0, 1].map((i) => { const o = 11 + i * 5; return { port: a[o], name: a[o + 1], speed: a[o + 2], mode: a[o + 3] === 1 ? 'grip' : 'hold', travel: a[o + 4] }; });
+    const aux = [0, 1].map((i) => { const o = 11 + i * 5; return { port: a[o], name: a[o + 1], speed: a[o + 2], mode: a[o + 3] === 1 ? 'grip' : a[o + 3] === 2 ? 'toggle' : 'hold', travel: a[o + 4] }; });
     return cleanProfile({ name: a[1], left: a[2], right: a[3], invL: a[4] === 1, invR: a[5] === 1, speed: a[6], turn: a[7], trim: a[8], guard: a[9] === 1, guardCm: a[10], aux, userPorts: true });
   }
   function importFromHash() {
@@ -1264,7 +1290,7 @@
       const labels = qsa('label.f > span, div.f > span', wrap);
       [t('aux.n', i + 1), t('aux.name'), t('aux.mode'), t('aux.speed'), t('aux.travel'), t('aux.jog')].forEach((txt, j) => { labels[j].textContent = txt; });
       const q = (sel) => wrap.querySelector(sel), port = q('[data-k="port"]'), name = q('[data-k="name"]'), mode = q('[data-k="mode"]'), speed = q('[data-k="speed"]'), travel = q('[data-k="travel"]');
-      fill(port, [['-', t('aux.off')]].concat(portItems())); fill(mode, [['hold', t('aux.hold')], ['grip', t('aux.grip')]]);
+      fill(port, [['-', t('aux.off')]].concat(portItems())); fill(mode, [['hold', t('aux.hold')], ['toggle', t('aux.toggle')], ['grip', t('aux.grip')]]);
       name.placeholder = t('aux.namePh'); q('p').textContent = t('aux.gripHelp'); q('.zero').textContent = t('aux.zero');
       const jogs = qsa('.jog', wrap); jogs[0].textContent = t('aux.minus'); jogs[1].textContent = t('aux.plus');
       const show = () => {
@@ -1273,8 +1299,8 @@
         q('.fold').classList.toggle('on', a.mode === 'grip' && a.port !== '-');
       };
       const changed = () => { save(); show(); renderAux(); };
-      port.addEventListener('change', () => { a.port = port.value; sfx.tick(); changed(); port.blur(); });
-      mode.addEventListener('change', () => { a.mode = mode.value; sfx.tick(); changed(); mode.blur(); });
+      port.addEventListener('change', () => { a.port = port.value; st.aux[i] = 0; sfx.tick(); changed(); port.blur(); });
+      mode.addEventListener('change', () => { a.mode = mode.value; st.aux[i] = 0; sfx.tick(); changed(); mode.blur(); });
       name.addEventListener('input', () => { a.name = name.value.slice(0, 20); save(); renderAux(); });
       speed.addEventListener('input', () => { a.speed = +speed.value; changed(); });
       travel.addEventListener('input', () => { a.travel = +travel.value; changed(); });
@@ -1344,7 +1370,6 @@
     qsa('[data-i18n-aria]').forEach((n) => { n.setAttribute('aria-label', t(n.dataset.i18nAria)); });
     qsa('[data-i18n-ph]').forEach((n) => { n.placeholder = t(n.dataset.i18nPh); });
     $('playWhere').textContent = t(st.phase === 'ready' ? 'play.hub' : 'play.phone');
-    $('speakNote').textContent = t(synth ? 'speak.help' : 'speak.none');
     if (st.songRec) $('btnSongRec').textContent = t('piano.stopRec');
     $('pillText').dataset.t = ''; $('btnConnectText').dataset.t = ''; $('hint').dataset.t = '';
     phaseTexts(); setText($('hint'), t(...st.hint));

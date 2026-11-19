@@ -18,13 +18,14 @@ program in a program slot on the hub, and then sends live drive commands to it.
 - Keyboard on a laptop: WASD or arrows, Shift for turbo, Space to stop, H for the horn
 - Speed, turn speed and straight-line trim
 - Motor test buttons to find the right ports and directions in seconds
-- Two extra motors with their own name and speed, either hold-to-turn or a gripper with fixed
-  open and closed positions
+- Two extra motors with their own name and speed: hold-to-turn, on/off (tap to start, tap again to
+  stop), or a gripper with fixed open and closed positions
 - Live sensors: distance, colour and force, plus an optional stop-for-obstacles guard
 - A profile per robot, shareable as a link or QR code
 - Hub battery level with low-battery warnings
 - Play tab: public-domain songs and a one-octave piano on the hub's speaker, robot moods with a face
-  on the hub's light matrix, and the phone speaking typed text while the hub moves its mouth
+  on the hub's light matrix, and robot language: the hub says a typed sentence in beeps (one per
+  syllable, a question rises) while it moves its mouth
 - Two dances and a route you record with the joystick and drive again; STOP, the space bar or the
   joystick takes over at once
 - Without a hub, songs, moods and the piano play on the phone itself

@@ -32,7 +32,10 @@ CI (`.github/workflows/pages.yml`) fails if `site/index.html` is not rebuilt and
 - Safety behaviour to preserve: hub-side stop after 800 ms without a message; page keepalive
   every 250 ms; STOP acts on pointer down; everything stops on blur, tab hidden and view switch.
   Dances and route replay run only in the Drive view and end on `halt()` or on any joystick,
-  tilt, tank or key input.
+  tilt, tank or key input. An extra motor in on/off mode keeps turning after the tap, so it
+  must stay in `st.aux` and be cleared by `halt()` (STOP, blur, hidden, view switch, link lost).
+- Robot language plays on the hub (beeps per syllable via `tune`); the owner rejected speech
+  from the phone, because it does not come from the robot.
 - Songs in the app are public domain or written for this project. Do not add copyrighted melodies.
 - CI: the GitHub Pages deploy runs only when the repository variable `DEPLOY_PAGES` is `true`;
   the app is hosted on Netlify (`netlify.toml`, publishes `site/` with no build step).

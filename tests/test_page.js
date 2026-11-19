@@ -443,30 +443,15 @@ const fakeHub = (opts) => {
     await ctx.close();
   }
   }
-  // ---------- G. play: songs, robot talk, faces, speech, piano, dances, recorded route ----------
+  // ---------- G. play: songs, robot talk, faces, robot language, piano, dances, recorded route, on/off motor ----------
   if (RUN('G')) {
-  // Speech is replaced by a recorder: it "speaks" for 900 ms.
-  const fakeSpeech = () => {
-    window.__said = [];
-    if (!window.SpeechSynthesisUtterance) window.SpeechSynthesisUtterance = function (text) { this.text = text; };
-    // Chrome's speechSynthesis cannot be replaced, so its methods are patched on the object itself.
-    const s = window.speechSynthesis || {};
-    let busy = false;
-    const def = (k, v) => Object.defineProperty(s, k, Object.assign({ configurable: true }, v));
-    def('speaking', { get: () => busy }); def('pending', { get: () => false });
-    def('getVoices', { value: () => [] });
-    def('cancel', { value: () => { busy = false; } });
-    def('speak', { value: (u) => { window.__said.push({ text: u.text, lang: u.lang, pitch: u.pitch }); busy = true;
-      setTimeout(() => { busy = false; if (u.onend) u.onend(); }, 900); } });
-    if (!window.speechSynthesis) Object.defineProperty(window, 'speechSynthesis', { value: s, configurable: true });
-  };
   const toastHas = (re) => page.waitForFunction((src) => new RegExp(src).test(document.getElementById('toasts').textContent), re.source);
   const since = async (n) => (await tunnelOf(page)).slice(n);
   const count = () => page.evaluate(() => window.__hub.tunnel.length);
   const NOTE_OK = (tok) => { const [f, ms] = tok.split(':').map(Number); return Number.isInteger(f) && Number.isInteger(ms) && (f === 0 || (f >= 100 && f <= 10000)) && ms >= 10 && ms <= 3000; };
   const tunes = (msgs) => msgs.filter((x) => /^tune\+? /.test(x));
   const imgs = (msgs) => msgs.filter((x) => x.startsWith('img ')).map((x) => x.slice(4));
-  page = await open({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true }, {}, undefined, fakeSpeech);
+  page = await open({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
   // not connected: everything plays on the phone, nothing goes to the hub
   await page.click('.tab[data-view="viewPlay"]'); await page.waitForTimeout(300);
   assert.ok(/Niet verbonden/.test(await page.$eval('#playWhere', (e) => e.textContent)));
@@ -507,18 +492,27 @@ const fakeHub = (opts) => {
     assert.ok(toks.length >= 3 && toks.every(NOTE_OK), id + ': ' + toks.join(' '));
     assert.ok(imgs(msgs).length === 1 && /^[0-9]{25}$/.test(imgs(msgs)[0]), id + ' face');
   }
-  // speech: the device speaks in the page language, the hub moves its mouth, then smiles
+  // robot language: the hub says the sentence in beeps, two per syllable; a question rises; the mouth moves, then smiles
+  const sayNotes = async (text) => { const n = await count(); await page.fill('#inpSay', text); await page.click('#btnSay'); await page.waitForTimeout(250);
+    return tunes(await since(n)).flatMap((x) => x.split(' ').slice(1)); };
+  const sounding = (toks) => toks.filter((x) => !x.startsWith('0:')).map((x) => +x.split(':')[0]);
   n0 = await count();
-  await page.fill('#inpSay', 'Hallo test'); await page.click('#btnSay');
-  await page.waitForTimeout(1500);
-  let said = await page.evaluate(() => window.__said);
-  assert.deepStrictEqual(said[0], { text: 'Hallo test', lang: 'nl-NL', pitch: 1 });
+  const said = await sayNotes('Hallo robot?');
+  assert.ok(said.every(NOTE_OK), said.join(' '));
+  const sNormal = sounding(said), q = sNormal.slice(-3);
+  assert.strictEqual(sNormal.length, 9, 'Hal-lo ro-bot?: ' + sNormal.join(' '));
+  assert.ok(q[0] < q[1] && q[1] < q[2], 'question rises: ' + q);
+  await page.waitForTimeout(1200);
   let faces = imgs(await since(n0));
-  assert.ok(faces.includes('0909000000099909000909990') && faces.length >= 4, 'mouth moves: ' + faces.length);
+  assert.ok(faces[0] === '0909000000099909000909990' && faces.length >= 3, 'mouth moves: ' + faces.length);
   assert.strictEqual(faces[faces.length - 1], '0000009090000009000909990', 'smile when done');
-  await page.selectOption('#selVoice', 'high'); await page.click('#phrases .btn'); await page.waitForTimeout(100);
-  said = await page.evaluate(() => window.__said);
-  assert.strictEqual(said[1].text, 'Hallo! Ik ben een robot.'); assert.ok(Math.abs(said[1].pitch - 1.9) < 0.01, 'high voice');
+  assert.deepStrictEqual(await sayNotes('Hallo robot?'), said, 'same sentence, same sound');
+  await page.selectOption('#selVoice', 'high');
+  assert.ok(sounding(await sayNotes('Hallo robot?'))[0] > sNormal[0] * 1.4, 'high voice');
+  n0 = await count(); await page.click('#phrases .btn'); await page.waitForTimeout(250);
+  assert.ok(sounding(tunes(await since(n0)).flatMap((x) => x.split(' ').slice(1))).length >= 10, 'phrase is said');
+  assert.strictEqual(await page.$eval('#speakNote', (e) => e.textContent).then((x) => /robotpiepjes/.test(x)), true);
+  await page.click('#song-quiet'); await page.waitForTimeout(1200);
   // piano: a key plays one note; record three keys and play them back
   n0 = await count();
   await ptr(page, '.wkey[data-note="E4"]', 'pointerdown', 0, 0, 1); await page.waitForTimeout(150);
@@ -574,6 +568,21 @@ const fakeHub = (opts) => {
   await page.click('#btnRoute'); await toastHas(/Route is klaar/); await page.waitForTimeout(400);   // soft stop takes a few ticks
   const drove = (await tunnelOf(page)).filter(isDrive);
   assert.ok(drove.some((x) => x !== 'C:0 D:0'), 'route drives'); assert.strictEqual(drove[drove.length - 1], 'C:0 D:0');
+  // extra motor in on/off mode: a tap starts it, a tap in the other direction reverses, a second tap stops; STOP stops it too
+  await page.click('.tab[data-view="viewSettings"]'); await page.waitForTimeout(300);
+  await page.selectOption(AUX1 + '[data-k="port"]', 'E'); await page.selectOption(AUX1 + '[data-k="mode"]', 'toggle');
+  await page.click('.tab[data-view="viewDrive"]'); await page.waitForTimeout(300);
+  const tap = async (dir) => { const sel = '#aux .hold[data-aux="0"][data-dir="' + dir + '"]'; await ptr(page, sel, 'pointerdown', 0, 0, 1); await ptr(page, sel, 'pointerup', 0, 0, 1); await page.waitForTimeout(400); };
+  await tap(1); assert.ok(/E:60/.test(await last(page)), await last(page));
+  await page.waitForTimeout(600); assert.ok(/E:60/.test(await last(page)), 'keeps turning after release');
+  assert.strictEqual(await page.$$eval('#aux .hold.on', (b) => b.map((x) => x.dataset.dir).join()), '1');
+  await tap(-1); assert.ok(/E:-60/.test(await last(page)), await last(page));
+  await tap(-1); assert.ok(/E:0/.test(await last(page)), await last(page));
+  assert.strictEqual(await page.$$eval('#aux .hold.on', (b) => b.length), 0);
+  await tap(1); await page.dispatchEvent('#btnStop', 'pointerdown'); await page.waitForTimeout(400);
+  assert.ok(/E:0/.test(await last(page)), 'STOP stops it'); assert.strictEqual(await page.$$eval('#aux .hold.on', (b) => b.length), 0);
+  await page.keyboard.press('KeyE'); await page.waitForTimeout(400); assert.ok(/E:60/.test(await last(page)), 'key E toggles on');
+  await page.keyboard.press('KeyE'); await page.waitForTimeout(400); assert.ok(/E:0/.test(await last(page)), 'key E toggles off');
   // reactions can be switched off
   await page.click('.tab[data-view="viewPlay"]'); await page.waitForTimeout(300);
   await page.click('#chkReact + span'); await page.waitForTimeout(100);
@@ -585,7 +594,7 @@ const fakeHub = (opts) => {
   assert.strictEqual(await page.$eval('#inpSay', (e) => e.placeholder), 'Type what the robot should say');
   await page.screenshot({ path: OUT + '/play.png', fullPage: true });
   await page.context().close();
-  console.log('G ok: songs, moods, faces, speech, piano, dances, route, reactions');
+  console.log('G ok: songs, moods, faces, robot language, piano, dances, route, on/off motor, reactions');
   }
   await browser.close(); server.close();
   assert.deepStrictEqual(errors, [], 'page errors: ' + errors.join('\n'));
