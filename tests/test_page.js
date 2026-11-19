@@ -302,9 +302,14 @@ const fakeHub = (opts) => {
   }
   // ---------- C. tilt steering on a touch device ----------
   if (RUN('C')) {
-  // Some machines (GitHub runners) deliver real orientation readings. Keep those away from the
-  // app so only the simulated events below count; trusted events come from the browser itself.
-  const blockRealTilt = () => { window.__realTilt = 0; window.addEventListener('deviceorientation', (e) => { if (e.isTrusted) { window.__realTilt++; e.stopImmediatePropagation(); } }, true); };
+  // Only the simulated sensor counts: real orientation events from the browser are dropped, and the
+  // motion permission prompt (iOS, and Chrome 159+, which grants it on some machines and refuses
+  // it on others) gives the answer the test sets.
+  const blockRealTilt = () => {
+    window.__realTilt = 0; window.__permAnswer = 'granted';
+    window.addEventListener('deviceorientation', (e) => { if (e.isTrusted) { window.__realTilt++; e.stopImmediatePropagation(); } }, true);
+    DeviceOrientationEvent.requestPermission = () => Promise.resolve(window.__permAnswer);
+  };
   page = await open({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true }, {}, undefined, blockRealTilt);
   await page.click('#btnConnect'); await waitPhase(page, 'ready');
   assert.notStrictEqual(await page.$eval('#modes [data-mode="tilt"]', (e) => getComputedStyle(e).display), 'none');
@@ -312,16 +317,7 @@ const fakeHub = (opts) => {
   await page.click('#modes [data-mode="tilt"]'); await page.waitForTimeout(300);
   const P = await rect(page, '#pad');
   await ptr(page, '#pad', 'pointerdown', P.cx, P.cy, 1);
-  await page.waitForFunction(() => /geen kantelgegevens/.test(document.getElementById('toasts').textContent), null, { timeout: 5000 })   // no sensor data yet
-    .catch(async (e) => {
-      // Explain a failure here: it has only been seen on GitHub runners.
-      console.log('C state', JSON.stringify(await page.evaluate(() => ({
-        toasts: document.getElementById('toasts').textContent, lang: navigator.language, realTilt: window.__realTilt,
-        mode: JSON.parse(localStorage.getItem('hubremote3') || '{}').mode, tiltBtn: document.querySelector('#modes [data-mode="tilt"]').className,
-        pad: document.getElementById('pad').className, coarse: matchMedia('(pointer:coarse)').matches,
-        perm: typeof DeviceOrientationEvent.requestPermission, log: document.getElementById('log').textContent.slice(-400) }))));
-      throw e;
-    });
+  await page.waitForFunction(() => /geen kantelgegevens/.test(document.getElementById('toasts').textContent));   // no sensor data yet
   await tiltEv(45, 0);
   await page.evaluate(() => (window.__hub.tunnel.length = 0));
   await ptr(page, '#pad', 'pointerdown', P.cx, P.cy, 1); await page.waitForTimeout(300);
@@ -337,9 +333,14 @@ const fakeHub = (opts) => {
   assert.strictEqual(await last(page), 'C:0 D:0', 'release stops');
   await tiltEv(10, 0); await page.waitForTimeout(300); assert.strictEqual(await last(page), 'C:0 D:0', 'no driving unless held');
   assert.strictEqual(await page.evaluate(() => JSON.parse(localStorage.getItem('hubremote3')).mode), 'tilt');
+  // permission refused (iPhone "Don't allow"): a clear message and back to the joystick
+  await page.click('#modes [data-mode="joy"]'); await page.evaluate(() => { window.__permAnswer = 'denied'; });
+  await page.click('#modes [data-mode="tilt"]');
+  await page.waitForFunction(() => /Geen toegang tot de bewegingssensor/.test(document.getElementById('toasts').textContent));
+  await page.waitForFunction(() => JSON.parse(localStorage.getItem('hubremote3')).mode === 'joy');
   const realTilt = await page.evaluate(() => window.__realTilt);
   await page.context().close();
-  console.log('C ok: tilt (' + realTilt + ' real sensor events ignored)');
+  console.log('C ok: tilt, permission refused (' + realTilt + ' real sensor events ignored)');
 
   }
   // ---------- D. small-packet fallback, 20-byte hub, v2 settings migration ----------
