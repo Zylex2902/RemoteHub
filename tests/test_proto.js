@@ -56,4 +56,10 @@ const r = P.parseDeviceNotification(Uint8Array.from([0x3c, pay.length, 0, ...pay
 assert.strictEqual(r.battery, 87); assert.deepStrictEqual([...r.motors], ['C']);
 assert.deepStrictEqual(JSON.parse(JSON.stringify(r.sensors)), [{ type: 'distance', port: 'A', mm: 350 }, { type: 'distance', port: 'E', mm: -1 },
   { type: 'color', port: 'B', color: 9, r: 512, g: 16, b: 32 }, { type: 'force', port: 'F', value: 40, pressed: true }]);
-console.log('OK', n, 'checks against the reference vectors, plus sensor parsing');
+// motion sensor and motor values: IMU face up 0, yaw -90, pitch 12, roll -5; motor A abs 45, power -300, speed -30, position -1234
+const le16 = (x) => [x & 255, (x >> 8) & 255], le32 = (x) => [x & 255, (x >> 8) & 255, (x >> 16) & 255, (x >>> 24) & 255];
+const pay2 = [1, 0, 0, ...le16(-90), ...le16(12), ...le16(-5), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 0, 48, ...le16(45), ...le16(-300), 256 - 30, ...le32(-1234)];
+const r2 = P.parseDeviceNotification(Uint8Array.from([0x3c, pay2.length, 0, ...pay2]));
+assert.deepStrictEqual(JSON.parse(JSON.stringify(r2.imu)), { face: 0, yawFace: 0, yaw: -90, pitch: 12, roll: -5 });
+assert.deepStrictEqual(JSON.parse(JSON.stringify(r2.motorData)), [{ port: 'A', type: 48, abs: 45, power: -300, speed: -30, pos: -1234 }]);
+console.log('OK', n, 'checks against the reference vectors, plus sensor, motion and motor parsing');

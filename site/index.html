@@ -92,8 +92,8 @@ main{flex:1;min-height:0;overflow:auto;overscroll-behavior:none;display:flex;fle
 .card h2{margin:0 0 12px;font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
 
 /* tabbalk (smalle schermen) */
-.tabbar{flex:none;display:grid;grid-template-columns:repeat(4,1fr);position:relative;border-top:1px solid var(--line);background:var(--panel)}
-.tabbar::before{content:"";position:absolute;top:-1px;left:0;width:25%;height:2px;background:var(--accent);transform:translateX(calc(var(--i,0)*100%));transition:transform .28s var(--ease)}
+.tabbar{flex:none;display:grid;grid-template-columns:repeat(5,1fr);position:relative;border-top:1px solid var(--line);background:var(--panel)}
+.tabbar::before{content:"";position:absolute;top:-1px;left:0;width:20%;height:2px;background:var(--accent);transform:translateX(calc(var(--i,0)*100%));transition:transform .28s var(--ease)}
 .tab{position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px 4px 8px;background:none;border:0;color:var(--muted);font-size:11.5px;font-weight:500;cursor:pointer;
   transition:color .2s var(--ease),transform .12s var(--ease)}
 .tab:active{transform:scale(.94)}
@@ -440,7 +440,7 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border:3px solid #fff
 .schip{border-width:2px;font-size:13px;font-weight:600;padding:4px 11px}
 .schip.alert{border-color:var(--danger)}
 .tabbar{border-top:2px solid var(--line)}
-.tabbar::before{top:6px;bottom:6px;height:auto;width:calc(25% - 16px);left:8px;border-radius:14px;background:var(--accent-soft);transform:translateX(calc(var(--i,0)*(100% + 16px)))}
+.tabbar::before{top:6px;bottom:6px;height:auto;width:calc(20% - 12px);left:6px;border-radius:14px;background:var(--accent-soft);transform:translateX(calc(var(--i,0)*(100% + 12px)))}
 .tab{font-size:13px;font-weight:600;z-index:1;padding:10px 4px 9px}
 .tab .ico{width:22px;height:22px}
 .toast{border-width:2px;border-radius:16px;font-size:15px;font-weight:600;background:var(--panel);box-shadow:0 5px 0 var(--line),0 12px 28px var(--shadow-c)}
@@ -503,6 +503,68 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border:3px solid #fff
 .banner i{flex:none;width:10px;height:10px;border-radius:50%;background:var(--accent)}
 .banner.rec{border-color:var(--danger)}
 .banner.rec i{background:var(--danger);animation:pulse 1s infinite}
+
+/* ---- versie 5: programmeerkaartjes ---- */
+.tab span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media (max-width:400px){.tab{font-size:10.5px;padding-left:2px;padding-right:2px}}
+.cat-event{--c:#16a34a}.cat-move{--c:#6a4cf5}.cat-motor{--c:#2f7cf6}.cat-light{--c:#e0a100}
+.cat-sound{--c:#e2459a}.cat-control{--c:#f26b1d}.cat-sensor{--c:#0aa5c2}.cat-var{--c:#d6336c}
+.codebar{position:sticky;top:0;z-index:6;display:flex;flex-direction:column;gap:10px}
+.codetop{display:flex;gap:8px;align-items:center}
+.codetop select{flex:1;min-width:0}
+.coderun{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.coderun .run{padding:12px;font-size:17px}
+.coderun .stop{padding:12px;width:auto}
+.codestatus{min-height:0;margin:-4px 2px 0}
+.codestatus:empty{display:none}
+body.running .run{opacity:.55}
+#stacks{display:flex;flex-direction:column;gap:var(--gap)}
+.stack{display:flex;flex-direction:column;gap:6px;padding:10px}
+.pcards{display:flex;flex-direction:column;gap:5px}
+.pcard{position:relative;display:flex;align-items:center;gap:8px;flex-wrap:nowrap;margin-left:calc(var(--d,0) * 16px);padding:8px 10px;border-radius:14px;
+  background:color-mix(in srgb,var(--c) 13%,var(--panel));border:2px solid color-mix(in srgb,var(--c) 45%,transparent);border-left:7px solid var(--c);
+  font:600 14px var(--head);color:var(--text);line-height:1.6;cursor:pointer;-webkit-user-select:none;user-select:none;transition:box-shadow .15s var(--ease),transform .15s var(--ease)}
+.pcard.hat{border-radius:20px 20px 14px 14px;padding-top:10px;padding-bottom:10px}
+.pcard.endc{padding-top:4px;padding-bottom:4px;font-size:12.5px;opacity:.85}
+.pcard.sel{box-shadow:0 0 0 3px var(--accent-soft),0 0 0 1px var(--accent)}
+.pcard.active{box-shadow:0 0 0 4px color-mix(in srgb,var(--c) 45%,transparent);transform:translateX(3px)}
+.pcard.active::after{content:"";position:absolute;left:-15px;top:50%;width:8px;height:8px;margin-top:-4px;border-radius:50%;background:var(--c);animation:pulse .8s infinite}
+.pico{flex:none;font-size:17px;line-height:1}
+.pbody{display:flex;flex-wrap:wrap;align-items:center;gap:4px 6px;min-width:0}
+.pbody select{padding-right:20px !important;background-position:right 6px center !important;background-size:10px 7px !important}
+.pbody select,.pbody input{width:auto;height:auto;font:600 13.5px var(--body);padding:3px 6px;border-radius:9px;border:1.5px solid color-mix(in srgb,var(--c) 40%,var(--line));background:var(--panel);color:var(--text);min-width:0;max-width:100%}
+.pbody input.ptext{width:9em}.pbody input.msg{width:6em}
+.vsrc{display:inline-flex;align-items:center;gap:3px;max-width:100%}
+.vsrc .vnum{width:4.4em}
+.vsrc .vsel{max-width:3.4em;padding-left:4px;padding-right:2px;color:var(--muted)}
+.vsrc.src .vsel{max-width:13em}
+.vto{font-size:12.5px;color:var(--muted)}
+.vsrc [hidden]{display:none}
+.cond{display:inline-flex;flex-wrap:wrap;align-items:center;gap:4px 6px;padding:2px 6px;border-radius:11px;background:color-mix(in srgb,var(--c) 10%,transparent);border:1.5px dashed color-mix(in srgb,var(--c) 45%,transparent)}
+.notbtn{font:600 12px var(--head);padding:3px 7px;border-radius:8px;border:1.5px solid var(--line);background:var(--panel);color:var(--muted);cursor:pointer}
+.notbtn.on{background:var(--c);border-color:var(--c);color:#fff}
+.imgbtn{display:inline-grid;place-items:center;padding:3px;border-radius:8px;border:1.5px solid var(--line);background:#14161c;cursor:pointer}
+.mini{display:grid;grid-template-columns:repeat(5,5px);gap:1.5px}
+.mini i{width:5px;height:5px;border-radius:1.5px;background:#ffd84d}
+.ptools{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 4px calc(var(--d,0) * 16px)}
+.ptools .btn{min-width:42px}
+.stackfoot{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:4px}
+.linkbtn.sure{color:var(--danger)}
+.addstack{align-self:flex-start}
+.pal{width:min(560px,100%) !important;max-height:min(640px,100%) !important}
+.palhead{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.pcats{display:flex;flex-wrap:wrap;gap:6px}
+.pcat{font:600 13px var(--head);padding:6px 10px;border-radius:999px;border:2px solid color-mix(in srgb,var(--c) 50%,transparent);background:var(--panel);color:var(--text);cursor:pointer}
+.pcat.on{background:var(--c);border-color:var(--c);color:#fff}
+.plist{display:flex;flex-direction:column;gap:6px;overflow:auto;min-height:120px}
+.pcard.pick{width:100%;text-align:left;margin-left:0}
+.imggrid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;padding:10px;border-radius:14px;background:#14161c;width:min(240px,100%);align-self:center}
+.px{aspect-ratio:1;border-radius:6px;border:0;background:#2b2f3a;cursor:pointer}
+.px.on{background:#ffd84d;box-shadow:0 0 10px rgba(255,216,77,.6)}
+.imgpresets{display:flex;flex-wrap:wrap;gap:6px}
+/* breed: code, spelen en instellingen samen in de rechterkolom */
+@media (min-width:900px){#viewCode{padding-left:calc(var(--gap) / 2);padding-bottom:0}}
+@media (max-width:360px){.codetop{flex-wrap:wrap}.codetop select{flex:1 1 100%}.codetop .btn{flex:1}}
 </style>
 </head>
 <body data-phase="idle">
@@ -594,6 +656,25 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border:3px solid #fff
   </section>
 
   <div class="side" id="side">
+  <section class="view" id="viewCode">
+    <div class="card codebar" id="codebar">
+      <div class="codetop">
+        <select id="selProg" data-i18n-aria="code.rename" aria-label="Programma"></select>
+        <button class="btn sm" id="btnProgNew" data-i18n="code.new">Nieuw</button>
+        <button class="btn sm" id="btnProgRename" data-i18n="code.rename">Naam</button>
+        <button class="btn sm danger" id="btnProgDel" data-i18n="code.delete">Weg</button>
+      </div>
+      <div class="coderun">
+        <button class="btn primary run" id="btnRun"><svg class="ico" viewBox="0 0 24 24"><path d="M7 4v16l13-8z" fill="currentColor"/></svg><span data-i18n="code.run">Start</span></button>
+        <button class="stop progstop" id="btnProgStop"><svg class="ico" viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="2" fill="currentColor"/></svg>STOP</button>
+      </div>
+      <div class="small codestatus" id="codeStatus" aria-live="polite"></div>
+    </div>
+    <div id="stacks"></div>
+    <button class="btn addstack" id="btnAddStack" data-i18n="code.addStack">+ Nieuw spoor</button>
+    <p class="small" style="margin:0 4px" data-i18n="code.help"></p>
+  </section>
+
   <section class="view" id="viewPlay">
     <p class="small where" id="playWhere"></p>
 
@@ -736,7 +817,7 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border:3px solid #fff
     <div class="card">
       <h2 data-i18n="about.title">Over</h2>
       <p class="small" style="margin:0" data-i18n="about.text"></p>
-      <p class="small" style="margin:8px 0 0">Hub Remote 4.0</p>
+      <p class="small" style="margin:8px 0 0">Hub Remote 5.0</p>
     </div>
   </section>
   </div>
@@ -752,6 +833,9 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border:3px solid #fff
 <nav class="tabbar" id="tabbar" style="--i:0">
   <button class="tab on" data-view="viewDrive">
     <svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg><span data-i18n="tab.drive">Rijden</span>
+  </button>
+  <button class="tab" data-view="viewCode">
+    <svg class="ico" viewBox="0 0 24 24"><rect x="3" y="4" width="10" height="6" rx="2"/><rect x="7" y="14" width="14" height="6" rx="2"/><path d="M8 10v4"/></svg><span data-i18n="tab.code">Code</span>
   </button>
   <button class="tab" data-view="viewPlay">
     <svg class="ico" viewBox="0 0 24 24"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg><span data-i18n="tab.play">Spelen</span>
@@ -778,6 +862,27 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border:3px solid #fff
   </div>
 </div>
 
+<div class="sheet" id="palSheet" aria-hidden="true">
+  <div class="card box pal">
+    <div class="palhead"><h2 data-i18n="code.palette">Kies een kaart</h2><button class="btn sm" id="palClose" data-i18n="code.close">Sluiten</button></div>
+    <div class="pcats" id="palCats"></div>
+    <div class="plist" id="palList"></div>
+  </div>
+</div>
+
+<div class="sheet" id="imgSheet" aria-hidden="true">
+  <div class="card box">
+    <h2 data-i18n="code.imgTitle">Kies of teken een plaatje</h2>
+    <div class="imggrid" id="imgGrid"></div>
+    <p class="small" style="margin:0" data-i18n="code.imgHelp"></p>
+    <div class="imgpresets" id="imgPresets"></div>
+    <div class="rowbtns">
+      <button class="btn sm primary" id="imgDone" data-i18n="code.done2">Klaar</button>
+      <button class="btn sm" id="imgClear" data-i18n="code.imgClear">Leeg</button>
+    </div>
+  </div>
+</div>
+
 <div class="banner" id="banner" aria-live="polite"><i id="bannerDot"></i><span id="bannerText"></span><button class="btn sm" id="bannerBtn"></button></div>
 
 <div id="toasts" aria-live="assertive"></div>
@@ -790,8 +895,24 @@ try:
     from hub import sound
 except Exception:
     sound = None
+try:
+    from hub import light
+except Exception:
+    light = None
+try:
+    from hub import button
+except Exception:
+    button = None
+try:
+    from hub import motion_sensor
+except Exception:
+    motion_sensor = None
+try:
+    import distance_sensor
+except Exception:
+    distance_sensor = None
 
-VERSION = '4'
+VERSION = '5'
 PORTS = {'A': port.A, 'B': port.B, 'C': port.C, 'D': port.D, 'E': port.E, 'F': port.F}
 TIMEOUT_MS = 800
 tunnel = hub.config['module_tunnel']
@@ -800,6 +921,11 @@ seen = [time.ticks_ms()]
 speeds = {}
 failed = {}
 grip = {}
+# Poorten met een beweging over een aantal graden: (start, verwachte duur in ms). En stopstand per poort.
+moving = {}
+stops = {}
+# Laatst gemelde hubknoppen en gebaar, en een teller om ze om de 50 ms te lezen.
+inputs = {'L': 0, 'R': 0, 'g': -1, 'n': 0}
 notes = []
 # Muziek: [start van de huidige noot, lengte in ms, volume]
 tune = [0, 0, 80]
@@ -830,9 +956,11 @@ def set_motor(name, pct):
     p = PORTS.get(name)
     if p is None:
         return
+    if pct != 0 and name in moving:
+        del moving[name]
     try:
         if pct == 0:
-            motor.stop(p)
+            halt_port(p, name)
         else:
             motor.run(p, pct * 10)
         if name in failed:
@@ -843,9 +971,90 @@ def set_motor(name, pct):
             say('err ' + name + ' ' + str(e))
 
 
+def halt_port(p, name):
+    # Stoppen met de gekozen stopstand (uitlopen, remmen, vasthouden); zonder die mogelijkheid gewoon stoppen.
+    try:
+        motor.stop(p, stop=stops[name])
+        return
+    except Exception:
+        pass
+    motor.stop(p)
+
+
 def stop_all():
     for name in list(speeds):
         set_motor(name, 0)
+    # Ook bewegingen over een aantal graden die nog bezig zijn: die staan niet in speeds.
+    now = time.ticks_ms()
+    for name in list(moving):
+        start, ms = moving[name]
+        del moving[name]
+        if time.ticks_diff(now, start) < ms:
+            try:
+                motor.stop(PORTS[name])
+            except Exception:
+                pass
+
+
+def halt_all():
+    # STOP op de pagina: alle poorten stil, ook lopende bewegingen, en geen geluid.
+    for name in PORTS:
+        speeds[name] = 0
+        try:
+            motor.stop(PORTS[name])
+        except Exception:
+            pass
+    moving.clear()
+    hush()
+
+
+def run_degrees(name, deg, pct):
+    # Draait een motor een aantal graden; de rijlus laat hem met rust tot er een nieuwe snelheid komt.
+    p = PORTS.get(name)
+    if p is None or deg == 0:
+        return
+    pct = max(5, min(100, abs(pct)))
+    try:
+        motor.run_for_degrees(p, deg, pct * 10)
+        speeds[name] = 0
+        moving[name] = (time.ticks_ms(), abs(deg) * 150 // pct + 500)
+    except Exception as e:
+        say('err ' + name + ' ' + str(e))
+
+
+def go_to(name, pos, pct, way):
+    p = PORTS.get(name)
+    if p is None:
+        return
+    pct = max(5, min(100, abs(pct)))
+    ways = {'cw': ('CLOCKWISE', 0), 'ccw': ('COUNTERCLOCKWISE', 1), 's': ('SHORTEST_PATH', 2)}
+    w = ways.get(way, ways['s'])
+    try:
+        motor.run_to_absolute_position(p, pos % 360, pct * 10, direction=getattr(motor, w[0], w[1]))
+        speeds[name] = 0
+        moving[name] = (time.ticks_ms(), 54000 // pct + 500)
+    except Exception as e:
+        say('err ' + name + ' ' + str(e))
+
+
+def poll_inputs():
+    # Hubknoppen links/rechts en gebaren (tikken, schudden, vallen) doorgeven als ze veranderen.
+    try:
+        for key, which in (('L', 'LEFT'), ('R', 'RIGHT')):
+            down = 1 if button.pressed(getattr(button, which)) else 0
+            if down != inputs[key]:
+                inputs[key] = down
+                say('btn ' + key + ' ' + str(down))
+    except Exception:
+        pass
+    try:
+        g = motion_sensor.gesture()
+        if g != inputs['g']:
+            inputs['g'] = g
+            if g is not None and g >= 0:
+                say('ges ' + str(g))
+    except Exception:
+        pass
 
 
 def move_to(name, target, pct):
@@ -953,6 +1162,42 @@ def handle(text):
         if len(parts) > 1:
             show(parts[1])
         return
+    if parts and parts[0] == 'halt':
+        halt_all()
+        return
+    if parts and parts[0] == 'deg':
+        # deg A:360:50 B:-360:50  (poort:graden:snelheid), alle motoren tegelijk
+        for tok in parts[1:]:
+            bits = tok.split(':')
+            try:
+                run_degrees(bits[0], int(bits[1]), int(bits[2]))
+            except (ValueError, IndexError):
+                pass
+        return
+    if parts and parts[0] == 'goto':
+        try:
+            go_to(parts[1], int(parts[2]), int(parts[3]), parts[4] if len(parts) > 4 else 's')
+        except (ValueError, IndexError):
+            pass
+        return
+    if parts and parts[0] == 'smode':
+        try:
+            stops[parts[1]] = max(0, min(2, int(parts[2])))
+        except (ValueError, IndexError):
+            pass
+        return
+    if parts and parts[0] == 'light':
+        try:
+            light.color(getattr(light, 'POWER', 0), int(parts[1]))
+        except Exception:
+            pass
+        return
+    if parts and parts[0] == 'eyes':
+        try:
+            distance_sensor.show(PORTS[parts[1]], [max(0, min(100, int(x))) for x in parts[2:6]])
+        except Exception:
+            pass
+        return
     if parts and parts[0] == 'pos':
         try:
             move_to(parts[1], int(parts[2]), int(parts[3]))
@@ -996,6 +1241,10 @@ async def main():
             if notes:
                 hush()
         play_notes(time.ticks_ms())
+        inputs['n'] += 1
+        if inputs['n'] >= 5:
+            inputs['n'] = 0
+            poll_inputs()
         await runloop.sleep_ms(10)
 
 
@@ -1143,7 +1392,7 @@ const Proto = (() => {
   const PORT_NAMES = 'ABCDEF';
 
   function parseDeviceNotification(msg) {
-    const res = { battery: null, motors: [], sensors: [] };
+    const res = { battery: null, motors: [], sensors: [], imu: null, motorData: [] };
     if (msg.length < 3) return res;
     const size = new DataView(msg.buffer, msg.byteOffset, msg.byteLength).getUint16(1, true);
     const data = msg.subarray(3, 3 + size);
@@ -1154,7 +1403,12 @@ const Proto = (() => {
       if (!len || i + len > data.length) break;
       const port = data[i + 1] < 6 ? PORT_NAMES[data[i + 1]] : null;
       if (id === 0x00) res.battery = data[i + 1];
-      else if (port && id === 0x0a) res.motors.push(port);
+      // Bewegingssensor: welke kant boven ligt, gieren, voorover/achterover en zijwaarts kantelen.
+      else if (id === 0x01) res.imu = { face: data[i + 1], yawFace: data[i + 2], yaw: v.getInt16(i + 3, true), pitch: v.getInt16(i + 5, true), roll: v.getInt16(i + 7, true) };
+      else if (port && id === 0x0a) {
+        res.motors.push(port);
+        res.motorData.push({ port, type: data[i + 2], abs: v.getInt16(i + 3, true), power: v.getInt16(i + 5, true), speed: v.getInt8(i + 7), pos: v.getInt32(i + 8, true) });
+      }
       else if (port && id === 0x0b) res.sensors.push({ type: 'force', port, value: data[i + 2], pressed: data[i + 3] === 1 });
       else if (port && id === 0x0c) res.sensors.push({ type: 'color', port, color: v.getInt8(i + 2), r: v.getUint16(i + 3, true), g: v.getUint16(i + 5, true), b: v.getUint16(i + 7, true) });
       else if (port && id === 0x0d) res.sensors.push({ type: 'distance', port, mm: v.getInt16(i + 2, true) });
@@ -1284,6 +1538,53 @@ const I18N = {
     'dbg.lost': 'De hub verbrak de verbinding (laatste stap: {0}).',
     'dbg.choose': 'hub kiezen', 'dbg.gatt': 'Bluetooth-verbinding maken', 'dbg.service': 'dienst van de hub zoeken', 'dbg.chars': 'kanalen openen',
     'dbg.notify': 'meldingen aanzetten', 'dbg.linked': 'verbonden, kennismaken met de hub', 'dbg.dropped': 'versturen na wegvallen van de verbinding',
+    'tab.code': 'Code',
+    'code.run': 'Start', 'code.stop': 'STOP', 'code.new': 'Nieuw', 'code.rename': 'Naam', 'code.delete': 'Weg', 'code.deleteSure': 'Zeker?',
+    'code.addCard': '+ Kaart', 'code.addStack': '+ Nieuw spoor', 'code.default': 'Mijn programma', 'code.renamePrompt': 'Nieuwe naam voor het programma',
+    'code.palette': 'Kies een kaart', 'code.close': 'Sluiten', 'code.up': 'Omhoog', 'code.down': 'Omlaag', 'code.copy': 'Kopie', 'code.del': 'Weg', 'code.stackDel': 'Spoor weg',
+    'code.newVar': 'Nieuwe variabele…', 'code.varPrompt': 'Naam van de nieuwe variabele', 'code.noVar': '(maak eerst een variabele)',
+    'code.number': 'getal', 'code.random': 'willekeurig', 'code.to': 'tot', 'code.sensors': 'Sensoren', 'code.vars': 'Variabelen', 'code.not': 'niet', 'code.any': 'elke',
+    'code.running': 'Programma loopt', 'code.listening': 'Wacht op gebeurtenissen', 'code.done': 'Programma klaar.', 'code.stopped': 'Programma gestopt.',
+    'code.noImu': 'De hub stuurt geen gegevens van de bewegingssensor: draaien overgeslagen.', 'code.error': 'Fout in het programma: {0}',
+    'code.imgTitle': 'Kies of teken een plaatje', 'code.imgHelp': 'Tik op een lampje om het aan of uit te zetten.', 'code.imgClear': 'Leeg', 'code.done2': 'Klaar',
+    'code.help': 'Elk spoor begint met een gebeurtenis. Tik op een kaart om hem te verplaatsen of weg te halen. Start laat de robot het programma uitvoeren; STOP of een ander scherm stopt alles.',
+    'cat.event': 'Gebeurtenissen', 'cat.move': 'Rijden', 'cat.motor': 'Motoren', 'cat.light': 'Licht', 'cat.sound': 'Geluid', 'cat.control': 'Besturing', 'cat.sensor': 'Sensoren', 'cat.var': 'Variabelen',
+    'card.start': 'Wanneer het programma start', 'card.when': 'Wanneer {c}', 'card.gesture': 'Wanneer de hub {g}', 'card.onMsg': 'Wanneer ik bericht {m} ontvang',
+    'card.send': 'Stuur bericht {m}', 'card.sendWait': 'Stuur bericht {m} en wacht',
+    'card.moveFor': 'Rijd {dir} {n} {unit}', 'card.steerFor': 'Rijd met sturen {s} voor {n} {unit}', 'card.tankFor': 'Rijd links {l} % rechts {r} % voor {n} {unit}',
+    'card.moveStart': 'Begin met rijden {dir}', 'card.steerStart': 'Begin met rijden, sturen {s}', 'card.tankStart': 'Begin met rijden, links {l} % rechts {r} %',
+    'card.moveStop': 'Stop met rijden', 'card.moveSpeed': 'Zet rijsnelheid op {n} %', 'card.turn': 'Draai {side} {n} graden', 'card.movePorts': 'Rijmotoren: links {l} rechts {r}',
+    'card.wheel': 'Eén wielrotatie is {n} cm',
+    'card.motorFor': 'Motor {p} draait {dir} {n} {unit}', 'card.motorGoto': 'Motor {p} naar positie {n} ° {way}', 'card.motorStart': 'Start motor {p} {dir}',
+    'card.motorStop': 'Stop motor {p}', 'card.motorSpeed': 'Zet snelheid motor {p} op {n} %', 'card.motorStopMode': 'Motor {p} stopt met {mode}', 'card.motorReset': 'Zet positie motor {p} op 0',
+    'card.imgFor': 'Toon {img} voor {n} seconden', 'card.img': 'Toon {img}', 'card.write': 'Schrijf {t}', 'card.writeVal': 'Schrijf getal {n}', 'card.lightOff': 'Lichtscherm uit',
+    'card.pixel': 'Zet lampje x {x} y {y} op {n} %', 'card.bright': 'Zet helderheid op {n} %', 'card.orient': 'Draai het lichtscherm: {o}', 'card.btnLight': 'Zet het knoplampje op {c}',
+    'card.eyes': 'Afstandssensor {p} lampjes {a} {b} {c} {d} %',
+    'card.songWait': 'Speel {song} tot het klaar is', 'card.songStart': 'Start liedje {song}', 'card.beepFor': 'Piep {note} voor {n} seconden', 'card.beepStart': 'Begin piep {note}',
+    'card.soundStop': 'Stop alle geluid', 'card.vol': 'Zet volume op {n} %', 'card.volBy': 'Verander volume met {n}', 'card.pitch': 'Zet toonhoogte op {n} halve tonen',
+    'card.mood': 'Robotgeluid {mood}', 'card.say': 'Zeg in robottaal {t}',
+    'card.wait': 'Wacht {n} seconden', 'card.waitUntil': 'Wacht tot {c}', 'card.repeat': 'Herhaal {n} keer', 'card.forever': 'Herhaal altijd', 'card.repeatUntil': 'Herhaal tot {c}',
+    'card.if': 'Als {c} dan', 'card.else': 'Anders', 'card.end': 'Einde blok', 'card.stop': 'Stop {w}',
+    'card.resetTimer': 'Zet de timer op 0', 'card.resetYaw': 'Zet de draaihoek op 0',
+    'card.setVar': 'Zet {v} op {n}', 'card.changeVar': 'Verander {v} met {n}', 'card.mathVar': 'Zet {v} op {a} {op} {b}',
+    'cond.dist': '{op} {n} cm', 'cond.color': '{p} is {col}', 'cond.force': '{st}', 'cond.tilt': '{dir}', 'cond.face': 'met {f} boven',
+    'cond.btn': '{b} ingedrukt', 'cond.timer': '{op} {n} s', 'cond.motor': '{p} {op} {n} °', 'cond.cmp': '{a} {op} {b}',
+    'condname.dist': 'afstand', 'condname.color': 'kleur', 'condname.force': 'krachtsensor', 'condname.tilt': 'hub kantelt', 'condname.face': 'hub ligt', 'condname.btn': 'hubknop',
+    'condname.timer': 'timer', 'condname.motor': 'motorpositie', 'condname.cmp': 'getallen',
+    'opt.fw': 'vooruit', 'opt.bw': 'achteruit', 'opt.cm': 'cm', 'opt.rot': 'rotaties', 'opt.deg': 'graden', 'opt.sec': 'seconden', 'opt.cw': 'rechtsom', 'opt.ccw': 'linksom',
+    'opt.right': 'rechts', 'opt.left': 'links', 'opt.s': 'kortste weg', 'opt.brake': 'remmen', 'opt.coast': 'uitlopen', 'opt.hold': 'vasthouden',
+    'opt.up': 'rechtop', 'opt.down': 'ondersteboven', 'opt.tap': 'getikt wordt', 'opt.dtap': 'twee keer getikt wordt', 'opt.shake': 'geschud wordt', 'opt.fall': 'valt',
+    'opt.all': 'alles', 'opt.this': 'dit spoor', 'opt.others': 'andere sporen', 'opt.+': '+', 'opt.-': '−', 'opt.*': '×', 'opt./': '÷', 'opt.%': 'rest na delen door',
+    'opt.<': '<', 'opt.>': '>', 'opt.=': '=', 'opt.pressed': 'ingedrukt', 'opt.released': 'losgelaten', 'opt.hard': 'hard ingedrukt',
+    'opt.tfw': 'voorover', 'opt.tbw': 'achterover', 'opt.tleft': 'naar links', 'opt.tright': 'naar rechts', 'opt.level': 'niet (ligt plat)',
+    'opt.ftop': 'de bovenkant', 'opt.ffront': 'de voorkant', 'opt.fright': 'de rechterkant', 'opt.fbottom': 'de onderkant', 'opt.fback': 'de achterkant', 'opt.fleft': 'de linkerkant',
+    'opt.L': 'links', 'opt.R': 'rechts',
+    'src.dist': 'afstand (cm)', 'src.force': 'kracht (%)', 'src.light': 'licht (%)', 'src.color': 'kleur (nummer)', 'src.timer': 'timer (s)', 'src.yaw': 'draaihoek (°)',
+    'src.pitch': 'kantel voor/achter (°)', 'src.roll': 'kantel opzij (°)', 'src.posA': 'positie motor A', 'src.posB': 'positie motor B', 'src.posC': 'positie motor C',
+    'src.posD': 'positie motor D', 'src.posE': 'positie motor E', 'src.posF': 'positie motor F',
+    'imgname.smile': 'blij', 'imgname.sad': 'verdrietig', 'imgname.wow': 'verrast', 'imgname.heart': 'hartje', 'imgname.yes': 'vinkje', 'imgname.no': 'kruis',
+    'imgname.up': 'pijl omhoog', 'imgname.down': 'pijl omlaag', 'imgname.left': 'pijl links', 'imgname.right': 'pijl rechts', 'imgname.square': 'vierkant', 'imgname.dot': 'stip',
+    'imgname.note': 'muzieknoot', 'imgname.ghost': 'spookje',
   },
   en: {
     'app.tagline': 'Remote control for your robot hub',
@@ -1370,9 +1671,553 @@ const I18N = {
     'dbg.lost': 'The hub closed the connection (last step: {0}).',
     'dbg.choose': 'choosing the hub', 'dbg.gatt': 'making the Bluetooth connection', 'dbg.service': 'finding the hub service', 'dbg.chars': 'opening the channels',
     'dbg.notify': 'turning on notifications', 'dbg.linked': 'connected, greeting the hub', 'dbg.dropped': 'sending after the connection dropped',
+    'tab.code': 'Code',
+    'code.run': 'Run', 'code.stop': 'STOP', 'code.new': 'New', 'code.rename': 'Name', 'code.delete': 'Delete', 'code.deleteSure': 'Sure?',
+    'code.addCard': '+ Card', 'code.addStack': '+ New stack', 'code.default': 'My program', 'code.renamePrompt': 'New name for the program',
+    'code.palette': 'Choose a card', 'code.close': 'Close', 'code.up': 'Up', 'code.down': 'Down', 'code.copy': 'Copy', 'code.del': 'Delete', 'code.stackDel': 'Delete stack',
+    'code.newVar': 'New variable…', 'code.varPrompt': 'Name of the new variable', 'code.noVar': '(make a variable first)',
+    'code.number': 'number', 'code.random': 'random', 'code.to': 'to', 'code.sensors': 'Sensors', 'code.vars': 'Variables', 'code.not': 'not', 'code.any': 'any',
+    'code.running': 'Program running', 'code.listening': 'Waiting for events', 'code.done': 'Program finished.', 'code.stopped': 'Program stopped.',
+    'code.noImu': 'The hub sends no motion sensor data: turn skipped.', 'code.error': 'Error in the program: {0}',
+    'code.imgTitle': 'Choose or draw a picture', 'code.imgHelp': 'Tap a light to turn it on or off.', 'code.imgClear': 'Clear', 'code.done2': 'Done',
+    'code.help': 'Every stack starts with an event. Tap a card to move or delete it. Run makes the robot follow the program; STOP or another screen stops everything.',
+    'cat.event': 'Events', 'cat.move': 'Movement', 'cat.motor': 'Motors', 'cat.light': 'Light', 'cat.sound': 'Sound', 'cat.control': 'Control', 'cat.sensor': 'Sensors', 'cat.var': 'Variables',
+    'card.start': 'When the program starts', 'card.when': 'When {c}', 'card.gesture': 'When the hub is {g}', 'card.onMsg': 'When I receive {m}',
+    'card.send': 'Send message {m}', 'card.sendWait': 'Send message {m} and wait',
+    'card.moveFor': 'Move {dir} {n} {unit}', 'card.steerFor': 'Move with steering {s} for {n} {unit}', 'card.tankFor': 'Move left {l} % right {r} % for {n} {unit}',
+    'card.moveStart': 'Start moving {dir}', 'card.steerStart': 'Start moving, steering {s}', 'card.tankStart': 'Start moving, left {l} % right {r} %',
+    'card.moveStop': 'Stop moving', 'card.moveSpeed': 'Set movement speed to {n} %', 'card.turn': 'Turn {side} {n} degrees', 'card.movePorts': 'Movement motors: left {l} right {r}',
+    'card.wheel': 'One wheel rotation is {n} cm',
+    'card.motorFor': 'Motor {p} runs {dir} {n} {unit}', 'card.motorGoto': 'Motor {p} to position {n} ° {way}', 'card.motorStart': 'Start motor {p} {dir}',
+    'card.motorStop': 'Stop motor {p}', 'card.motorSpeed': 'Set motor {p} speed to {n} %', 'card.motorStopMode': 'Motor {p} stops by {mode}', 'card.motorReset': 'Set motor {p} position to 0',
+    'card.imgFor': 'Show {img} for {n} seconds', 'card.img': 'Show {img}', 'card.write': 'Write {t}', 'card.writeVal': 'Write number {n}', 'card.lightOff': 'Turn off the light matrix',
+    'card.pixel': 'Set light x {x} y {y} to {n} %', 'card.bright': 'Set brightness to {n} %', 'card.orient': 'Rotate the light matrix: {o}', 'card.btnLight': 'Set the button light to {c}',
+    'card.eyes': 'Distance sensor {p} lights {a} {b} {c} {d} %',
+    'card.songWait': 'Play {song} until done', 'card.songStart': 'Start song {song}', 'card.beepFor': 'Beep {note} for {n} seconds', 'card.beepStart': 'Start beep {note}',
+    'card.soundStop': 'Stop all sounds', 'card.vol': 'Set volume to {n} %', 'card.volBy': 'Change volume by {n}', 'card.pitch': 'Set pitch to {n} semitones',
+    'card.mood': 'Robot sound {mood}', 'card.say': 'Say in robot language {t}',
+    'card.wait': 'Wait {n} seconds', 'card.waitUntil': 'Wait until {c}', 'card.repeat': 'Repeat {n} times', 'card.forever': 'Repeat forever', 'card.repeatUntil': 'Repeat until {c}',
+    'card.if': 'If {c} then', 'card.else': 'Else', 'card.end': 'End of block', 'card.stop': 'Stop {w}',
+    'card.resetTimer': 'Reset the timer', 'card.resetYaw': 'Set the turn angle to 0',
+    'card.setVar': 'Set {v} to {n}', 'card.changeVar': 'Change {v} by {n}', 'card.mathVar': 'Set {v} to {a} {op} {b}',
+    'cond.dist': '{op} {n} cm', 'cond.color': '{p} is {col}', 'cond.force': '{st}', 'cond.tilt': '{dir}', 'cond.face': 'with {f} up',
+    'cond.btn': '{b} pressed', 'cond.timer': '{op} {n} s', 'cond.motor': '{p} {op} {n} °', 'cond.cmp': '{a} {op} {b}',
+    'condname.dist': 'distance', 'condname.color': 'colour', 'condname.force': 'force sensor', 'condname.tilt': 'hub tilts', 'condname.face': 'hub lies', 'condname.btn': 'hub button',
+    'condname.timer': 'timer', 'condname.motor': 'motor position', 'condname.cmp': 'numbers',
+    'opt.fw': 'forward', 'opt.bw': 'backward', 'opt.cm': 'cm', 'opt.rot': 'rotations', 'opt.deg': 'degrees', 'opt.sec': 'seconds', 'opt.cw': 'clockwise', 'opt.ccw': 'counterclockwise',
+    'opt.right': 'right', 'opt.left': 'left', 'opt.s': 'shortest way', 'opt.brake': 'braking', 'opt.coast': 'coasting', 'opt.hold': 'holding',
+    'opt.up': 'upright', 'opt.down': 'upside down', 'opt.tap': 'tapped', 'opt.dtap': 'double-tapped', 'opt.shake': 'shaken', 'opt.fall': 'falling',
+    'opt.all': 'everything', 'opt.this': 'this stack', 'opt.others': 'other stacks', 'opt.+': '+', 'opt.-': '−', 'opt.*': '×', 'opt./': '÷', 'opt.%': 'remainder after dividing by',
+    'opt.<': '<', 'opt.>': '>', 'opt.=': '=', 'opt.pressed': 'pressed', 'opt.released': 'released', 'opt.hard': 'pressed hard',
+    'opt.tfw': 'forward', 'opt.tbw': 'backward', 'opt.tleft': 'to the left', 'opt.tright': 'to the right', 'opt.level': 'not (lies flat)',
+    'opt.ftop': 'the top', 'opt.ffront': 'the front', 'opt.fright': 'the right side', 'opt.fbottom': 'the bottom', 'opt.fback': 'the back', 'opt.fleft': 'the left side',
+    'opt.L': 'left', 'opt.R': 'right',
+    'src.dist': 'distance (cm)', 'src.force': 'force (%)', 'src.light': 'light (%)', 'src.color': 'colour (number)', 'src.timer': 'timer (s)', 'src.yaw': 'turn angle (°)',
+    'src.pitch': 'tilt forward/back (°)', 'src.roll': 'tilt sideways (°)', 'src.posA': 'motor A position', 'src.posB': 'motor B position', 'src.posC': 'motor C position',
+    'src.posD': 'motor D position', 'src.posE': 'motor E position', 'src.posF': 'motor F position',
+    'imgname.smile': 'happy', 'imgname.sad': 'sad', 'imgname.wow': 'surprised', 'imgname.heart': 'heart', 'imgname.yes': 'tick', 'imgname.no': 'cross',
+    'imgname.up': 'arrow up', 'imgname.down': 'arrow down', 'imgname.left': 'arrow left', 'imgname.right': 'arrow right', 'imgname.square': 'square', 'imgname.dot': 'dot',
+    'imgname.note': 'music note', 'imgname.ghost': 'ghost',
   },
 };
 if (typeof module !== 'undefined') module.exports = I18N;
+</script>
+
+<!-- Programmeerkaartjes: kaartenset en uitvoerder (geen DOM). -->
+<script id="cards">
+// Programmeerkaartjes: de kaartenset, het opschonen van opgeslagen programma's en de uitvoerder.
+// Geen DOM en geen hub-code: de pagina geeft een io-object mee (motoren, geluid, lampjes, sensoren),
+// zodat dit ook in node te testen is. Teksten staan in i18n.js onder card.*, opt.*, cond.*, src.*.
+const Cards = (() => {
+  const PORTS = ['A', 'B', 'C', 'D', 'E', 'F'];
+  const COLORS = [-1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+  const NOTES = ['C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', 'C5', 'D5', 'E5', 'F5', 'G5', 'A5', 'B5', 'C6'];
+  const CATS = ['event', 'move', 'motor', 'light', 'sound', 'control', 'sensor', 'var'];
+  const ICONS = { event: '\u{1F6A9}', move: '\u{1F697}', motor: '⚙️', light: '\u{1F4A1}', sound: '\u{1F3B5}', control: '\u{1F501}', sensor: '\u{1F441}️', var: '\u{1F4E6}' };
+
+  // Parameters: num = getal of andere bron (variabele, toeval, sensor), choice = vaste keuzes.
+  const num = (k, v, extra) => Object.assign({ k, type: 'num', def: v }, extra || {});
+  const choice = (k, opts, extra) => Object.assign({ k, type: 'choice', opts, def: opts[0] }, extra || {});
+  const P = {
+    port: (k, def) => ({ k, type: 'port', def: def || 'A' }),
+    dir: choice('dir', ['fw', 'bw']),
+    unit: choice('unit', ['cm', 'rot', 'deg', 'sec']),
+    munit: choice('unit', ['rot', 'deg', 'sec']),
+    rot: choice('dir', ['cw', 'ccw']),
+    cond: { k: 'c', type: 'cond' },
+    img: { k: 'img', type: 'img', def: '0000009090000009000909990' },
+    text: (k, def) => ({ k, type: 'text', def }),
+    v: { k: 'v', type: 'var' },
+    msg: { k: 'm', type: 'msg', def: 'go' },
+  };
+  const T = {};
+  const def = (id, cat, kind, params) => { T[id] = { id, cat, kind, params }; };
+  // Gebeurtenissen: de eerste kaart van een spoor.
+  def('start', 'event', 'hat', []);
+  def('when', 'event', 'hat', [P.cond]);
+  def('gesture', 'event', 'hat', [choice('g', ['tap', 'dtap', 'shake', 'fall'])]);
+  def('onMsg', 'event', 'hat', [P.msg]);
+  def('send', 'event', 'cmd', [P.msg]);
+  def('sendWait', 'event', 'cmd', [P.msg]);
+  // Rijden met twee motoren.
+  def('moveFor', 'move', 'cmd', [P.dir, num('n', 10), P.unit]);
+  def('steerFor', 'move', 'cmd', [num('s', 30, { min: -100, max: 100 }), num('n', 10), P.unit]);
+  def('tankFor', 'move', 'cmd', [num('l', 50, { min: -100, max: 100 }), num('r', 50, { min: -100, max: 100 }), num('n', 10), P.unit]);
+  def('moveStart', 'move', 'cmd', [P.dir]);
+  def('steerStart', 'move', 'cmd', [num('s', 30, { min: -100, max: 100 })]);
+  def('tankStart', 'move', 'cmd', [num('l', 50, { min: -100, max: 100 }), num('r', 50, { min: -100, max: 100 })]);
+  def('moveStop', 'move', 'cmd', []);
+  def('moveSpeed', 'move', 'cmd', [num('n', 50, { min: 0, max: 100 })]);
+  def('turn', 'move', 'cmd', [choice('side', ['right', 'left']), num('n', 90)]);
+  def('movePorts', 'move', 'cmd', [P.port('l', 'A'), P.port('r', 'B')]);
+  def('wheel', 'move', 'cmd', [num('n', 17.5)]);
+  // Losse motoren.
+  def('motorFor', 'motor', 'cmd', [P.port('p'), P.rot, num('n', 1), P.munit]);
+  def('motorGoto', 'motor', 'cmd', [P.port('p'), num('n', 0), choice('way', ['s', 'cw', 'ccw'])]);
+  def('motorStart', 'motor', 'cmd', [P.port('p'), P.rot]);
+  def('motorStop', 'motor', 'cmd', [P.port('p')]);
+  def('motorSpeed', 'motor', 'cmd', [P.port('p'), num('n', 75, { min: 0, max: 100 })]);
+  def('motorStopMode', 'motor', 'cmd', [P.port('p'), choice('mode', ['brake', 'coast', 'hold'])]);
+  def('motorReset', 'motor', 'cmd', [P.port('p')]);
+  // Lichtscherm en lampjes.
+  def('imgFor', 'light', 'cmd', [P.img, num('n', 2)]);
+  def('img', 'light', 'cmd', [P.img]);
+  def('write', 'light', 'cmd', [P.text('t', 'Hi')]);
+  def('writeVal', 'light', 'cmd', [num('n', 42)]);
+  def('lightOff', 'light', 'cmd', []);
+  def('pixel', 'light', 'cmd', [num('x', 3, { min: 1, max: 5 }), num('y', 3, { min: 1, max: 5 }), num('n', 100, { min: 0, max: 100 })]);
+  def('bright', 'light', 'cmd', [num('n', 100, { min: 0, max: 100 })]);
+  def('orient', 'light', 'cmd', [choice('o', ['up', 'right', 'down', 'left'])]);
+  def('btnLight', 'light', 'cmd', [{ k: 'c', type: 'color', def: 6 }]);
+  def('eyes', 'light', 'cmd', [P.port('p'), num('a', 100), num('b', 100), num('c', 100), num('d', 100)]);
+  // Geluid.
+  def('songWait', 'sound', 'cmd', [{ k: 'song', type: 'song', def: 'birthday' }]);
+  def('songStart', 'sound', 'cmd', [{ k: 'song', type: 'song', def: 'birthday' }]);
+  def('beepFor', 'sound', 'cmd', [{ k: 'note', type: 'note', def: 'C5' }, num('n', 0.5)]);
+  def('beepStart', 'sound', 'cmd', [{ k: 'note', type: 'note', def: 'C5' }]);
+  def('soundStop', 'sound', 'cmd', []);
+  def('vol', 'sound', 'cmd', [num('n', 80, { min: 0, max: 100 })]);
+  def('volBy', 'sound', 'cmd', [num('n', -10)]);
+  def('pitch', 'sound', 'cmd', [num('n', 0)]);
+  def('mood', 'sound', 'cmd', [{ k: 'mood', type: 'mood', def: 'happy' }]);
+  def('say', 'sound', 'cmd', [P.text('t', 'Hallo!')]);
+  // Besturing. begin/else/end vormen blokken; de editor laat ze inspringen.
+  def('wait', 'control', 'cmd', [num('n', 1)]);
+  def('waitUntil', 'control', 'cmd', [P.cond]);
+  def('repeat', 'control', 'begin', [num('n', 4)]);
+  def('forever', 'control', 'begin', []);
+  def('repeatUntil', 'control', 'begin', [P.cond]);
+  def('if', 'control', 'begin', [P.cond]);
+  def('else', 'control', 'else', []);
+  def('end', 'control', 'end', []);
+  def('stop', 'control', 'cmd', [choice('w', ['all', 'this', 'others'])]);
+  // Sensoren (hun waarden en voorwaarden zitten in de vakjes van andere kaarten).
+  def('resetTimer', 'sensor', 'cmd', []);
+  def('resetYaw', 'sensor', 'cmd', []);
+  // Variabelen.
+  def('setVar', 'var', 'cmd', [P.v, num('n', 0)]);
+  def('changeVar', 'var', 'cmd', [P.v, num('n', 1)]);
+  def('mathVar', 'var', 'cmd', [P.v, num('a', 1), choice('op', ['+', '-', '*', '/', '%']), num('b', 1)]);
+
+  // Waarden die in een getal-vakje kunnen in plaats van een getal.
+  const SENSORS = ['dist', 'force', 'light', 'color', 'timer', 'yaw', 'pitch', 'roll'].concat(PORTS.map((p) => 'pos' + p));
+  // Voorwaarden voor als/wacht tot/herhaal tot/wanneer.
+  const COND = {
+    dist: [choice('op', ['<', '>']), num('n', 10)],
+    color: [{ k: 'p', type: 'portAny', def: 'any' }, { k: 'col', type: 'color', def: 9 }],
+    force: [choice('st', ['pressed', 'released', 'hard'])],
+    tilt: [choice('dir', ['tfw', 'tbw', 'tleft', 'tright', 'level'])],
+    face: [choice('f', ['ftop', 'ffront', 'fright', 'fbottom', 'fback', 'fleft'])],
+    btn: [choice('b', ['L', 'R'])],
+    timer: [choice('op', ['>', '<']), num('n', 5)],
+    motor: [P.port('p'), choice('op', ['>', '<']), num('n', 360)],
+    cmp: [num('a', 0), choice('op', ['<', '=', '>']), num('b', 0)],
+  };
+  const GESTURES = { tap: 0, dtap: 1, shake: 2, fall: 3 };
+  const FACE_UP = ['ftop', 'ffront', 'fright', 'fbottom', 'fback', 'fleft'];
+
+  // Kant-en-klare plaatjes voor het lichtscherm (eigen ontwerpen), 25 helderheden 0-9.
+  const IMAGES = {
+    smile: '0000009090000009000909990', sad: '0000009090000000999090009', wow: '0909000000009000909000900',
+    heart: '0909099999999990999000900', yes: '0000000009000909090000900', no: '9000909090009000909090009',
+    up: '0090009990909090090000900', down: '0090000900909090999000900', left: '0090009000999990900000900',
+    right: '0090000090999990009000900', square: '9999990009900099000999999', dot: '0000000000009000000000000',
+    note: '0099000909009009990099900', ghost: '0999099999909099999990909',
+  };
+
+  // Lettertje van 3 bij 5 voor tekst op het lichtscherm: per teken 5 rijen van 3 bits (4 = links).
+  const FONT = {
+    A: [2, 5, 7, 5, 5], B: [6, 5, 6, 5, 6], C: [3, 4, 4, 4, 3], D: [6, 5, 5, 5, 6], E: [7, 4, 6, 4, 7], F: [7, 4, 6, 4, 4],
+    G: [3, 4, 5, 5, 3], H: [5, 5, 7, 5, 5], I: [7, 2, 2, 2, 7], J: [1, 1, 1, 5, 2], K: [5, 5, 6, 5, 5], L: [4, 4, 4, 4, 7],
+    M: [5, 7, 7, 5, 5], N: [6, 5, 5, 5, 5], O: [2, 5, 5, 5, 2], P: [6, 5, 6, 4, 4], Q: [2, 5, 5, 6, 3], R: [6, 5, 6, 5, 5],
+    S: [3, 4, 2, 1, 6], T: [7, 2, 2, 2, 2], U: [5, 5, 5, 5, 7], V: [5, 5, 5, 5, 2], W: [5, 5, 7, 7, 5], X: [5, 5, 2, 5, 5],
+    Y: [5, 5, 2, 2, 2], Z: [7, 1, 2, 4, 7], 0: [7, 5, 5, 5, 7], 1: [2, 6, 2, 2, 7], 2: [6, 1, 2, 4, 7], 3: [6, 1, 2, 1, 6],
+    4: [5, 5, 7, 1, 1], 5: [7, 4, 6, 1, 6], 6: [3, 4, 6, 5, 2], 7: [7, 1, 2, 2, 2], 8: [2, 5, 2, 5, 2], 9: [2, 5, 3, 1, 6],
+    ' ': [0, 0, 0, 0, 0], '.': [0, 0, 0, 0, 2], ',': [0, 0, 0, 2, 4], '!': [2, 2, 2, 0, 2], '?': [6, 1, 2, 0, 2],
+    '-': [0, 0, 7, 0, 0], '+': [0, 2, 7, 2, 0], ':': [0, 2, 0, 2, 0], "'": [2, 2, 0, 0, 0], '=': [0, 7, 0, 7, 0],
+  };
+  // Kolommen (elk 5 helderheden van boven naar beneden) om tekst door het scherm te laten schuiven.
+  function textColumns(text) {
+    const cols = [[0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]];
+    const plain = String(text).toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g, '').slice(0, 60);
+    for (const ch of plain) {
+      const g = FONT[ch] || FONT['?'];
+      for (const bit of [4, 2, 1]) cols.push(g.map((row) => (row & bit ? 9 : 0)));
+      cols.push([0, 0, 0, 0, 0]);
+    }
+    for (let i = 0; i < 5; i++) cols.push([0, 0, 0, 0, 0]);
+    return cols;
+  }
+
+  /* ---------- nieuwe kaarten en opschonen ---------- */
+  const isNum = (x) => typeof x === 'number' && isFinite(x);
+  function cleanVal(v, spec) {
+    if (isNum(v)) return { k: 'n', v };
+    if (!v || typeof v !== 'object') return { k: 'n', v: spec.def };
+    if (v.k === 'n') return { k: 'n', v: isNum(+v.v) ? +v.v : spec.def };
+    if (v.k === 'r') return { k: 'r', a: isNum(+v.a) ? +v.a : 1, b: isNum(+v.b) ? +v.b : 10 };
+    if (v.k === 'v') return { k: 'v', v: String(v.v || '').slice(0, 20) };
+    if (v.k === 's' && SENSORS.includes(v.v)) return { k: 's', v: v.v };
+    return { k: 'n', v: spec.def };
+  }
+  function cleanParam(spec, v) {
+    switch (spec.type) {
+      case 'num': return cleanVal(v, spec);
+      case 'choice': return spec.opts.includes(v) ? v : spec.def;
+      case 'port': return PORTS.includes(v) ? v : spec.def;
+      case 'portAny': return v === 'any' || PORTS.includes(v) ? v : 'any';
+      case 'color': return COLORS.includes(v) ? v : spec.def;
+      case 'img': return typeof v === 'string' && /^[0-9]{25}$/.test(v) ? v : spec.def;
+      case 'text': return typeof v === 'string' ? v.slice(0, 60) : spec.def;
+      case 'note': return NOTES.includes(v) ? v : spec.def;
+      case 'var': return typeof v === 'string' ? v.slice(0, 20) : '';
+      case 'msg': return typeof v === 'string' && v.trim() ? v.trim().slice(0, 20) : spec.def;
+      case 'cond': return cleanCond(v);
+      default: return typeof v === 'string' ? v.slice(0, 30) : spec.def;   // song, mood: de pagina kent de lijst
+    }
+  }
+  function cleanCond(c) {
+    c = c && typeof c === 'object' && COND[c.k] ? c : { k: 'dist' };
+    const out = { k: c.k, not: c.not === true };
+    for (const spec of COND[c.k]) out[spec.k] = cleanParam(spec, c[spec.k]);
+    return out;
+  }
+  function newCard(type, vars) {
+    const t = T[type], card = { t: type, p: {} };
+    for (const spec of t.params) {
+      if (spec.type === 'cond') card.p[spec.k] = cleanCond(null);
+      else if (spec.type === 'var') card.p[spec.k] = (vars && vars[0]) || '';
+      else card.p[spec.k] = cleanParam(spec, undefined);
+    }
+    return card;
+  }
+  function cleanCard(c) {
+    if (!c || !T[c.t]) return null;
+    const out = { t: c.t, p: {} }, p = c.p && typeof c.p === 'object' ? c.p : {};
+    for (const spec of T[c.t].params) out.p[spec.k] = cleanParam(spec, p[spec.k]);
+    return out;
+  }
+  function cleanProgram(raw, fallbackName) {
+    const r = raw && typeof raw === 'object' ? raw : {};
+    const vars = (Array.isArray(r.vars) ? r.vars : []).filter((v) => typeof v === 'string' && v.trim()).map((v) => v.trim().slice(0, 20)).slice(0, 20);
+    const stacks = (Array.isArray(r.stacks) ? r.stacks : []).slice(0, 12).map((s) => {
+      const cards = (Array.isArray(s) ? s : (s && s.cards) || []).slice(0, 200).map(cleanCard).filter(Boolean);
+      if (!cards.length || T[cards[0].t].kind !== 'hat') cards.unshift(newCard('start'));
+      return cards.filter((c, i) => i === 0 || T[c.t].kind !== 'hat');
+    });
+    return { id: typeof r.id === 'string' && r.id ? r.id.slice(0, 12) : Math.random().toString(36).slice(2, 9),
+      name: String(r.name || fallbackName || '').slice(0, 30), vars, stacks: stacks.length ? stacks : [[newCard('start')]] };
+  }
+  // Inspringing per kaart (voor de editor) uit begin/anders/einde.
+  function depths(cards) {
+    const out = [];
+    let d = 0;
+    cards.forEach((c, i) => {
+      const k = T[c.t].kind;
+      if (i === 0) { out.push(0); return; }
+      if (k === 'end' || k === 'else') d = Math.max(0, d - 1);
+      out.push(d + 1);
+      if (k === 'begin' || k === 'else') d++;
+    });
+    return out;
+  }
+  // Van een plat spoor een boom maken: begin...anders...einde worden blokken met body en elseBody.
+  function compile(cards) {
+    const root = { body: [] }, stack = [root];
+    cards.forEach((c, i) => {
+      if (i === 0) return;
+      const k = T[c.t].kind, top = stack[stack.length - 1];
+      if (k === 'begin') { const node = { c, i, body: [], elseBody: null, inElse: false }; (top.inElse ? top.elseBody : top.body).push(node); stack.push(node); }
+      else if (k === 'else') { if (stack.length > 1 && top.c.t === 'if' && !top.inElse) { top.inElse = true; top.elseBody = []; top.elseAt = i; } }
+      else if (k === 'end') { if (stack.length > 1) stack.pop(); }
+      else (top.inElse ? top.elseBody : top.body).push({ c, i });
+    });
+    return root.body;
+  }
+
+  /* ---------- uitvoeren ---------- */
+  const HALT = { halt: true };
+  const wrap180 = (a) => ((((a + 180) % 360) + 360) % 360) - 180;
+  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+  // Sturen zoals op een robotkar: 0 rechtdoor, 50 draaien om het binnenste wiel, 100 ter plekke.
+  function steer(s, speed) {
+    s = clamp(s, -100, 100);
+    return s >= 0 ? [speed, speed * (1 - s / 50)] : [speed * (1 + s / 50), speed];
+  }
+
+  class Runner {
+    constructor(prog, io) {
+      this.prog = prog; this.io = io; this.trees = prog.stacks.map(compile);
+      this.threads = new Map(); this.vars = {}; prog.vars.forEach((v) => { this.vars[v] = 0; });
+      this.mv = { l: io.ports().l, r: io.ports().r, speed: 50, wheel: 17.5 };
+      this.mspeed = {}; this.mrun = {}; this.posZero = {}; this.vol = 80; this.pitch = 0;
+      this.fb = new Array(25).fill(0); this.bright = 100; this.orient = 'up';
+      this.t0 = io.now(); this.yaw = 0; this.yawRaw = null; this.yaw0 = 0; this.deci = false;
+      this.whenPrev = {}; this.running = false;
+    }
+    start() {
+      this.running = true;
+      this.prog.stacks.forEach((s, si) => { if (s[0].t === 'start') this.launch(si); });
+      this.checkDone();
+    }
+    stop() {
+      if (!this.running) return;
+      this.running = false;
+      for (const th of this.threads.values()) th.dead = true;
+      this.threads.clear();
+      this.io.active(-1, -1);
+      this.io.stopAll();
+      this.io.done();
+    }
+    // Programma is klaar als er niets meer loopt en geen spoor op een gebeurtenis wacht.
+    checkDone() {
+      if (!this.running || this.threads.size) return;
+      if (this.prog.stacks.some((s) => s[0].t !== 'start')) return;
+      this.running = false; this.io.active(-1, -1); this.io.stopAll(); this.io.done();
+    }
+    launch(si) {
+      const old = this.threads.get(si);
+      if (old) old.dead = true;
+      const th = { si, dead: false };
+      this.threads.set(si, th);
+      th.promise = this.list(this.trees[si], th).catch((e) => { if (e !== HALT) this.io.warn('error', String(e && e.message || e)); })
+        .then(() => { if (this.threads.get(si) === th) { this.threads.delete(si); this.io.active(si, -1); this.checkDone(); } });
+      return th.promise;
+    }
+    // Elke 50 ms door de pagina aangeroepen: gieren bijhouden en 'wanneer'-sporen starten.
+    tick() {
+      if (!this.running) return;
+      const imu = this.io.data().imu;
+      if (imu) {
+        if (Math.abs(imu.yaw) > 400 || Math.abs(imu.pitch) > 400 || Math.abs(imu.roll) > 400) this.deci = true;
+        const raw = this.deci ? imu.yaw / 10 : imu.yaw;
+        if (this.yawRaw !== null) this.yaw += wrap180(raw - this.yawRaw);
+        this.yawRaw = raw;
+      }
+      this.prog.stacks.forEach((s, si) => {
+        if (s[0].t !== 'when') return;
+        const now = this.cond(s[0].p.c);
+        if (now && !this.whenPrev[si] && !this.threads.has(si)) this.launch(si);
+        this.whenPrev[si] = now;
+      });
+    }
+    fire(kind, arg) {
+      if (!this.running) return [];
+      const started = [];
+      this.prog.stacks.forEach((s, si) => {
+        if ((kind === 'gesture' && s[0].t === 'gesture' && GESTURES[s[0].p.g] === arg) || (kind === 'msg' && s[0].t === 'onMsg' && s[0].p.m === arg)) started.push(this.launch(si));
+      });
+      return started;
+    }
+    async sleep(th, ms) {
+      await this.io.sleep(Math.max(0, ms));
+      if (th.dead || !this.running) throw HALT;
+    }
+    async list(nodes, th) {
+      for (const node of nodes || []) {
+        if (th.dead) throw HALT;
+        await this.node(node, th);
+      }
+    }
+    async node(n, th) {
+      const c = n.c, p = c.p;
+      this.io.active(th.si, n.i);
+      switch (c.t) {
+        case 'repeat': { const times = Math.round(this.val(p.n)); for (let k = 0; k < times; k++) { await this.list(n.body, th); await this.sleep(th, 0); } return; }
+        case 'forever': for (;;) { await this.list(n.body, th); await this.sleep(th, 0); }
+        case 'repeatUntil': while (!this.cond(p.c)) { await this.list(n.body, th); await this.sleep(th, 0); } return;
+        case 'if': if (this.cond(p.c)) await this.list(n.body, th); else { if (n.elseAt !== undefined) this.io.active(th.si, n.elseAt); await this.list(n.elseBody, th); } return;
+        default: await this.cmd(c, th);
+      }
+    }
+    /* waarden en voorwaarden */
+    sensor(id) {
+      const d = this.io.data();
+      if (id === 'dist') return d.dist === null || d.dist === undefined || d.dist < 0 ? -1 : Math.round(d.dist / 10);
+      if (id === 'force') return d.force ? d.force.v : 0;
+      if (id === 'light') return d.light === null || d.light === undefined ? 0 : d.light;
+      if (id === 'color') return d.color === null || d.color === undefined ? -1 : d.color;
+      if (id === 'timer') return Math.round((this.io.now() - this.t0) / 100) / 10;
+      if (id === 'yaw') return Math.round(this.yaw - this.yaw0);
+      if (id === 'pitch' || id === 'roll') { const v = d.imu ? d.imu[id] : 0; return Math.round(this.deci ? v / 10 : v); }
+      if (id.startsWith('pos')) { const port = id[3], m = d.motors[port]; return m ? m.pos - (this.posZero[port] || 0) : 0; }
+      return 0;
+    }
+    val(v) {
+      if (!v) return 0;
+      if (v.k === 'n') return +v.v || 0;
+      if (v.k === 'v') return this.vars[v.v] || 0;
+      if (v.k === 's') return this.sensor(v.v);
+      if (v.k === 'r') {
+        const lo = Math.min(v.a, v.b), hi = Math.max(v.a, v.b);
+        return Number.isInteger(lo) && Number.isInteger(hi) ? lo + Math.floor(this.io.random() * (hi - lo + 1)) : lo + this.io.random() * (hi - lo);
+      }
+      return 0;
+    }
+    cond(c) {
+      const d = this.io.data(), cmp = (a, op, b) => (op === '<' ? a < b : op === '>' ? a > b : Math.abs(a - b) < 1e-9);
+      let r = false;
+      switch (c.k) {
+        case 'dist': { const cm = this.sensor('dist'); r = cm < 0 ? c.op === '>' : cmp(cm, c.op, this.val(c.n)); break; }
+        case 'color': r = c.p === 'any' ? Object.values(d.colors).includes(c.col) : d.colors[c.p] === c.col; break;
+        case 'force': r = c.st === 'pressed' ? !!(d.force && d.force.pressed) : c.st === 'released' ? !(d.force && d.force.pressed) : !!(d.force && d.force.v >= 70); break;
+        case 'tilt': {
+          const pt = this.sensor('pitch'), rl = this.sensor('roll');
+          r = c.dir === 'tfw' ? pt < -20 : c.dir === 'tbw' ? pt > 20 : c.dir === 'tleft' ? rl < -20 : c.dir === 'tright' ? rl > 20 : Math.abs(pt) < 10 && Math.abs(rl) < 10;
+          break;
+        }
+        case 'face': r = !!d.imu && FACE_UP[d.imu.face] === c.f; break;
+        case 'btn': r = !!d.btn[c.b]; break;
+        case 'timer': r = cmp(this.sensor('timer'), c.op, this.val(c.n)); break;
+        case 'motor': r = cmp(this.sensor('pos' + c.p), c.op, this.val(c.n)); break;
+        case 'cmp': r = cmp(this.val(c.a), c.op, this.val(c.b)); break;
+      }
+      return c.not ? !r : r;
+    }
+    /* lichtscherm */
+    flush() {
+      const out = new Array(25).fill(0);
+      for (let y = 0; y < 5; y++) for (let x = 0; x < 5; x++) {
+        let sx = x, sy = y;
+        if (this.orient === 'right') { sx = y; sy = 4 - x; } else if (this.orient === 'down') { sx = 4 - x; sy = 4 - y; } else if (this.orient === 'left') { sx = 4 - y; sy = x; }
+        out[y * 5 + x] = this.fb[sy * 5 + sx];
+      }
+      this.io.img(out.map((v) => Math.round(clamp((v * this.bright) / 100, 0, 100) / 11.12)).join(''));
+    }
+    setImg(img) { for (let i = 0; i < 25; i++) this.fb[i] = img.charCodeAt(i) - 48 === 9 ? 100 : (img.charCodeAt(i) - 48) * 11; this.flush(); }
+    async scroll(text, th) {
+      const cols = textColumns(text);
+      for (let s = 0; s + 5 <= cols.length; s++) {
+        for (let x = 0; x < 5; x++) for (let y = 0; y < 5; y++) this.fb[y * 5 + x] = cols[s + x][y] === 9 ? 100 : 0;
+        this.flush();
+        await this.sleep(th, 140);
+      }
+    }
+    /* geluid */
+    tone(f) { return Math.round(f * Math.pow(2, this.pitch / 12)); }
+    async play(notes, th, wait) {
+      const shifted = notes.map(([f, ms]) => [f ? clamp(this.tone(f), 100, 10000) : 0, ms]);
+      this.io.tune(shifted);
+      if (wait) await this.sleep(th, shifted.reduce((a, n) => a + n[1], 0));
+    }
+    /* bewegen */
+    amountDeg(n, unit) { return unit === 'rot' ? n * 360 : unit === 'cm' ? (n / (this.mv.wheel || 17.5)) * 360 : n; }
+    async drivePair(l, r, n, unit, th) {
+      if (unit === 'sec') { this.io.drive(l, r); await this.sleep(th, n * 1000); this.io.drive(0, 0); return; }
+      const outer = Math.max(Math.abs(l), Math.abs(r)), deg = this.amountDeg(n, unit);
+      if (!outer || !deg) return;
+      this.io.drive(0, 0);
+      await this.io.moveDeg(Math.round((deg * l) / outer), Math.abs(l), Math.round((deg * r) / outer), Math.abs(r));
+      if (th.dead || !this.running) throw HALT;
+    }
+    async turn(side, n, th) {
+      if (!this.io.data().imu) { this.io.warn('noImu'); return; }
+      const s = Math.max(15, Math.min(this.mv.speed, 40)), start = this.yaw, until = this.io.now() + Math.max(3000, n * 60);
+      this.io.drive(side === 'right' ? s : -s, side === 'right' ? -s : s);
+      while (Math.abs(this.yaw - start) < Math.max(0, n - 4) && this.io.now() < until) await this.sleep(th, 20);
+      this.io.drive(0, 0);
+    }
+    mspd(port) { return this.mspeed[port] === undefined ? 75 : this.mspeed[port]; }
+    async cmd(c, th) {
+      const p = c.p, io = this.io, v = (k) => this.val(p[k]);
+      switch (c.t) {
+        case 'send': this.fire('msg', p.m); return;
+        case 'sendWait': await Promise.all(this.fire('msg', p.m)); if (th.dead) throw HALT; return;
+        case 'moveFor': { const s = this.mv.speed * (p.dir === 'bw' ? -1 : 1); await this.drivePair(s, s, v('n'), p.unit, th); return; }
+        case 'steerFor': { const [l, r] = steer(v('s'), this.mv.speed); await this.drivePair(l, r, v('n'), p.unit, th); return; }
+        case 'tankFor': await this.drivePair(clamp(v('l'), -100, 100), clamp(v('r'), -100, 100), v('n'), p.unit, th); return;
+        case 'moveStart': { const s = this.mv.speed * (p.dir === 'bw' ? -1 : 1); io.drive(s, s); return; }
+        case 'steerStart': { const [l, r] = steer(v('s'), this.mv.speed); io.drive(l, r); return; }
+        case 'tankStart': io.drive(clamp(v('l'), -100, 100), clamp(v('r'), -100, 100)); return;
+        case 'moveStop': io.drive(0, 0); return;
+        case 'moveSpeed': this.mv.speed = clamp(v('n'), 0, 100); return;
+        case 'turn': await this.turn(p.side, Math.abs(v('n')), th); return;
+        case 'movePorts': io.drive(0, 0); this.mv.l = p.l; this.mv.r = p.r; io.setPorts(p.l, p.r); return;
+        case 'wheel': this.mv.wheel = Math.max(1, v('n')); return;
+        case 'motorFor': {
+          const sgn = p.dir === 'ccw' ? -1 : 1, spd = this.mspd(p.p), n = v('n');
+          if (p.unit === 'sec') { io.motor(p.p, sgn * spd); await this.sleep(th, n * 1000); io.motor(p.p, 0); return; }
+          const deg = Math.round(sgn * (p.unit === 'rot' ? n * 360 : n));
+          if (!deg || !spd) return;
+          io.motor(p.p, 0); delete this.mrun[p.p];
+          await io.motorDeg(p.p, deg, spd);
+          if (th.dead || !this.running) throw HALT;
+          return;
+        }
+        case 'motorGoto': io.motor(p.p, 0); delete this.mrun[p.p]; await io.motorGoto(p.p, Math.round(v('n')), this.mspd(p.p), p.way); if (th.dead || !this.running) throw HALT; return;
+        case 'motorStart': this.mrun[p.p] = p.dir === 'ccw' ? -1 : 1; io.motor(p.p, this.mrun[p.p] * this.mspd(p.p)); return;
+        case 'motorStop': delete this.mrun[p.p]; io.motor(p.p, 0); return;
+        case 'motorSpeed': this.mspeed[p.p] = clamp(v('n'), 0, 100); if (this.mrun[p.p]) io.motor(p.p, this.mrun[p.p] * this.mspd(p.p)); return;
+        case 'motorStopMode': io.send('smode ' + p.p + ' ' + { coast: 0, brake: 1, hold: 2 }[p.mode]); return;
+        case 'motorReset': { const m = io.data().motors[p.p]; this.posZero[p.p] = m ? m.pos : 0; return; }
+        case 'imgFor': this.setImg(p.img); await this.sleep(th, v('n') * 1000); this.fb.fill(0); this.flush(); return;
+        case 'img': this.setImg(p.img); return;
+        case 'write': await this.scroll(p.t, th); return;
+        case 'writeVal': { const x = v('n'); await this.scroll(String(Math.round(x * 10) / 10), th); return; }
+        case 'lightOff': this.fb.fill(0); this.flush(); return;
+        case 'pixel': { const x = Math.round(clamp(v('x'), 1, 5)) - 1, y = Math.round(clamp(v('y'), 1, 5)) - 1; this.fb[y * 5 + x] = clamp(v('n'), 0, 100); this.flush(); return; }
+        case 'bright': this.bright = clamp(v('n'), 0, 100); this.flush(); return;
+        case 'orient': this.orient = p.o; this.flush(); return;
+        case 'btnLight': io.send('light ' + p.c); return;
+        case 'eyes': io.send('eyes ' + p.p + ' ' + ['a', 'b', 'c', 'd'].map((k) => Math.round(clamp(v(k), 0, 100))).join(' ')); return;
+        case 'songWait': await this.play(io.song(p.song), th, true); return;
+        case 'songStart': await this.play(io.song(p.song), th, false); return;
+        case 'beepFor': {
+          const f = io.freq(p.note), ms = Math.max(10, Math.round(v('n') * 1000)), notes = [];
+          for (let left = ms; left > 0; left -= 3000) notes.push([f, Math.min(3000, left)]);
+          await this.play(notes, th, true); return;
+        }
+        case 'beepStart': { const f = io.freq(p.note); await this.play(new Array(20).fill([f, 3000]), th, false); return; }
+        case 'soundStop': io.send('hush'); return;
+        case 'vol': this.vol = clamp(v('n'), 0, 100); io.send('vol ' + Math.round(this.vol)); return;
+        case 'volBy': this.vol = clamp(this.vol + v('n'), 0, 100); io.send('vol ' + Math.round(this.vol)); return;
+        case 'pitch': this.pitch = clamp(v('n'), -24, 24); return;
+        case 'mood': await this.sleep(th, io.mood(p.mood)); return;
+        case 'say': await this.sleep(th, io.talk(p.t)); return;
+        case 'wait': await this.sleep(th, v('n') * 1000); return;
+        case 'waitUntil': while (!this.cond(p.c)) await this.sleep(th, 20); return;
+        case 'stop':
+          if (p.w === 'all') { this.stop(); throw HALT; }
+          if (p.w === 'this') throw HALT;
+          for (const [si, other] of this.threads) if (other !== th) { other.dead = true; this.threads.delete(si); this.io.active(si, -1); }
+          return;
+        case 'resetTimer': this.t0 = io.now(); return;
+        case 'resetYaw': this.yaw0 = this.yaw; return;
+        case 'setVar': if (p.v) this.vars[p.v] = v('n'); return;
+        case 'changeVar': if (p.v) this.vars[p.v] = (this.vars[p.v] || 0) + v('n'); return;
+        case 'mathVar': {
+          if (!p.v) return;
+          const a = v('a'), b = v('b');
+          this.vars[p.v] = p.op === '+' ? a + b : p.op === '-' ? a - b : p.op === '*' ? a * b : p.op === '/' ? (b ? a / b : 0) : (b ? ((a % b) + b) % b : 0);
+          return;
+        }
+      }
+    }
+  }
+
+  return { PORTS, COLORS, NOTES, CATS, ICONS, TYPES: T, COND, SENSORS, IMAGES, FONT, newCard, cleanCard, cleanCond, cleanProgram, depths, compile, steer, textColumns, Runner };
+})();
+if (typeof module !== 'undefined') module.exports = Cards;
 </script>
 
 <script id="app">
@@ -1381,7 +2226,7 @@ if (typeof module !== 'undefined') module.exports = I18N;
   const qsa = (sel, root) => Array.from((root || document).querySelectorAll(sel));
   const el = (tag, cls) => { const e = document.createElement(tag); if (cls) e.className = cls; return e; };
   const PORTS = ['A', 'B', 'C', 'D', 'E', 'F'];
-  const HUB_VERSION = '4';
+  const HUB_VERSION = '5';
   const enc = new TextEncoder(), dec = new TextDecoder();
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
@@ -1393,7 +2238,7 @@ if (typeof module !== 'undefined') module.exports = I18N;
   const newProfile = (name) => ({ id: uid(), name, left: 'A', right: 'B', invL: true, invR: false, speed: 60, turn: 60, trim: 0, userPorts: false,
     aux: [newAux(), newAux()], guard: false, guardCm: 20 });
   const G = { lang: 'auto', theme: 'light', sound: true, haptic: true, slot: 19, mode: 'joy', active: '', profiles: [],
-    hubVol: 60, voice: 'normal', react: true, song: [], path: [] };
+    hubVol: 60, voice: 'normal', react: true, song: [], path: [], programs: [], progActive: '' };
   const curLang = () => (G.lang === 'nl' || G.lang === 'en') ? G.lang : ((navigator.language || 'en').toLowerCase().startsWith('nl') ? 'nl' : 'en');
   const t = (k, ...a) => {
     let s = (I18N[curLang()] || I18N.en)[k];
@@ -1433,6 +2278,8 @@ if (typeof module !== 'undefined') module.exports = I18N;
       G.hubVol = num(raw.hubVol, 0, 100, 60); G.voice = ['high', 'low'].includes(raw.voice) ? raw.voice : 'normal'; G.react = raw.react !== false;
       G.song = cleanPairs(raw.song, 200, (f) => (f === 0 ? 0 : num(f, 100, 10000, 0)), (ms) => num(ms, 50, 2000, 300));
       G.path = cleanPairs(raw.path, MAX_PATH, (v) => num(v, -100, 100, 0), (v) => num(v, -100, 100, 0));
+      G.programs = (Array.isArray(raw.programs) ? raw.programs : []).slice(0, 30).map((x) => Cards.cleanProgram(x, t('code.default')));
+      G.progActive = typeof raw.progActive === 'string' ? raw.progActive : '';
       G.profiles = (Array.isArray(raw.profiles) ? raw.profiles : []).map(cleanProfile);
       G.active = raw.active;
     } else {
@@ -1449,6 +2296,13 @@ if (typeof module !== 'undefined') module.exports = I18N;
     }
     if (!G.profiles.length) G.profiles = [newProfile(t('profile.default'))];
     if (!G.profiles.some((p) => p.id === G.active)) G.active = G.profiles[0].id;
+    if (!G.programs.length) {
+      // Voorbeeldprogramma om mee te beginnen.
+      const n = (v) => ({ k: 'n', v }), card = (tp, p) => Object.assign(Cards.newCard(tp), p ? { p: Object.assign(Cards.newCard(tp).p, p) } : {});
+      G.programs = [Cards.cleanProgram({ name: t('code.default'), stacks: [[card('start'), card('img', { img: Cards.IMAGES.smile }), card('moveFor', { n: n(10) }),
+        card('mood', { mood: 'happy' }), card('moveFor', { dir: 'bw', n: n(10) }), card('write', { t: 'Hi!' })]] })];
+    }
+    if (!G.programs.some((p) => p.id === G.progActive)) G.progActive = G.programs[0].id;
   })();
   let S = G.profiles.find((p) => p.id === G.active);
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(G)); } catch (e) {} };
@@ -1634,6 +2488,7 @@ if (typeof module !== 'undefined') module.exports = I18N;
     $('drive').classList.toggle('idle', p !== 'ready');
     keepAwake(p === 'ready');
     if (p !== 'ready' && st.rec) finishRec();
+    if (p !== 'ready' && st.run) st.run.stop();
     $('playWhere').textContent = t(p === 'ready' ? 'play.hub' : 'play.phone');
     if (p === 'idle') {
       showBattery(null); st.motors = []; st.gotMotors = false; showChips(); showSensors([]);
@@ -1724,6 +2579,9 @@ if (typeof module !== 'undefined') module.exports = I18N;
     if (id === 0x32 || id === 0x33) {
       const text = dec.decode(Proto.parseTunnel(msg)).trim();
       if (text.startsWith('rdy')) { if (st.readyWait) { const r = st.readyWait; st.readyWait = null; r(text); } return; }
+      // Hubknoppen en gebaren (voor de programmeerkaartjes).
+      if (/^btn [LR] [01]$/.test(text)) { st.btn[text[4]] = +text[6]; return; }
+      if (/^ges \d$/.test(text)) { if (st.run) st.run.fire('gesture', +text[4]); return; }
       if (text.startsWith('err ')) {
         const port = text.slice(4, 5), why = text.slice(6), m = t('msg.portErr', port);
         log(m + (why ? ' (' + why + ')' : ''), 'err'); toast(m, 'err'); sfx.err();
@@ -1746,6 +2604,10 @@ if (typeof module !== 'undefined') module.exports = I18N;
       }
       showMotors(info.motors);
       showSensors(info.sensors);
+      if (info.imu) st.imu = info.imu;
+      const md = {};
+      info.motorData.forEach((m) => { md[m.port] = m; });
+      st.motorData = md;
     }
   }
 
@@ -1930,6 +2792,7 @@ if (typeof module !== 'undefined') module.exports = I18N;
     st.keys.clear(); st.codes.clear(); st.joy.x = 0; st.joy.y = 0; st.joy.on = false; st.joy.id = null;
     st.tank.l = stick(); st.tank.r = stick(); st.tilt.on = false; st.aux = [0, 0]; st.jog = [0, 0]; st.cur.l = 0; st.cur.r = 0; st.test = null;
     if (st.macro) endMacro(false);
+    if (st.run) st.run.stop();
     setTurbo(false);
     $('knob').style.transform = ''; $('pad').classList.remove('grab');
     qsa('.vstick').forEach((v) => { v.classList.remove('grab'); v.querySelector('.vknob').style.transform = ''; });
@@ -1937,6 +2800,8 @@ if (typeof module !== 'undefined') module.exports = I18N;
   }
   function emergencyStop() {
     halt(); sfx.stop(); buzz(40);
+    // Ook bewegingen over graden en grijperstanden op de hub stoppen.
+    if (st.phase === 'ready') hub.text('halt').catch(() => {});
     const b = $('btnStop'); b.classList.add('flash'); setTimeout(() => b.classList.remove('flash'), 220);
   }
   function beep() {
@@ -1961,6 +2826,13 @@ if (typeof module !== 'undefined') module.exports = I18N;
   }
   function outputs() {
     const out = {};
+    if (st.run) {
+      const pp = progPorts();
+      for (const p in st.prog.ports) out[p] = st.prog.ports[p];
+      out[pp.l] = Math.round(st.cur.l) * (S.invL ? -1 : 1) || 0;
+      if (pp.r !== pp.l) out[pp.r] = Math.round(st.cur.r) * (S.invR ? -1 : 1) || 0;
+      return out;
+    }
     out[S.left] = Math.round(st.cur.l) * (S.invL ? -1 : 1) || 0;
     if (S.right !== S.left) out[S.right] = Math.round(st.cur.r) * (S.invR ? -1 : 1) || 0;
     auxPorts().forEach((port, i) => {
@@ -2018,6 +2890,11 @@ if (typeof module !== 'undefined') module.exports = I18N;
         return [ml, mr];
       }
     }
+    // Programma van kaartjes: zijn eigen rijsnelheden, tot je zelf stuurt.
+    if (st.run) {
+      if (st.joy.on || st.tilt.on || st.keys.size || st.tank.l.on || st.tank.r.on) st.run.stop();
+      else return [st.prog.l, st.prog.r];
+    }
     // Rechtuit-correctie: negatief remt de linkermotor iets af, positief de rechter.
     const tl = S.trim < 0 ? 1 + S.trim / 100 : 1, tr = S.trim > 0 ? 1 - S.trim / 100 : 1;
     let l, r;
@@ -2046,6 +2923,7 @@ if (typeof module !== 'undefined') module.exports = I18N;
   }
 
   function tick() {
+    if (st.run) st.run.tick();
     const [tl, tr] = targets();
     if (st.rec && st.phase === 'ready') {
       // Route opnemen: begint bij de eerste beweging.
@@ -2391,10 +3269,10 @@ if (typeof module !== 'undefined') module.exports = I18N;
   function endMouth() { if (!mouth) return; clearInterval(mouth); mouth = null; showFace('smile'); }
   function talk(text) {
     const notes = robotWords(text);
-    if (!notes.length) return;
+    if (!notes.length) return 0;
     endMouth();
     const ms = play(notes);
-    if (!linked()) return;
+    if (!linked()) return ms;
     const frames = ['mOpen', 'mHalf', 'mShut', 'mHalf'], until = performance.now() + ms;
     let i = 0;
     showFace(frames[i++]);
@@ -2402,6 +3280,7 @@ if (typeof module !== 'undefined') module.exports = I18N;
       if (performance.now() > until || !linked()) { endMouth(); return; }
       showFace(frames[i++ % 4]);
     }, 160);
+    return ms;
   }
   $('btnSay').addEventListener('click', () => { buzz(10); talk($('inpSay').value); });
   $('inpSay').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); talk($('inpSay').value); } });
@@ -2513,6 +3392,393 @@ if (typeof module !== 'undefined') module.exports = I18N;
     G.path = r; save(); syncSettings();
     toast(t('move.saved', Math.round(r.length / 2) / 10), 'ok'); sfx.open();
   }
+
+  /* ---------- code: programmeerkaartjes ---------- */
+  const CT = Cards.TYPES;
+  const prog = () => G.programs.find((p) => p.id === G.progActive) || G.programs[0];
+  let saveTimer = null;
+  const saveSoon = () => { clearTimeout(saveTimer); saveTimer = setTimeout(save, 300); };
+  const code = { sel: null, pal: null, img: null, imgSet: null };
+  const songItems = () => SONGS.map((s) => [s[0], t('song.' + s[0])]);
+  const moodItems = () => MOODS.map((m) => [m[0], t('mood.' + m[0])]);
+  const colorItems = () => Cards.COLORS.map((c) => [String(c), t('color.' + c)]);
+
+  // Een getal-vakje: een getal, of een variabele, een willekeurig getal of een sensorwaarde.
+  function valControl(v, set) {
+    const box = el('span', 'vsrc'), sel = el('select', 'vsel'), a = el('input', 'vnum'), b = el('input', 'vnum'), to = el('span', 'vto');
+    [a, b].forEach((x) => { x.type = 'number'; x.step = 'any'; x.inputMode = 'decimal'; });
+    const add = (parent, val, label) => { const o = el('option'); o.value = val; o.textContent = label; parent.appendChild(o); };
+    add(sel, 'n', '123'); add(sel, 'r', '\u{1F3B2} ' + t('code.random'));
+    if (prog().vars.length) { const g = el('optgroup'); g.label = t('code.vars'); prog().vars.forEach((n) => add(g, 'v:' + n, n)); sel.appendChild(g); }
+    const g = el('optgroup'); g.label = t('code.sensors'); Cards.SENSORS.forEach((s) => add(g, 's:' + s, t('src.' + s))); sel.appendChild(g);
+    to.textContent = t('code.to');
+    const show = () => {
+      sel.value = v.k === 'n' || v.k === 'r' ? v.k : v.k + ':' + v.v;
+      if (sel.value === '' || sel.selectedIndex < 0) sel.value = 'n';
+      a.hidden = !(v.k === 'n' || v.k === 'r'); b.hidden = to.hidden = v.k !== 'r';
+      a.value = v.k === 'n' ? v.v : v.k === 'r' ? v.a : ''; b.value = v.k === 'r' ? v.b : '';
+      box.classList.toggle('src', v.k === 'v' || v.k === 's');
+    };
+    sel.addEventListener('change', () => {
+      const x = sel.value;
+      v = x === 'n' ? { k: 'n', v: 0 } : x === 'r' ? { k: 'r', a: 1, b: 10 } : { k: x[0], v: x.slice(2) };
+      set(v); show();
+    });
+    const num = (x) => (x.value === '' || isNaN(+x.value) ? 0 : +x.value);
+    a.addEventListener('input', () => { v = v.k === 'r' ? { k: 'r', a: num(a), b: v.b } : { k: 'n', v: num(a) }; set(v); });
+    b.addEventListener('input', () => { v = { k: 'r', a: v.a, b: num(b) }; set(v); });
+    box.append(a, sel, to, b); show();
+    return box;
+  }
+  function selectControl(items, value, set, cls) {
+    const s = el('select', cls || 'psel');
+    for (const [val, label] of items) { const o = el('option'); o.value = val; o.textContent = label; s.appendChild(o); }
+    s.value = String(value);
+    s.addEventListener('change', () => set(s.value));
+    return s;
+  }
+  function miniImg(img) {
+    const g = el('span', 'mini');
+    for (let i = 0; i < 25; i++) { const d = el('i'); d.style.opacity = String(0.12 + (0.88 * (img.charCodeAt(i) - 48)) / 9); g.appendChild(d); }
+    return g;
+  }
+  // Eén parameter als bedieningselement; set(nieuwe waarde) slaat op, rerender bij vormveranderingen.
+  function paramControl(spec, value, set, rerender) {
+    switch (spec.type) {
+      case 'num': return valControl(value, set);
+      case 'choice': return selectControl(spec.opts.map((o) => [o, t('opt.' + o)]), value, set);
+      case 'port': return selectControl(Cards.PORTS.map((p) => [p, p]), value, set, 'psel port');
+      case 'portAny': return selectControl([['any', t('code.any')]].concat(Cards.PORTS.map((p) => [p, p])), value, set, 'psel port');
+      case 'color': { const s = selectControl(colorItems(), value, (x) => { set(+x); s.dataset.c = x; }, 'psel color'); s.dataset.c = value; return s; }
+      case 'note': return selectControl(Cards.NOTES.map((n) => [n, n]), value, set);
+      case 'song': return selectControl(songItems(), value, set);
+      case 'mood': return selectControl(moodItems(), value, set);
+      case 'text': case 'msg': {
+        const i = el('input', spec.type === 'msg' ? 'ptext msg' : 'ptext'); i.type = 'text'; i.value = value; i.maxLength = spec.type === 'msg' ? 20 : 60;
+        i.addEventListener('input', () => set(i.value)); return i;
+      }
+      case 'var': {
+        const vars = prog().vars, items = vars.map((n) => [n, n]);
+        if (!vars.length) items.push(['', t('code.noVar')]);
+        items.push(['+', t('code.newVar')]);
+        const s = selectControl(items, value || (vars[0] || ''), (x) => {
+          if (x !== '+') { set(x); return; }
+          const name = (window.prompt(t('code.varPrompt')) || '').trim().slice(0, 20);
+          if (name && !prog().vars.includes(name)) prog().vars.push(name);
+          if (name) set(name);
+          rerender();
+        }, 'psel var');
+        return s;
+      }
+      case 'img': {
+        const b = el('button', 'imgbtn'); b.type = 'button'; b.appendChild(miniImg(value)); b.setAttribute('aria-label', t('code.imgTitle'));
+        b.addEventListener('click', () => openImg(value, (img) => { set(img); b.textContent = ''; b.appendChild(miniImg(img)); }));
+        return b;
+      }
+      case 'cond': return condControl(value, set, rerender);
+    }
+    return el('span');
+  }
+  function fillTemplate(box, tpl, specs, values, set, rerender) {
+    tpl.split(/(\{\w+\})/).forEach((part) => {
+      const m = /^\{(\w+)\}$/.exec(part);
+      if (!m) { if (part) { const s = el('span', 'pt'); s.textContent = part; box.appendChild(s); } return; }
+      const spec = specs.find((x) => x.k === m[1]);
+      if (spec) box.appendChild(paramControl(spec, values[spec.k], (v) => { values[spec.k] = v; set(); }, rerender));
+    });
+  }
+  function condControl(c, set, rerender) {
+    // Wijzigingen binnen de voorwaarde bewaren de hele voorwaarde (set verwacht de nieuwe waarde).
+    const box = el('span', 'cond'), changed = () => set(c);
+    const kind = selectControl(Object.keys(Cards.COND).map((k) => [k, t('condname.' + k)]), c.k, (k) => {
+      const fresh = Cards.cleanCond({ k, not: c.not });
+      Object.keys(c).forEach((key) => delete c[key]); Object.assign(c, fresh); changed(); rerender();
+    }, 'psel ckind');
+    const not = el('button', 'notbtn' + (c.not ? ' on' : '')); not.type = 'button'; not.textContent = t('code.not');
+    not.addEventListener('click', () => { c.not = !c.not; not.classList.toggle('on', c.not); changed(); });
+    box.append(not, kind);
+    fillTemplate(box, t('cond.' + c.k), Cards.COND[c.k], c, changed, rerender);
+    return box;
+  }
+  // Kaart als tekst (voor het kaartenmenu): standaardwaarden als woorden.
+  function cardText(type) {
+    const card = Cards.newCard(type, prog().vars), spec = CT[type].params;
+    return t('card.' + type).replace(/\{(\w+)\}/g, (_, k) => {
+      const s = spec.find((x) => x.k === k), v = card.p[k];
+      if (!s) return '';
+      if (s.type === 'num') return String(v.v);
+      if (s.type === 'choice') return t('opt.' + v);
+      if (s.type === 'cond') return '…';
+      if (s.type === 'color') return t('color.' + v);
+      if (s.type === 'song') return t('song.' + v);
+      if (s.type === 'mood') return t('mood.' + v);
+      if (s.type === 'img') return '\u{1F642}';
+      if (s.type === 'var') return v || 'x';
+      return String(v);
+    });
+  }
+
+  function renderProgs() {
+    const sel = $('selProg');
+    sel.textContent = '';
+    for (const p of G.programs) { const o = el('option'); o.value = p.id; o.textContent = p.name; sel.appendChild(o); }
+    sel.value = prog().id;
+  }
+  function renderStacks() {
+    const box = $('stacks'), p = prog();
+    box.textContent = '';
+    p.stacks.forEach((cards, si) => {
+      const card = el('div', 'card stack'), list = el('div', 'pcards'), d = Cards.depths(cards);
+      cards.forEach((c, i) => {
+        const type = CT[c.t], row = el('div', 'pcard cat-' + type.cat + (type.kind === 'hat' ? ' hat' : '') + (type.kind === 'end' ? ' endc' : ''));
+        row.dataset.si = si; row.dataset.i = i; row.style.setProperty('--d', d[i]);
+        if (code.sel && code.sel[0] === si && code.sel[1] === i) row.classList.add('sel');
+        const ico = el('span', 'pico'); ico.textContent = Cards.ICONS[type.cat]; ico.setAttribute('aria-hidden', 'true'); row.appendChild(ico);
+        const body = el('span', 'pbody');
+        fillTemplate(body, t('card.' + c.t), type.params, c.p, saveSoon, renderStacks);
+        row.appendChild(body);
+        row.addEventListener('click', (e) => {
+          if (e.target.closest('select,input,button')) return;
+          code.sel = code.sel && code.sel[0] === si && code.sel[1] === i ? null : [si, i];
+          sfx.tick(); renderStacks();
+        });
+        list.appendChild(row);
+        if (row.classList.contains('sel')) list.appendChild(cardTools(si, i));
+      });
+      card.appendChild(list);
+      const foot = el('div', 'stackfoot'), add = el('button', 'btn sm primary'), del = el('button', 'linkbtn');
+      add.textContent = t('code.addCard'); del.textContent = t('code.stackDel');
+      add.addEventListener('click', () => openPalette({ si, at: cards.length }));
+      del.addEventListener('click', () => {
+        if (!del.classList.contains('sure')) { del.classList.add('sure'); del.textContent = t('code.deleteSure'); setTimeout(() => { del.classList.remove('sure'); del.textContent = t('code.stackDel'); }, 3000); return; }
+        p.stacks.splice(si, 1); if (!p.stacks.length) p.stacks.push([Cards.newCard('start')]);
+        code.sel = null; saveSoon(); renderStacks();
+      });
+      foot.append(add, del); card.appendChild(foot);
+      box.appendChild(card);
+    });
+  }
+  function cardTools(si, i) {
+    const p = prog(), cards = p.stacks[si], bar = el('div', 'ptools');
+    const tool = (label, txt, fn, off) => { const b = el('button', 'btn sm'); b.textContent = txt; b.setAttribute('aria-label', label); b.disabled = !!off; b.addEventListener('click', () => { fn(); buzz(8); saveSoon(); renderStacks(); }); bar.appendChild(b); };
+    const hat = i === 0;
+    tool(t('code.up'), '↑', () => { [cards[i - 1], cards[i]] = [cards[i], cards[i - 1]]; code.sel = [si, i - 1]; }, hat || i < 2);
+    tool(t('code.down'), '↓', () => { [cards[i + 1], cards[i]] = [cards[i], cards[i + 1]]; code.sel = [si, i + 1]; }, hat || i >= cards.length - 1);
+    tool(t('code.copy'), '⧉', () => { cards.splice(i + 1, 0, JSON.parse(JSON.stringify(cards[i]))); code.sel = [si, i + 1]; }, hat);
+    tool(t('code.del'), '\u{1F5D1}', () => { cards.splice(i, 1); code.sel = null; }, hat);
+    const add = el('button', 'btn sm primary'); add.textContent = t('code.addCard');
+    add.addEventListener('click', () => openPalette({ si, at: i + 1 }));
+    bar.appendChild(add);
+    return bar;
+  }
+
+  /* kaartenmenu */
+  function openPalette(target) {
+    code.pal = target; code.palCat = code.palCat || (target.hat ? 'event' : 'move');
+    if (target.hat) code.palCat = 'event';
+    renderPalette();
+    $('palSheet').classList.add('on'); $('palSheet').setAttribute('aria-hidden', 'false'); sfx.open();
+  }
+  function closePalette() { $('palSheet').classList.remove('on'); $('palSheet').setAttribute('aria-hidden', 'true'); code.pal = null; }
+  function renderPalette() {
+    const cats = $('palCats'), list = $('palList'), tgt = code.pal;
+    cats.textContent = ''; list.textContent = '';
+    for (const c of Cards.CATS) {
+      const b = el('button', 'pcat cat-' + c + (c === code.palCat ? ' on' : ''));
+      b.textContent = Cards.ICONS[c] + ' ' + t('cat.' + c);
+      b.addEventListener('click', () => { code.palCat = c; sfx.tick(); renderPalette(); });
+      cats.appendChild(b);
+    }
+    Object.values(CT).filter((x) => x.cat === code.palCat && (tgt.hat ? x.kind === 'hat' : x.kind !== 'hat')).forEach((x) => {
+      const b = el('button', 'pcard pick cat-' + x.cat + (x.kind === 'hat' ? ' hat' : ''));
+      b.dataset.t = x.id;
+      const ico = el('span', 'pico'); ico.textContent = Cards.ICONS[x.cat]; b.appendChild(ico);
+      const s = el('span', 'pbody'); s.textContent = cardText(x.id); b.appendChild(s);
+      b.addEventListener('click', () => addCard(x.id));
+      list.appendChild(b);
+    });
+    if (!list.childElementCount) { const p = el('p', 'small'); p.textContent = t('code.help'); list.appendChild(p); }
+  }
+  function addCard(type) {
+    const p = prog(), tgt = code.pal, card = Cards.newCard(type, p.vars);
+    if (tgt.hat) { p.stacks.push([card]); code.sel = null; }
+    else {
+      const cards = p.stacks[tgt.si], at = Math.max(1, tgt.at);
+      const add = CT[type].kind === 'begin' ? [card, Cards.newCard('end')] : [card];
+      cards.splice(at, 0, ...add); code.sel = [tgt.si, at];
+    }
+    sfx.open(); buzz(10); saveSoon(); closePalette(); renderStacks();
+  }
+
+  /* plaatje kiezen of tekenen */
+  function openImg(img, onDone) {
+    code.img = img.split('').map((c) => (c === '0' ? 0 : 9)); code.imgSet = onDone;
+    const pre = $('imgPresets'); pre.textContent = '';
+    Object.keys(Cards.IMAGES).forEach((k) => {
+      const b = el('button', 'imgbtn'); b.type = 'button'; b.appendChild(miniImg(Cards.IMAGES[k])); b.title = t('imgname.' + k); b.setAttribute('aria-label', t('imgname.' + k));
+      b.addEventListener('click', () => { code.img = Cards.IMAGES[k].split('').map((c) => (c === '0' ? 0 : 9)); drawGrid(); sfx.tick(); });
+      pre.appendChild(b);
+    });
+    drawGrid();
+    $('imgSheet').classList.add('on'); $('imgSheet').setAttribute('aria-hidden', 'false'); sfx.open();
+  }
+  function drawGrid() {
+    const g = $('imgGrid'); g.textContent = '';
+    code.img.forEach((v, i) => {
+      const b = el('button', 'px' + (v ? ' on' : '')); b.type = 'button'; b.dataset.i = i;
+      b.addEventListener('click', () => { code.img[i] = code.img[i] ? 0 : 9; b.classList.toggle('on', !!code.img[i]); sfx.tick(); });
+      g.appendChild(b);
+    });
+  }
+  function closeImg(apply) {
+    if (apply && code.imgSet) { code.imgSet(code.img.join('')); saveSoon(); }
+    $('imgSheet').classList.remove('on'); $('imgSheet').setAttribute('aria-hidden', 'true'); code.imgSet = null;
+  }
+  $('imgDone').addEventListener('click', () => closeImg(true));
+  $('imgClear').addEventListener('click', () => { code.img.fill(0); drawGrid(); });
+  $('imgSheet').addEventListener('click', (e) => { if (e.target === $('imgSheet')) closeImg(false); });
+  $('palClose').addEventListener('click', closePalette);
+  $('palSheet').addEventListener('click', (e) => { if (e.target === $('palSheet')) closePalette(); });
+
+  /* programma's: nieuw, naam, weg */
+  $('selProg').addEventListener('change', (e) => { if (st.run) st.run.stop(); G.progActive = e.target.value; code.sel = null; save(); renderStacks(); e.target.blur(); });
+  $('btnProgNew').addEventListener('click', () => {
+    const names = new Set(G.programs.map((p) => p.name));
+    let name = t('code.default'), n = 2;
+    while (names.has(name)) name = t('code.default') + ' ' + n++;
+    const p = Cards.cleanProgram(null, name);
+    G.programs.push(p); G.progActive = p.id; code.sel = null; save(); renderProgs(); renderStacks(); sfx.open();
+  });
+  $('btnProgRename').addEventListener('click', () => {
+    const name = (window.prompt(t('code.renamePrompt'), prog().name) || '').trim().slice(0, 30);
+    if (name) { prog().name = name; save(); renderProgs(); }
+  });
+  $('btnProgDel').addEventListener('click', () => {
+    const b = $('btnProgDel');
+    if (!b.classList.contains('sure')) { b.classList.add('sure'); b.textContent = t('code.deleteSure'); setTimeout(() => { b.classList.remove('sure'); b.textContent = t('code.delete'); }, 3000); return; }
+    b.classList.remove('sure'); b.textContent = t('code.delete');
+    if (st.run) st.run.stop();
+    G.programs = G.programs.filter((p) => p.id !== prog().id);
+    if (!G.programs.length) G.programs.push(Cards.cleanProgram(null, t('code.default')));
+    G.progActive = G.programs[0].id; code.sel = null; save(); renderProgs(); renderStacks(); sfx.stop();
+  });
+  $('btnAddStack').addEventListener('click', () => openPalette({ hat: true }));
+
+  /* uitvoeren: de kaarten sturen de hub aan via de rijlus en losse hubopdrachten */
+  st.prog = { l: 0, r: 0, ports: {}, lp: null, rp: null };
+  st.btn = { L: 0, R: 0 }; st.imu = null; st.motorData = {};
+  const progPorts = () => ({ l: st.prog.lp || S.left, r: st.prog.rp || S.right });
+  // Nul-snelheden meteen versturen, zodat ze vóór een beweging over graden op de hub aankomen.
+  function syncOut() {
+    const out = outputs();
+    for (const p in st.lastSent) if (!(p in out) && st.lastSent[p] !== 0) out[p] = 0;
+    const text = textOf(out);
+    st.lastSent = out; st.lastText = text; st.lastAt = performance.now();
+    return hub.text(text).catch(() => {});
+  }
+  // Wachten tot een beweging over graden klaar is: op de motorpositie als de hub die meldt, anders op de verwachte tijd.
+  function waitMove(moves, est) {
+    const t0 = performance.now(), known = moves.every((m) => st.motorData[m.port]);
+    const goals = moves.map((m) => ({ port: m.port, goal: known ? st.motorData[m.port].pos + m.deg : 0 }));
+    return new Promise((resolve) => {
+      const check = () => {
+        const dt = performance.now() - t0;
+        const there = known && dt > 150 && goals.every((g) => st.motorData[g.port] && Math.abs(st.motorData[g.port].pos - g.goal) <= 6);
+        if (!st.run || there || dt > (known ? est * 2.5 + 800 : est + 150)) resolve();
+        else setTimeout(check, 30);
+      };
+      setTimeout(check, 30);
+    });
+  }
+  let imgPending = null, imgTimer = null;
+  const io = {
+    now: () => performance.now(), random: Math.random, sleep: (ms) => new Promise((r) => setTimeout(r, ms)),
+    data: () => {
+      const s = st.sensors || [], dist = s.find((x) => x.type === 'distance'), cols = s.filter((x) => x.type === 'color'), f = s.find((x) => x.type === 'force');
+      const colors = {};
+      cols.forEach((c) => { colors[c.port] = c.color; });
+      return { dist: dist ? dist.mm : null, force: f ? { v: f.value, pressed: f.pressed } : null, light: cols[0] ? Math.min(100, Math.round((cols[0].r + cols[0].g + cols[0].b) / 30.72)) : null,
+        color: cols[0] ? cols[0].color : null, colors, imu: st.imu, motors: st.motorData, btn: st.btn };
+    },
+    ports: () => ({ l: S.left, r: S.right }),
+    setPorts: (l, r) => { st.prog.lp = l; st.prog.rp = r; },
+    drive: (l, r) => { st.prog.l = l; st.prog.r = r; },
+    motor: (p, pct) => { st.prog.ports[p] = Math.round(pct); },
+    moveDeg: async (dl, sl, dr, sr) => {
+      st.prog.l = st.prog.r = 0; st.cur.l = st.cur.r = 0;
+      const pp = progPorts(), moves = [];
+      if (dl) moves.push({ port: pp.l, deg: dl * (S.invL ? -1 : 1), pct: Math.round(sl) });
+      if (dr && pp.r !== pp.l) moves.push({ port: pp.r, deg: dr * (S.invR ? -1 : 1), pct: Math.round(sr) });
+      if (!moves.length) return;
+      await syncOut();
+      hub.text('deg ' + moves.map((m) => m.port + ':' + m.deg + ':' + m.pct).join(' ')).catch(() => {});
+      await waitMove(moves, Math.max(...moves.map((m) => (Math.abs(m.deg) * 100) / Math.max(5, m.pct))));
+    },
+    motorDeg: async (p, deg, pct) => {
+      st.prog.ports[p] = 0;
+      await syncOut();
+      hub.text('deg ' + p + ':' + deg + ':' + Math.round(pct)).catch(() => {});
+      await waitMove([{ port: p, deg }], (Math.abs(deg) * 100) / Math.max(5, pct));
+    },
+    motorGoto: async (p, pos, pct, way) => {
+      st.prog.ports[p] = 0;
+      await syncOut();
+      hub.text('goto ' + p + ' ' + pos + ' ' + Math.round(pct) + ' ' + way).catch(() => {});
+      const t0 = performance.now(), est = 36000 / Math.max(5, pct);
+      await new Promise((resolve) => {
+        const check = () => {
+          const m = st.motorData[p], d = m ? Math.abs((((m.abs - pos) % 360) + 540) % 360 - 180) : 999;
+          if (!st.run || (performance.now() - t0 > 150 && d <= 5) || performance.now() - t0 > est + 800) resolve(); else setTimeout(check, 30);
+        };
+        setTimeout(check, 30);
+      });
+    },
+    send: (text) => { if (linked()) hub.text(text).catch(() => {}); },
+    tune: (notes) => { if (linked()) sendNotes(notes); else playLocal(notes); },
+    img: (s) => {
+      imgPending = s;
+      if (imgTimer) return;
+      const flush = () => { imgTimer = null; if (imgPending && linked()) hub.text('img ' + imgPending).catch(() => {}); imgPending = null; };
+      flush(); imgTimer = setTimeout(() => { imgTimer = null; if (imgPending) io.img(imgPending); }, 60);
+    },
+    song: (id) => { const s = SONGS.find((x) => x[0] === id) || SONGS[0]; return melody(s[3], s[2]); },
+    freq: (n) => freqOf(n),
+    mood: (id) => { const [n, face] = moodNotes(id); return play(n, face); },
+    talk: (text) => talk(text),
+    active: (si, i) => {
+      qsa(si < 0 ? '#stacks .pcard.active' : '#stacks .pcard.active[data-si="' + si + '"]').forEach((n) => n.classList.remove('active'));
+      const n = si >= 0 && i >= 0 && document.querySelector('#stacks .pcard[data-si="' + si + '"][data-i="' + i + '"]');
+      if (n) n.classList.add('active');
+    },
+    warn: (k, detail) => { const m = k === 'noImu' ? t('code.noImu') : t('code.error', detail || k); toast(m, 'warn'); log(m, 'warn'); },
+    stopAll: () => {
+      st.prog = { l: 0, r: 0, ports: {}, lp: null, rp: null }; st.cur.l = st.cur.r = 0;
+      endMouth();
+      if (linked()) { syncOut(); hub.text('halt').catch(() => {}); hub.request(Proto.deviceNotificationRequest(200), 0x29, 2000).catch(() => {}); }
+    },
+    done: () => {
+      const r = st.run; st.run = null;
+      document.body.classList.remove('running'); $('codeStatus').textContent = '';
+      if (r && r.stopped) { log(t('code.stopped')); } else { toast(t('code.done'), 'ok'); log(t('code.done'), 'ok'); sfx.ready(); }
+    },
+  };
+  function runProgram() {
+    if (st.run || !needReady()) return;
+    const p = Cards.cleanProgram(prog());
+    halt();
+    st.prog = { l: 0, r: 0, ports: {}, lp: null, rp: null };
+    const r = new Cards.Runner(p, io);
+    st.run = r;
+    const stop = r.stop.bind(r);
+    r.stop = () => { r.stopped = true; stop(); };
+    document.body.classList.add('running');
+    $('codeStatus').textContent = t(p.stacks.some((s) => s[0].t !== 'start') ? 'code.listening' : 'code.running');
+    hub.request(Proto.deviceNotificationRequest(50), 0x29, 2000).catch(() => {});
+    sfx.ready(); buzz(15);
+    r.start();
+  }
+  $('btnRun').addEventListener('click', runProgram);
+  $('btnProgStop').addEventListener('pointerdown', (e) => { e.preventDefault(); emergencyStop(); });
 
   /* ---------- tabs ---------- */
   const tabs = qsa('.tab');
@@ -2751,7 +4017,7 @@ if (typeof module !== 'undefined') module.exports = I18N;
     if (st.songRec) $('btnSongRec').textContent = t('piano.stopRec');
     $('pillText').dataset.t = ''; $('btnConnectText').dataset.t = ''; $('hint').dataset.t = '';
     phaseTexts(); setText($('hint'), t(...st.hint));
-    fillStatic(); fillProfiles(); renderAuxSettings(); syncSettings(); showChips();
+    fillStatic(); fillProfiles(); renderAuxSettings(); syncSettings(); showChips(); renderProgs(); renderStacks();
     showSensors(st.sensors);
     showBle();
   }

@@ -15,7 +15,8 @@ rd = lambda p: p.read_text(encoding="utf8")
 def build():
     html = rd(SRC / "base.html")
     parts = {"CSS": rd(SRC / "style.css"), "HUB": rd(SRC / "hub_program.py"), "PROTO": rd(SRC / "proto.js"),
-             "QR": rd(ROOT / "vendor" / "qrcode.min.js").strip(), "I18N": rd(SRC / "i18n.js"), "APP": rd(SRC / "app.js")}
+             "QR": rd(ROOT / "vendor" / "qrcode.min.js").strip(), "I18N": rd(SRC / "i18n.js"), "CARDS": rd(SRC / "cards.js"),
+             "APP": rd(SRC / "app.js")}
     for key, text in parts.items():
         assert "</script>" not in text and "</style>" not in text, key
         assert html.count("{{" + key + "}}") == 1, key

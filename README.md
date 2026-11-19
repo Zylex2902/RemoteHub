@@ -23,6 +23,9 @@ program in a program slot on the hub, and then sends live drive commands to it.
 - Live sensors: distance, colour and force, plus an optional stop-for-obstacles guard
 - A profile per robot, shareable as a link or QR code
 - Hub battery level with low-battery warnings
+- Code tab: programming cards in eight groups (events, movement, motors, light, sound, control,
+  sensors, variables), 58 card types with nested blocks, conditions, variables, random numbers,
+  sensor values and several stacks that start on events; the running card lights up
 - Play tab: public-domain songs and a one-octave piano on the hub's speaker, robot moods with a face
   on the hub's light matrix, and robot language: the hub says a typed sentence in beeps (one per
   syllable, a question rises) while it moves its mouth
@@ -62,8 +65,8 @@ Good to know:
 ## Status
 
 Early. Version 1 was confirmed on a real hub. Everything since then (reconnect, battery, horn,
-gripper, sensors, tank and tilt steering, profiles, and the version 4 songs, faces, speech, dances
-and routes) is covered by automated tests against a simulated hub, and still needs confirming on
+gripper, sensors, tank and tilt steering, profiles, the version 4 songs, faces, robot language,
+dances and routes, and the version 5 programming cards) is covered by automated tests against a simulated hub, and still needs confirming on
 real hardware, on Android and in Bluefy. The sound features depend on `sound.beep` working on the
 hub; the horn is the quickest check.
 
@@ -94,6 +97,7 @@ src/style.css        styles, light and dark theme, all screen layouts
 src/proto.js         protocol: framing, CRC, messages (no DOM)
 src/hub_program.py   the program that runs on the hub
 src/i18n.js          Dutch and English texts
+src/cards.js         programming cards: the card set and the program runner (no DOM)
 src/app.js           connection, controls, settings, profiles
 site/                the deployable app: built page, manifest, service worker, icons, fonts
 tests/               unit and browser tests, reference vectors
@@ -105,8 +109,13 @@ docs/                store listing text and trademark notes
 How the link works: the page speaks the hub's Bluetooth protocol as published in
 [LEGO/spike-prime-docs](https://github.com/LEGO/spike-prime-docs) to upload and start the program.
 Live commands then travel as small text messages (`A:-60 B:60`, `pos E 120 80`, `beep`, `?`,
-`tune 440:200 0:50`, `vol 60`, `img` with 25 brightness digits, `hush`) in tunnel messages. If no
-message arrives for 800 ms the hub program stops the drive motors and clears any queued notes.
+`tune 440:200 0:50`, `vol 60`, `img` with 25 brightness digits, `hush`, `deg A:360:50`, `goto A 90 50 s`,
+`smode A 2`, `light 9`, `eyes A 100 100 0 0`, `halt`) in tunnel messages; the hub reports `btn L 1` and
+`ges 2` for its buttons and gestures. If no message arrives for 800 ms the hub program stops the drive
+motors, any move over degrees still under way, and the queued notes.
+
+Programs made with cards run in the page (`src/cards.js`), not on the hub: the page sends the commands
+above and reads motor positions and the motion sensor from the hub's status messages.
 
 ## Contributing
 

@@ -1,6 +1,6 @@
 {
   "name": "hub-remote",
-  "version": "4.0.0",
+  "version": "5.0.0",
   "private": true,
   "description": "Drive a programmable robot hub from the browser over Web Bluetooth.",
   "license": "MIT",
@@ -9,7 +9,7 @@
     "build:standalone": "python3 tools/build.py --standalone dist/hub-remote.html",
     "vendor": "terser node_modules/qrcode-generator/dist/qrcode.js -c -m -o vendor/qrcode.min.js",
     "test": "npm run test:unit && npm run test:browser",
-    "test:unit": "node tests/test_proto.js && python3 -I tests/test_hub_program.py",
+    "test:unit": "node tests/test_proto.js && node tests/test_cards.js && python3 -I tests/test_hub_program.py",
     "test:browser": "node tests/test_page.js && node tests/test_fold.js && node tests/test_sw.js"
   },
   "devDependencies": {

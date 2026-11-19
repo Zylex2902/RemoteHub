@@ -110,6 +110,25 @@
   </section>
 
   <div class="side" id="side">
+  <section class="view" id="viewCode">
+    <div class="card codebar" id="codebar">
+      <div class="codetop">
+        <select id="selProg" data-i18n-aria="code.rename" aria-label="Programma"></select>
+        <button class="btn sm" id="btnProgNew" data-i18n="code.new">Nieuw</button>
+        <button class="btn sm" id="btnProgRename" data-i18n="code.rename">Naam</button>
+        <button class="btn sm danger" id="btnProgDel" data-i18n="code.delete">Weg</button>
+      </div>
+      <div class="coderun">
+        <button class="btn primary run" id="btnRun"><svg class="ico" viewBox="0 0 24 24"><path d="M7 4v16l13-8z" fill="currentColor"/></svg><span data-i18n="code.run">Start</span></button>
+        <button class="stop progstop" id="btnProgStop"><svg class="ico" viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="2" fill="currentColor"/></svg>STOP</button>
+      </div>
+      <div class="small codestatus" id="codeStatus" aria-live="polite"></div>
+    </div>
+    <div id="stacks"></div>
+    <button class="btn addstack" id="btnAddStack" data-i18n="code.addStack">+ Nieuw spoor</button>
+    <p class="small" style="margin:0 4px" data-i18n="code.help"></p>
+  </section>
+
   <section class="view" id="viewPlay">
     <p class="small where" id="playWhere"></p>
 
@@ -252,7 +271,7 @@
     <div class="card">
       <h2 data-i18n="about.title">Over</h2>
       <p class="small" style="margin:0" data-i18n="about.text"></p>
-      <p class="small" style="margin:8px 0 0">Hub Remote 4.0</p>
+      <p class="small" style="margin:8px 0 0">Hub Remote 5.0</p>
     </div>
   </section>
   </div>
@@ -268,6 +287,9 @@
 <nav class="tabbar" id="tabbar" style="--i:0">
   <button class="tab on" data-view="viewDrive">
     <svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg><span data-i18n="tab.drive">Rijden</span>
+  </button>
+  <button class="tab" data-view="viewCode">
+    <svg class="ico" viewBox="0 0 24 24"><rect x="3" y="4" width="10" height="6" rx="2"/><rect x="7" y="14" width="14" height="6" rx="2"/><path d="M8 10v4"/></svg><span data-i18n="tab.code">Code</span>
   </button>
   <button class="tab" data-view="viewPlay">
     <svg class="ico" viewBox="0 0 24 24"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg><span data-i18n="tab.play">Spelen</span>
@@ -294,6 +316,27 @@
   </div>
 </div>
 
+<div class="sheet" id="palSheet" aria-hidden="true">
+  <div class="card box pal">
+    <div class="palhead"><h2 data-i18n="code.palette">Kies een kaart</h2><button class="btn sm" id="palClose" data-i18n="code.close">Sluiten</button></div>
+    <div class="pcats" id="palCats"></div>
+    <div class="plist" id="palList"></div>
+  </div>
+</div>
+
+<div class="sheet" id="imgSheet" aria-hidden="true">
+  <div class="card box">
+    <h2 data-i18n="code.imgTitle">Kies of teken een plaatje</h2>
+    <div class="imggrid" id="imgGrid"></div>
+    <p class="small" style="margin:0" data-i18n="code.imgHelp"></p>
+    <div class="imgpresets" id="imgPresets"></div>
+    <div class="rowbtns">
+      <button class="btn sm primary" id="imgDone" data-i18n="code.done2">Klaar</button>
+      <button class="btn sm" id="imgClear" data-i18n="code.imgClear">Leeg</button>
+    </div>
+  </div>
+</div>
+
 <div class="banner" id="banner" aria-live="polite"><i id="bannerDot"></i><span id="bannerText"></span><button class="btn sm" id="bannerBtn"></button></div>
 
 <div id="toasts" aria-live="assertive"></div>
@@ -313,6 +356,10 @@
 
 <script id="i18n">
 {{I18N}}</script>
+
+<!-- Programmeerkaartjes: kaartenset en uitvoerder (geen DOM). -->
+<script id="cards">
+{{CARDS}}</script>
 
 <script id="app">
 {{APP}}</script>

@@ -3,7 +3,7 @@
   const qsa = (sel, root) => Array.from((root || document).querySelectorAll(sel));
   const el = (tag, cls) => { const e = document.createElement(tag); if (cls) e.className = cls; return e; };
   const PORTS = ['A', 'B', 'C', 'D', 'E', 'F'];
-  const HUB_VERSION = '4';
+  const HUB_VERSION = '5';
   const enc = new TextEncoder(), dec = new TextDecoder();
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
@@ -15,7 +15,7 @@
   const newProfile = (name) => ({ id: uid(), name, left: 'A', right: 'B', invL: true, invR: false, speed: 60, turn: 60, trim: 0, userPorts: false,
     aux: [newAux(), newAux()], guard: false, guardCm: 20 });
   const G = { lang: 'auto', theme: 'light', sound: true, haptic: true, slot: 19, mode: 'joy', active: '', profiles: [],
-    hubVol: 60, voice: 'normal', react: true, song: [], path: [] };
+    hubVol: 60, voice: 'normal', react: true, song: [], path: [], programs: [], progActive: '' };
   const curLang = () => (G.lang === 'nl' || G.lang === 'en') ? G.lang : ((navigator.language || 'en').toLowerCase().startsWith('nl') ? 'nl' : 'en');
   const t = (k, ...a) => {
     let s = (I18N[curLang()] || I18N.en)[k];
@@ -55,6 +55,8 @@
       G.hubVol = num(raw.hubVol, 0, 100, 60); G.voice = ['high', 'low'].includes(raw.voice) ? raw.voice : 'normal'; G.react = raw.react !== false;
       G.song = cleanPairs(raw.song, 200, (f) => (f === 0 ? 0 : num(f, 100, 10000, 0)), (ms) => num(ms, 50, 2000, 300));
       G.path = cleanPairs(raw.path, MAX_PATH, (v) => num(v, -100, 100, 0), (v) => num(v, -100, 100, 0));
+      G.programs = (Array.isArray(raw.programs) ? raw.programs : []).slice(0, 30).map((x) => Cards.cleanProgram(x, t('code.default')));
+      G.progActive = typeof raw.progActive === 'string' ? raw.progActive : '';
       G.profiles = (Array.isArray(raw.profiles) ? raw.profiles : []).map(cleanProfile);
       G.active = raw.active;
     } else {
@@ -71,6 +73,13 @@
     }
     if (!G.profiles.length) G.profiles = [newProfile(t('profile.default'))];
     if (!G.profiles.some((p) => p.id === G.active)) G.active = G.profiles[0].id;
+    if (!G.programs.length) {
+      // Voorbeeldprogramma om mee te beginnen.
+      const n = (v) => ({ k: 'n', v }), card = (tp, p) => Object.assign(Cards.newCard(tp), p ? { p: Object.assign(Cards.newCard(tp).p, p) } : {});
+      G.programs = [Cards.cleanProgram({ name: t('code.default'), stacks: [[card('start'), card('img', { img: Cards.IMAGES.smile }), card('moveFor', { n: n(10) }),
+        card('mood', { mood: 'happy' }), card('moveFor', { dir: 'bw', n: n(10) }), card('write', { t: 'Hi!' })]] })];
+    }
+    if (!G.programs.some((p) => p.id === G.progActive)) G.progActive = G.programs[0].id;
   })();
   let S = G.profiles.find((p) => p.id === G.active);
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(G)); } catch (e) {} };
@@ -256,6 +265,7 @@
     $('drive').classList.toggle('idle', p !== 'ready');
     keepAwake(p === 'ready');
     if (p !== 'ready' && st.rec) finishRec();
+    if (p !== 'ready' && st.run) st.run.stop();
     $('playWhere').textContent = t(p === 'ready' ? 'play.hub' : 'play.phone');
     if (p === 'idle') {
       showBattery(null); st.motors = []; st.gotMotors = false; showChips(); showSensors([]);
@@ -346,6 +356,9 @@
     if (id === 0x32 || id === 0x33) {
       const text = dec.decode(Proto.parseTunnel(msg)).trim();
       if (text.startsWith('rdy')) { if (st.readyWait) { const r = st.readyWait; st.readyWait = null; r(text); } return; }
+      // Hubknoppen en gebaren (voor de programmeerkaartjes).
+      if (/^btn [LR] [01]$/.test(text)) { st.btn[text[4]] = +text[6]; return; }
+      if (/^ges \d$/.test(text)) { if (st.run) st.run.fire('gesture', +text[4]); return; }
       if (text.startsWith('err ')) {
         const port = text.slice(4, 5), why = text.slice(6), m = t('msg.portErr', port);
         log(m + (why ? ' (' + why + ')' : ''), 'err'); toast(m, 'err'); sfx.err();
@@ -368,6 +381,10 @@
       }
       showMotors(info.motors);
       showSensors(info.sensors);
+      if (info.imu) st.imu = info.imu;
+      const md = {};
+      info.motorData.forEach((m) => { md[m.port] = m; });
+      st.motorData = md;
     }
   }
 
@@ -552,6 +569,7 @@
     st.keys.clear(); st.codes.clear(); st.joy.x = 0; st.joy.y = 0; st.joy.on = false; st.joy.id = null;
     st.tank.l = stick(); st.tank.r = stick(); st.tilt.on = false; st.aux = [0, 0]; st.jog = [0, 0]; st.cur.l = 0; st.cur.r = 0; st.test = null;
     if (st.macro) endMacro(false);
+    if (st.run) st.run.stop();
     setTurbo(false);
     $('knob').style.transform = ''; $('pad').classList.remove('grab');
     qsa('.vstick').forEach((v) => { v.classList.remove('grab'); v.querySelector('.vknob').style.transform = ''; });
@@ -559,6 +577,8 @@
   }
   function emergencyStop() {
     halt(); sfx.stop(); buzz(40);
+    // Ook bewegingen over graden en grijperstanden op de hub stoppen.
+    if (st.phase === 'ready') hub.text('halt').catch(() => {});
     const b = $('btnStop'); b.classList.add('flash'); setTimeout(() => b.classList.remove('flash'), 220);
   }
   function beep() {
@@ -583,6 +603,13 @@
   }
   function outputs() {
     const out = {};
+    if (st.run) {
+      const pp = progPorts();
+      for (const p in st.prog.ports) out[p] = st.prog.ports[p];
+      out[pp.l] = Math.round(st.cur.l) * (S.invL ? -1 : 1) || 0;
+      if (pp.r !== pp.l) out[pp.r] = Math.round(st.cur.r) * (S.invR ? -1 : 1) || 0;
+      return out;
+    }
     out[S.left] = Math.round(st.cur.l) * (S.invL ? -1 : 1) || 0;
     if (S.right !== S.left) out[S.right] = Math.round(st.cur.r) * (S.invR ? -1 : 1) || 0;
     auxPorts().forEach((port, i) => {
@@ -640,6 +667,11 @@
         return [ml, mr];
       }
     }
+    // Programma van kaartjes: zijn eigen rijsnelheden, tot je zelf stuurt.
+    if (st.run) {
+      if (st.joy.on || st.tilt.on || st.keys.size || st.tank.l.on || st.tank.r.on) st.run.stop();
+      else return [st.prog.l, st.prog.r];
+    }
     // Rechtuit-correctie: negatief remt de linkermotor iets af, positief de rechter.
     const tl = S.trim < 0 ? 1 + S.trim / 100 : 1, tr = S.trim > 0 ? 1 - S.trim / 100 : 1;
     let l, r;
@@ -668,6 +700,7 @@
   }
 
   function tick() {
+    if (st.run) st.run.tick();
     const [tl, tr] = targets();
     if (st.rec && st.phase === 'ready') {
       // Route opnemen: begint bij de eerste beweging.
@@ -1013,10 +1046,10 @@
   function endMouth() { if (!mouth) return; clearInterval(mouth); mouth = null; showFace('smile'); }
   function talk(text) {
     const notes = robotWords(text);
-    if (!notes.length) return;
+    if (!notes.length) return 0;
     endMouth();
     const ms = play(notes);
-    if (!linked()) return;
+    if (!linked()) return ms;
     const frames = ['mOpen', 'mHalf', 'mShut', 'mHalf'], until = performance.now() + ms;
     let i = 0;
     showFace(frames[i++]);
@@ -1024,6 +1057,7 @@
       if (performance.now() > until || !linked()) { endMouth(); return; }
       showFace(frames[i++ % 4]);
     }, 160);
+    return ms;
   }
   $('btnSay').addEventListener('click', () => { buzz(10); talk($('inpSay').value); });
   $('inpSay').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); talk($('inpSay').value); } });
@@ -1135,6 +1169,393 @@
     G.path = r; save(); syncSettings();
     toast(t('move.saved', Math.round(r.length / 2) / 10), 'ok'); sfx.open();
   }
+
+  /* ---------- code: programmeerkaartjes ---------- */
+  const CT = Cards.TYPES;
+  const prog = () => G.programs.find((p) => p.id === G.progActive) || G.programs[0];
+  let saveTimer = null;
+  const saveSoon = () => { clearTimeout(saveTimer); saveTimer = setTimeout(save, 300); };
+  const code = { sel: null, pal: null, img: null, imgSet: null };
+  const songItems = () => SONGS.map((s) => [s[0], t('song.' + s[0])]);
+  const moodItems = () => MOODS.map((m) => [m[0], t('mood.' + m[0])]);
+  const colorItems = () => Cards.COLORS.map((c) => [String(c), t('color.' + c)]);
+
+  // Een getal-vakje: een getal, of een variabele, een willekeurig getal of een sensorwaarde.
+  function valControl(v, set) {
+    const box = el('span', 'vsrc'), sel = el('select', 'vsel'), a = el('input', 'vnum'), b = el('input', 'vnum'), to = el('span', 'vto');
+    [a, b].forEach((x) => { x.type = 'number'; x.step = 'any'; x.inputMode = 'decimal'; });
+    const add = (parent, val, label) => { const o = el('option'); o.value = val; o.textContent = label; parent.appendChild(o); };
+    add(sel, 'n', '123'); add(sel, 'r', '\u{1F3B2} ' + t('code.random'));
+    if (prog().vars.length) { const g = el('optgroup'); g.label = t('code.vars'); prog().vars.forEach((n) => add(g, 'v:' + n, n)); sel.appendChild(g); }
+    const g = el('optgroup'); g.label = t('code.sensors'); Cards.SENSORS.forEach((s) => add(g, 's:' + s, t('src.' + s))); sel.appendChild(g);
+    to.textContent = t('code.to');
+    const show = () => {
+      sel.value = v.k === 'n' || v.k === 'r' ? v.k : v.k + ':' + v.v;
+      if (sel.value === '' || sel.selectedIndex < 0) sel.value = 'n';
+      a.hidden = !(v.k === 'n' || v.k === 'r'); b.hidden = to.hidden = v.k !== 'r';
+      a.value = v.k === 'n' ? v.v : v.k === 'r' ? v.a : ''; b.value = v.k === 'r' ? v.b : '';
+      box.classList.toggle('src', v.k === 'v' || v.k === 's');
+    };
+    sel.addEventListener('change', () => {
+      const x = sel.value;
+      v = x === 'n' ? { k: 'n', v: 0 } : x === 'r' ? { k: 'r', a: 1, b: 10 } : { k: x[0], v: x.slice(2) };
+      set(v); show();
+    });
+    const num = (x) => (x.value === '' || isNaN(+x.value) ? 0 : +x.value);
+    a.addEventListener('input', () => { v = v.k === 'r' ? { k: 'r', a: num(a), b: v.b } : { k: 'n', v: num(a) }; set(v); });
+    b.addEventListener('input', () => { v = { k: 'r', a: v.a, b: num(b) }; set(v); });
+    box.append(a, sel, to, b); show();
+    return box;
+  }
+  function selectControl(items, value, set, cls) {
+    const s = el('select', cls || 'psel');
+    for (const [val, label] of items) { const o = el('option'); o.value = val; o.textContent = label; s.appendChild(o); }
+    s.value = String(value);
+    s.addEventListener('change', () => set(s.value));
+    return s;
+  }
+  function miniImg(img) {
+    const g = el('span', 'mini');
+    for (let i = 0; i < 25; i++) { const d = el('i'); d.style.opacity = String(0.12 + (0.88 * (img.charCodeAt(i) - 48)) / 9); g.appendChild(d); }
+    return g;
+  }
+  // Eén parameter als bedieningselement; set(nieuwe waarde) slaat op, rerender bij vormveranderingen.
+  function paramControl(spec, value, set, rerender) {
+    switch (spec.type) {
+      case 'num': return valControl(value, set);
+      case 'choice': return selectControl(spec.opts.map((o) => [o, t('opt.' + o)]), value, set);
+      case 'port': return selectControl(Cards.PORTS.map((p) => [p, p]), value, set, 'psel port');
+      case 'portAny': return selectControl([['any', t('code.any')]].concat(Cards.PORTS.map((p) => [p, p])), value, set, 'psel port');
+      case 'color': { const s = selectControl(colorItems(), value, (x) => { set(+x); s.dataset.c = x; }, 'psel color'); s.dataset.c = value; return s; }
+      case 'note': return selectControl(Cards.NOTES.map((n) => [n, n]), value, set);
+      case 'song': return selectControl(songItems(), value, set);
+      case 'mood': return selectControl(moodItems(), value, set);
+      case 'text': case 'msg': {
+        const i = el('input', spec.type === 'msg' ? 'ptext msg' : 'ptext'); i.type = 'text'; i.value = value; i.maxLength = spec.type === 'msg' ? 20 : 60;
+        i.addEventListener('input', () => set(i.value)); return i;
+      }
+      case 'var': {
+        const vars = prog().vars, items = vars.map((n) => [n, n]);
+        if (!vars.length) items.push(['', t('code.noVar')]);
+        items.push(['+', t('code.newVar')]);
+        const s = selectControl(items, value || (vars[0] || ''), (x) => {
+          if (x !== '+') { set(x); return; }
+          const name = (window.prompt(t('code.varPrompt')) || '').trim().slice(0, 20);
+          if (name && !prog().vars.includes(name)) prog().vars.push(name);
+          if (name) set(name);
+          rerender();
+        }, 'psel var');
+        return s;
+      }
+      case 'img': {
+        const b = el('button', 'imgbtn'); b.type = 'button'; b.appendChild(miniImg(value)); b.setAttribute('aria-label', t('code.imgTitle'));
+        b.addEventListener('click', () => openImg(value, (img) => { set(img); b.textContent = ''; b.appendChild(miniImg(img)); }));
+        return b;
+      }
+      case 'cond': return condControl(value, set, rerender);
+    }
+    return el('span');
+  }
+  function fillTemplate(box, tpl, specs, values, set, rerender) {
+    tpl.split(/(\{\w+\})/).forEach((part) => {
+      const m = /^\{(\w+)\}$/.exec(part);
+      if (!m) { if (part) { const s = el('span', 'pt'); s.textContent = part; box.appendChild(s); } return; }
+      const spec = specs.find((x) => x.k === m[1]);
+      if (spec) box.appendChild(paramControl(spec, values[spec.k], (v) => { values[spec.k] = v; set(); }, rerender));
+    });
+  }
+  function condControl(c, set, rerender) {
+    // Wijzigingen binnen de voorwaarde bewaren de hele voorwaarde (set verwacht de nieuwe waarde).
+    const box = el('span', 'cond'), changed = () => set(c);
+    const kind = selectControl(Object.keys(Cards.COND).map((k) => [k, t('condname.' + k)]), c.k, (k) => {
+      const fresh = Cards.cleanCond({ k, not: c.not });
+      Object.keys(c).forEach((key) => delete c[key]); Object.assign(c, fresh); changed(); rerender();
+    }, 'psel ckind');
+    const not = el('button', 'notbtn' + (c.not ? ' on' : '')); not.type = 'button'; not.textContent = t('code.not');
+    not.addEventListener('click', () => { c.not = !c.not; not.classList.toggle('on', c.not); changed(); });
+    box.append(not, kind);
+    fillTemplate(box, t('cond.' + c.k), Cards.COND[c.k], c, changed, rerender);
+    return box;
+  }
+  // Kaart als tekst (voor het kaartenmenu): standaardwaarden als woorden.
+  function cardText(type) {
+    const card = Cards.newCard(type, prog().vars), spec = CT[type].params;
+    return t('card.' + type).replace(/\{(\w+)\}/g, (_, k) => {
+      const s = spec.find((x) => x.k === k), v = card.p[k];
+      if (!s) return '';
+      if (s.type === 'num') return String(v.v);
+      if (s.type === 'choice') return t('opt.' + v);
+      if (s.type === 'cond') return '…';
+      if (s.type === 'color') return t('color.' + v);
+      if (s.type === 'song') return t('song.' + v);
+      if (s.type === 'mood') return t('mood.' + v);
+      if (s.type === 'img') return '\u{1F642}';
+      if (s.type === 'var') return v || 'x';
+      return String(v);
+    });
+  }
+
+  function renderProgs() {
+    const sel = $('selProg');
+    sel.textContent = '';
+    for (const p of G.programs) { const o = el('option'); o.value = p.id; o.textContent = p.name; sel.appendChild(o); }
+    sel.value = prog().id;
+  }
+  function renderStacks() {
+    const box = $('stacks'), p = prog();
+    box.textContent = '';
+    p.stacks.forEach((cards, si) => {
+      const card = el('div', 'card stack'), list = el('div', 'pcards'), d = Cards.depths(cards);
+      cards.forEach((c, i) => {
+        const type = CT[c.t], row = el('div', 'pcard cat-' + type.cat + (type.kind === 'hat' ? ' hat' : '') + (type.kind === 'end' ? ' endc' : ''));
+        row.dataset.si = si; row.dataset.i = i; row.style.setProperty('--d', d[i]);
+        if (code.sel && code.sel[0] === si && code.sel[1] === i) row.classList.add('sel');
+        const ico = el('span', 'pico'); ico.textContent = Cards.ICONS[type.cat]; ico.setAttribute('aria-hidden', 'true'); row.appendChild(ico);
+        const body = el('span', 'pbody');
+        fillTemplate(body, t('card.' + c.t), type.params, c.p, saveSoon, renderStacks);
+        row.appendChild(body);
+        row.addEventListener('click', (e) => {
+          if (e.target.closest('select,input,button')) return;
+          code.sel = code.sel && code.sel[0] === si && code.sel[1] === i ? null : [si, i];
+          sfx.tick(); renderStacks();
+        });
+        list.appendChild(row);
+        if (row.classList.contains('sel')) list.appendChild(cardTools(si, i));
+      });
+      card.appendChild(list);
+      const foot = el('div', 'stackfoot'), add = el('button', 'btn sm primary'), del = el('button', 'linkbtn');
+      add.textContent = t('code.addCard'); del.textContent = t('code.stackDel');
+      add.addEventListener('click', () => openPalette({ si, at: cards.length }));
+      del.addEventListener('click', () => {
+        if (!del.classList.contains('sure')) { del.classList.add('sure'); del.textContent = t('code.deleteSure'); setTimeout(() => { del.classList.remove('sure'); del.textContent = t('code.stackDel'); }, 3000); return; }
+        p.stacks.splice(si, 1); if (!p.stacks.length) p.stacks.push([Cards.newCard('start')]);
+        code.sel = null; saveSoon(); renderStacks();
+      });
+      foot.append(add, del); card.appendChild(foot);
+      box.appendChild(card);
+    });
+  }
+  function cardTools(si, i) {
+    const p = prog(), cards = p.stacks[si], bar = el('div', 'ptools');
+    const tool = (label, txt, fn, off) => { const b = el('button', 'btn sm'); b.textContent = txt; b.setAttribute('aria-label', label); b.disabled = !!off; b.addEventListener('click', () => { fn(); buzz(8); saveSoon(); renderStacks(); }); bar.appendChild(b); };
+    const hat = i === 0;
+    tool(t('code.up'), '↑', () => { [cards[i - 1], cards[i]] = [cards[i], cards[i - 1]]; code.sel = [si, i - 1]; }, hat || i < 2);
+    tool(t('code.down'), '↓', () => { [cards[i + 1], cards[i]] = [cards[i], cards[i + 1]]; code.sel = [si, i + 1]; }, hat || i >= cards.length - 1);
+    tool(t('code.copy'), '⧉', () => { cards.splice(i + 1, 0, JSON.parse(JSON.stringify(cards[i]))); code.sel = [si, i + 1]; }, hat);
+    tool(t('code.del'), '\u{1F5D1}', () => { cards.splice(i, 1); code.sel = null; }, hat);
+    const add = el('button', 'btn sm primary'); add.textContent = t('code.addCard');
+    add.addEventListener('click', () => openPalette({ si, at: i + 1 }));
+    bar.appendChild(add);
+    return bar;
+  }
+
+  /* kaartenmenu */
+  function openPalette(target) {
+    code.pal = target; code.palCat = code.palCat || (target.hat ? 'event' : 'move');
+    if (target.hat) code.palCat = 'event';
+    renderPalette();
+    $('palSheet').classList.add('on'); $('palSheet').setAttribute('aria-hidden', 'false'); sfx.open();
+  }
+  function closePalette() { $('palSheet').classList.remove('on'); $('palSheet').setAttribute('aria-hidden', 'true'); code.pal = null; }
+  function renderPalette() {
+    const cats = $('palCats'), list = $('palList'), tgt = code.pal;
+    cats.textContent = ''; list.textContent = '';
+    for (const c of Cards.CATS) {
+      const b = el('button', 'pcat cat-' + c + (c === code.palCat ? ' on' : ''));
+      b.textContent = Cards.ICONS[c] + ' ' + t('cat.' + c);
+      b.addEventListener('click', () => { code.palCat = c; sfx.tick(); renderPalette(); });
+      cats.appendChild(b);
+    }
+    Object.values(CT).filter((x) => x.cat === code.palCat && (tgt.hat ? x.kind === 'hat' : x.kind !== 'hat')).forEach((x) => {
+      const b = el('button', 'pcard pick cat-' + x.cat + (x.kind === 'hat' ? ' hat' : ''));
+      b.dataset.t = x.id;
+      const ico = el('span', 'pico'); ico.textContent = Cards.ICONS[x.cat]; b.appendChild(ico);
+      const s = el('span', 'pbody'); s.textContent = cardText(x.id); b.appendChild(s);
+      b.addEventListener('click', () => addCard(x.id));
+      list.appendChild(b);
+    });
+    if (!list.childElementCount) { const p = el('p', 'small'); p.textContent = t('code.help'); list.appendChild(p); }
+  }
+  function addCard(type) {
+    const p = prog(), tgt = code.pal, card = Cards.newCard(type, p.vars);
+    if (tgt.hat) { p.stacks.push([card]); code.sel = null; }
+    else {
+      const cards = p.stacks[tgt.si], at = Math.max(1, tgt.at);
+      const add = CT[type].kind === 'begin' ? [card, Cards.newCard('end')] : [card];
+      cards.splice(at, 0, ...add); code.sel = [tgt.si, at];
+    }
+    sfx.open(); buzz(10); saveSoon(); closePalette(); renderStacks();
+  }
+
+  /* plaatje kiezen of tekenen */
+  function openImg(img, onDone) {
+    code.img = img.split('').map((c) => (c === '0' ? 0 : 9)); code.imgSet = onDone;
+    const pre = $('imgPresets'); pre.textContent = '';
+    Object.keys(Cards.IMAGES).forEach((k) => {
+      const b = el('button', 'imgbtn'); b.type = 'button'; b.appendChild(miniImg(Cards.IMAGES[k])); b.title = t('imgname.' + k); b.setAttribute('aria-label', t('imgname.' + k));
+      b.addEventListener('click', () => { code.img = Cards.IMAGES[k].split('').map((c) => (c === '0' ? 0 : 9)); drawGrid(); sfx.tick(); });
+      pre.appendChild(b);
+    });
+    drawGrid();
+    $('imgSheet').classList.add('on'); $('imgSheet').setAttribute('aria-hidden', 'false'); sfx.open();
+  }
+  function drawGrid() {
+    const g = $('imgGrid'); g.textContent = '';
+    code.img.forEach((v, i) => {
+      const b = el('button', 'px' + (v ? ' on' : '')); b.type = 'button'; b.dataset.i = i;
+      b.addEventListener('click', () => { code.img[i] = code.img[i] ? 0 : 9; b.classList.toggle('on', !!code.img[i]); sfx.tick(); });
+      g.appendChild(b);
+    });
+  }
+  function closeImg(apply) {
+    if (apply && code.imgSet) { code.imgSet(code.img.join('')); saveSoon(); }
+    $('imgSheet').classList.remove('on'); $('imgSheet').setAttribute('aria-hidden', 'true'); code.imgSet = null;
+  }
+  $('imgDone').addEventListener('click', () => closeImg(true));
+  $('imgClear').addEventListener('click', () => { code.img.fill(0); drawGrid(); });
+  $('imgSheet').addEventListener('click', (e) => { if (e.target === $('imgSheet')) closeImg(false); });
+  $('palClose').addEventListener('click', closePalette);
+  $('palSheet').addEventListener('click', (e) => { if (e.target === $('palSheet')) closePalette(); });
+
+  /* programma's: nieuw, naam, weg */
+  $('selProg').addEventListener('change', (e) => { if (st.run) st.run.stop(); G.progActive = e.target.value; code.sel = null; save(); renderStacks(); e.target.blur(); });
+  $('btnProgNew').addEventListener('click', () => {
+    const names = new Set(G.programs.map((p) => p.name));
+    let name = t('code.default'), n = 2;
+    while (names.has(name)) name = t('code.default') + ' ' + n++;
+    const p = Cards.cleanProgram(null, name);
+    G.programs.push(p); G.progActive = p.id; code.sel = null; save(); renderProgs(); renderStacks(); sfx.open();
+  });
+  $('btnProgRename').addEventListener('click', () => {
+    const name = (window.prompt(t('code.renamePrompt'), prog().name) || '').trim().slice(0, 30);
+    if (name) { prog().name = name; save(); renderProgs(); }
+  });
+  $('btnProgDel').addEventListener('click', () => {
+    const b = $('btnProgDel');
+    if (!b.classList.contains('sure')) { b.classList.add('sure'); b.textContent = t('code.deleteSure'); setTimeout(() => { b.classList.remove('sure'); b.textContent = t('code.delete'); }, 3000); return; }
+    b.classList.remove('sure'); b.textContent = t('code.delete');
+    if (st.run) st.run.stop();
+    G.programs = G.programs.filter((p) => p.id !== prog().id);
+    if (!G.programs.length) G.programs.push(Cards.cleanProgram(null, t('code.default')));
+    G.progActive = G.programs[0].id; code.sel = null; save(); renderProgs(); renderStacks(); sfx.stop();
+  });
+  $('btnAddStack').addEventListener('click', () => openPalette({ hat: true }));
+
+  /* uitvoeren: de kaarten sturen de hub aan via de rijlus en losse hubopdrachten */
+  st.prog = { l: 0, r: 0, ports: {}, lp: null, rp: null };
+  st.btn = { L: 0, R: 0 }; st.imu = null; st.motorData = {};
+  const progPorts = () => ({ l: st.prog.lp || S.left, r: st.prog.rp || S.right });
+  // Nul-snelheden meteen versturen, zodat ze vóór een beweging over graden op de hub aankomen.
+  function syncOut() {
+    const out = outputs();
+    for (const p in st.lastSent) if (!(p in out) && st.lastSent[p] !== 0) out[p] = 0;
+    const text = textOf(out);
+    st.lastSent = out; st.lastText = text; st.lastAt = performance.now();
+    return hub.text(text).catch(() => {});
+  }
+  // Wachten tot een beweging over graden klaar is: op de motorpositie als de hub die meldt, anders op de verwachte tijd.
+  function waitMove(moves, est) {
+    const t0 = performance.now(), known = moves.every((m) => st.motorData[m.port]);
+    const goals = moves.map((m) => ({ port: m.port, goal: known ? st.motorData[m.port].pos + m.deg : 0 }));
+    return new Promise((resolve) => {
+      const check = () => {
+        const dt = performance.now() - t0;
+        const there = known && dt > 150 && goals.every((g) => st.motorData[g.port] && Math.abs(st.motorData[g.port].pos - g.goal) <= 6);
+        if (!st.run || there || dt > (known ? est * 2.5 + 800 : est + 150)) resolve();
+        else setTimeout(check, 30);
+      };
+      setTimeout(check, 30);
+    });
+  }
+  let imgPending = null, imgTimer = null;
+  const io = {
+    now: () => performance.now(), random: Math.random, sleep: (ms) => new Promise((r) => setTimeout(r, ms)),
+    data: () => {
+      const s = st.sensors || [], dist = s.find((x) => x.type === 'distance'), cols = s.filter((x) => x.type === 'color'), f = s.find((x) => x.type === 'force');
+      const colors = {};
+      cols.forEach((c) => { colors[c.port] = c.color; });
+      return { dist: dist ? dist.mm : null, force: f ? { v: f.value, pressed: f.pressed } : null, light: cols[0] ? Math.min(100, Math.round((cols[0].r + cols[0].g + cols[0].b) / 30.72)) : null,
+        color: cols[0] ? cols[0].color : null, colors, imu: st.imu, motors: st.motorData, btn: st.btn };
+    },
+    ports: () => ({ l: S.left, r: S.right }),
+    setPorts: (l, r) => { st.prog.lp = l; st.prog.rp = r; },
+    drive: (l, r) => { st.prog.l = l; st.prog.r = r; },
+    motor: (p, pct) => { st.prog.ports[p] = Math.round(pct); },
+    moveDeg: async (dl, sl, dr, sr) => {
+      st.prog.l = st.prog.r = 0; st.cur.l = st.cur.r = 0;
+      const pp = progPorts(), moves = [];
+      if (dl) moves.push({ port: pp.l, deg: dl * (S.invL ? -1 : 1), pct: Math.round(sl) });
+      if (dr && pp.r !== pp.l) moves.push({ port: pp.r, deg: dr * (S.invR ? -1 : 1), pct: Math.round(sr) });
+      if (!moves.length) return;
+      await syncOut();
+      hub.text('deg ' + moves.map((m) => m.port + ':' + m.deg + ':' + m.pct).join(' ')).catch(() => {});
+      await waitMove(moves, Math.max(...moves.map((m) => (Math.abs(m.deg) * 100) / Math.max(5, m.pct))));
+    },
+    motorDeg: async (p, deg, pct) => {
+      st.prog.ports[p] = 0;
+      await syncOut();
+      hub.text('deg ' + p + ':' + deg + ':' + Math.round(pct)).catch(() => {});
+      await waitMove([{ port: p, deg }], (Math.abs(deg) * 100) / Math.max(5, pct));
+    },
+    motorGoto: async (p, pos, pct, way) => {
+      st.prog.ports[p] = 0;
+      await syncOut();
+      hub.text('goto ' + p + ' ' + pos + ' ' + Math.round(pct) + ' ' + way).catch(() => {});
+      const t0 = performance.now(), est = 36000 / Math.max(5, pct);
+      await new Promise((resolve) => {
+        const check = () => {
+          const m = st.motorData[p], d = m ? Math.abs((((m.abs - pos) % 360) + 540) % 360 - 180) : 999;
+          if (!st.run || (performance.now() - t0 > 150 && d <= 5) || performance.now() - t0 > est + 800) resolve(); else setTimeout(check, 30);
+        };
+        setTimeout(check, 30);
+      });
+    },
+    send: (text) => { if (linked()) hub.text(text).catch(() => {}); },
+    tune: (notes) => { if (linked()) sendNotes(notes); else playLocal(notes); },
+    img: (s) => {
+      imgPending = s;
+      if (imgTimer) return;
+      const flush = () => { imgTimer = null; if (imgPending && linked()) hub.text('img ' + imgPending).catch(() => {}); imgPending = null; };
+      flush(); imgTimer = setTimeout(() => { imgTimer = null; if (imgPending) io.img(imgPending); }, 60);
+    },
+    song: (id) => { const s = SONGS.find((x) => x[0] === id) || SONGS[0]; return melody(s[3], s[2]); },
+    freq: (n) => freqOf(n),
+    mood: (id) => { const [n, face] = moodNotes(id); return play(n, face); },
+    talk: (text) => talk(text),
+    active: (si, i) => {
+      qsa(si < 0 ? '#stacks .pcard.active' : '#stacks .pcard.active[data-si="' + si + '"]').forEach((n) => n.classList.remove('active'));
+      const n = si >= 0 && i >= 0 && document.querySelector('#stacks .pcard[data-si="' + si + '"][data-i="' + i + '"]');
+      if (n) n.classList.add('active');
+    },
+    warn: (k, detail) => { const m = k === 'noImu' ? t('code.noImu') : t('code.error', detail || k); toast(m, 'warn'); log(m, 'warn'); },
+    stopAll: () => {
+      st.prog = { l: 0, r: 0, ports: {}, lp: null, rp: null }; st.cur.l = st.cur.r = 0;
+      endMouth();
+      if (linked()) { syncOut(); hub.text('halt').catch(() => {}); hub.request(Proto.deviceNotificationRequest(200), 0x29, 2000).catch(() => {}); }
+    },
+    done: () => {
+      const r = st.run; st.run = null;
+      document.body.classList.remove('running'); $('codeStatus').textContent = '';
+      if (r && r.stopped) { log(t('code.stopped')); } else { toast(t('code.done'), 'ok'); log(t('code.done'), 'ok'); sfx.ready(); }
+    },
+  };
+  function runProgram() {
+    if (st.run || !needReady()) return;
+    const p = Cards.cleanProgram(prog());
+    halt();
+    st.prog = { l: 0, r: 0, ports: {}, lp: null, rp: null };
+    const r = new Cards.Runner(p, io);
+    st.run = r;
+    const stop = r.stop.bind(r);
+    r.stop = () => { r.stopped = true; stop(); };
+    document.body.classList.add('running');
+    $('codeStatus').textContent = t(p.stacks.some((s) => s[0].t !== 'start') ? 'code.listening' : 'code.running');
+    hub.request(Proto.deviceNotificationRequest(50), 0x29, 2000).catch(() => {});
+    sfx.ready(); buzz(15);
+    r.start();
+  }
+  $('btnRun').addEventListener('click', runProgram);
+  $('btnProgStop').addEventListener('pointerdown', (e) => { e.preventDefault(); emergencyStop(); });
 
   /* ---------- tabs ---------- */
   const tabs = qsa('.tab');
@@ -1373,7 +1794,7 @@
     if (st.songRec) $('btnSongRec').textContent = t('piano.stopRec');
     $('pillText').dataset.t = ''; $('btnConnectText').dataset.t = ''; $('hint').dataset.t = '';
     phaseTexts(); setText($('hint'), t(...st.hint));
-    fillStatic(); fillProfiles(); renderAuxSettings(); syncSettings(); showChips();
+    fillStatic(); fillProfiles(); renderAuxSettings(); syncSettings(); showChips(); renderProgs(); renderStacks();
     showSensors(st.sensors);
     showBle();
   }

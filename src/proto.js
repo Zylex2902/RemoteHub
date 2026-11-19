@@ -137,7 +137,7 @@ const Proto = (() => {
   const PORT_NAMES = 'ABCDEF';
 
   function parseDeviceNotification(msg) {
-    const res = { battery: null, motors: [], sensors: [] };
+    const res = { battery: null, motors: [], sensors: [], imu: null, motorData: [] };
     if (msg.length < 3) return res;
     const size = new DataView(msg.buffer, msg.byteOffset, msg.byteLength).getUint16(1, true);
     const data = msg.subarray(3, 3 + size);
@@ -148,7 +148,12 @@ const Proto = (() => {
       if (!len || i + len > data.length) break;
       const port = data[i + 1] < 6 ? PORT_NAMES[data[i + 1]] : null;
       if (id === 0x00) res.battery = data[i + 1];
-      else if (port && id === 0x0a) res.motors.push(port);
+      // Bewegingssensor: welke kant boven ligt, gieren, voorover/achterover en zijwaarts kantelen.
+      else if (id === 0x01) res.imu = { face: data[i + 1], yawFace: data[i + 2], yaw: v.getInt16(i + 3, true), pitch: v.getInt16(i + 5, true), roll: v.getInt16(i + 7, true) };
+      else if (port && id === 0x0a) {
+        res.motors.push(port);
+        res.motorData.push({ port, type: data[i + 2], abs: v.getInt16(i + 3, true), power: v.getInt16(i + 5, true), speed: v.getInt8(i + 7), pos: v.getInt32(i + 8, true) });
+      }
       else if (port && id === 0x0b) res.sensors.push({ type: 'force', port, value: data[i + 2], pressed: data[i + 3] === 1 });
       else if (port && id === 0x0c) res.sensors.push({ type: 'color', port, color: v.getInt8(i + 2), r: v.getUint16(i + 3, true), g: v.getUint16(i + 5, true), b: v.getUint16(i + 7, true) });
       else if (port && id === 0x0d) res.sensors.push({ type: 'distance', port, mm: v.getInt16(i + 2, true) });

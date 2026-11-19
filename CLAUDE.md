@@ -34,6 +34,15 @@ CI (`.github/workflows/pages.yml`) fails if `site/index.html` is not rebuilt and
   Dances and route replay run only in the Drive view and end on `halt()` or on any joystick,
   tilt, tank or key input. An extra motor in on/off mode keeps turning after the tap, so it
   must stay in `st.aux` and be cleared by `halt()` (STOP, blur, hidden, view switch, link lost).
+- Programming cards (`src/cards.js`, Code tab) run in the page, not on the hub. Dances, routes and
+  programs share the drive loop: `st.run` takes over `targets()`/`outputs()`, and `halt()` stops it.
+  Moves over degrees go to the hub as `deg`/`goto`; the page sends zero speeds first (`syncOut`)
+  because a non-zero speed for a port cancels its move on the hub. Card texts live in i18n as
+  `card.*`, `opt.*`, `cond.*`, `src.*`; `tests/test_cards.js` checks every key exists.
+- Not confirmed on hardware: the IMU fields in status messages (units: degrees, or tenths, which
+  the runner detects; the sign of pitch/roll for 'tilts forward' is a guess), `button.pressed`,
+  `motion_sensor.gesture()` (gesture numbers), `light.color`, `distance_sensor.show`,
+  `motor.run_to_absolute_position`, stop modes via `motor.stop(port, stop=...)`.
 - Robot language plays on the hub (beeps per syllable via `tune`); the owner rejected speech
   from the phone, because it does not come from the robot.
 - Songs in the app are public domain or written for this project. Do not add copyrighted melodies.
@@ -44,7 +53,7 @@ CI (`.github/workflows/pages.yml`) fails if `site/index.html` is not rebuilt and
 
 ## Status and open work
 
-- v1 (connect, upload, drive) was confirmed on a real hub by the owner. v2, v3 and v4 features
+- v1 (connect, upload, drive) was confirmed on a real hub by the owner. v2 to v5 features
   are tested only against the simulated hub.
 - To confirm on hardware: horn, gripper moves, sensors and obstacle guard, reconnect, battery,
   v4 songs and moods (does each short `sound.beep` play cleanly one after another?), faces,
@@ -60,6 +69,8 @@ CI (`.github/workflows/pages.yml`) fails if `site/index.html` is not rebuilt and
 
 ## Intellectual property guardrails
 
+The Code tab offers the same kinds of commands as the official hub app, with our own names,
+icons, colours and card design; never copy its block look, icons or texts.
 Follow `docs/trademarks.md` for every change: no "LEGO" or "SPIKE" in names, identifiers, icons,
 URLs or store metadata; compatibility stated once with symbols and the disclaimer; keep the
 notices. Warn the owner before adding anything that could touch a patent, copyright or trademark.

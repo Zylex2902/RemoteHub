@@ -4,8 +4,24 @@ try:
     from hub import sound
 except Exception:
     sound = None
+try:
+    from hub import light
+except Exception:
+    light = None
+try:
+    from hub import button
+except Exception:
+    button = None
+try:
+    from hub import motion_sensor
+except Exception:
+    motion_sensor = None
+try:
+    import distance_sensor
+except Exception:
+    distance_sensor = None
 
-VERSION = '4'
+VERSION = '5'
 PORTS = {'A': port.A, 'B': port.B, 'C': port.C, 'D': port.D, 'E': port.E, 'F': port.F}
 TIMEOUT_MS = 800
 tunnel = hub.config['module_tunnel']
@@ -14,6 +30,11 @@ seen = [time.ticks_ms()]
 speeds = {}
 failed = {}
 grip = {}
+# Poorten met een beweging over een aantal graden: (start, verwachte duur in ms). En stopstand per poort.
+moving = {}
+stops = {}
+# Laatst gemelde hubknoppen en gebaar, en een teller om ze om de 50 ms te lezen.
+inputs = {'L': 0, 'R': 0, 'g': -1, 'n': 0}
 notes = []
 # Muziek: [start van de huidige noot, lengte in ms, volume]
 tune = [0, 0, 80]
@@ -44,9 +65,11 @@ def set_motor(name, pct):
     p = PORTS.get(name)
     if p is None:
         return
+    if pct != 0 and name in moving:
+        del moving[name]
     try:
         if pct == 0:
-            motor.stop(p)
+            halt_port(p, name)
         else:
             motor.run(p, pct * 10)
         if name in failed:
@@ -57,9 +80,90 @@ def set_motor(name, pct):
             say('err ' + name + ' ' + str(e))
 
 
+def halt_port(p, name):
+    # Stoppen met de gekozen stopstand (uitlopen, remmen, vasthouden); zonder die mogelijkheid gewoon stoppen.
+    try:
+        motor.stop(p, stop=stops[name])
+        return
+    except Exception:
+        pass
+    motor.stop(p)
+
+
 def stop_all():
     for name in list(speeds):
         set_motor(name, 0)
+    # Ook bewegingen over een aantal graden die nog bezig zijn: die staan niet in speeds.
+    now = time.ticks_ms()
+    for name in list(moving):
+        start, ms = moving[name]
+        del moving[name]
+        if time.ticks_diff(now, start) < ms:
+            try:
+                motor.stop(PORTS[name])
+            except Exception:
+                pass
+
+
+def halt_all():
+    # STOP op de pagina: alle poorten stil, ook lopende bewegingen, en geen geluid.
+    for name in PORTS:
+        speeds[name] = 0
+        try:
+            motor.stop(PORTS[name])
+        except Exception:
+            pass
+    moving.clear()
+    hush()
+
+
+def run_degrees(name, deg, pct):
+    # Draait een motor een aantal graden; de rijlus laat hem met rust tot er een nieuwe snelheid komt.
+    p = PORTS.get(name)
+    if p is None or deg == 0:
+        return
+    pct = max(5, min(100, abs(pct)))
+    try:
+        motor.run_for_degrees(p, deg, pct * 10)
+        speeds[name] = 0
+        moving[name] = (time.ticks_ms(), abs(deg) * 150 // pct + 500)
+    except Exception as e:
+        say('err ' + name + ' ' + str(e))
+
+
+def go_to(name, pos, pct, way):
+    p = PORTS.get(name)
+    if p is None:
+        return
+    pct = max(5, min(100, abs(pct)))
+    ways = {'cw': ('CLOCKWISE', 0), 'ccw': ('COUNTERCLOCKWISE', 1), 's': ('SHORTEST_PATH', 2)}
+    w = ways.get(way, ways['s'])
+    try:
+        motor.run_to_absolute_position(p, pos % 360, pct * 10, direction=getattr(motor, w[0], w[1]))
+        speeds[name] = 0
+        moving[name] = (time.ticks_ms(), 54000 // pct + 500)
+    except Exception as e:
+        say('err ' + name + ' ' + str(e))
+
+
+def poll_inputs():
+    # Hubknoppen links/rechts en gebaren (tikken, schudden, vallen) doorgeven als ze veranderen.
+    try:
+        for key, which in (('L', 'LEFT'), ('R', 'RIGHT')):
+            down = 1 if button.pressed(getattr(button, which)) else 0
+            if down != inputs[key]:
+                inputs[key] = down
+                say('btn ' + key + ' ' + str(down))
+    except Exception:
+        pass
+    try:
+        g = motion_sensor.gesture()
+        if g != inputs['g']:
+            inputs['g'] = g
+            if g is not None and g >= 0:
+                say('ges ' + str(g))
+    except Exception:
+        pass
 
 
 def move_to(name, target, pct):
@@ -167,6 +271,42 @@ def handle(text):
         if len(parts) > 1:
             show(parts[1])
         return
+    if parts and parts[0] == 'halt':
+        halt_all()
+        return
+    if parts and parts[0] == 'deg':
+        # deg A:360:50 B:-360:50  (poort:graden:snelheid), alle motoren tegelijk
+        for tok in parts[1:]:
+            bits = tok.split(':')
+            try:
+                run_degrees(bits[0], int(bits[1]), int(bits[2]))
+            except (ValueError, IndexError):
+                pass
+        return
+    if parts and parts[0] == 'goto':
+        try:
+            go_to(parts[1], int(parts[2]), int(parts[3]), parts[4] if len(parts) > 4 else 's')
+        except (ValueError, IndexError):
+            pass
+        return
+    if parts and parts[0] == 'smode':
+        try:
+            stops[parts[1]] = max(0, min(2, int(parts[2])))
+        except (ValueError, IndexError):
+            pass
+        return
+    if parts and parts[0] == 'light':
+        try:
+            light.color(getattr(light, 'POWER', 0), int(parts[1]))
+        except Exception:
+            pass
+        return
+    if parts and parts[0] == 'eyes':
+        try:
+            distance_sensor.show(PORTS[parts[1]], [max(0, min(100, int(x))) for x in parts[2:6]])
+        except Exception:
+            pass
+        return
     if parts and parts[0] == 'pos':
         try:
             move_to(parts[1], int(parts[2]), int(parts[3]))
@@ -210,6 +350,10 @@ async def main():
             if notes:
                 hush()
         play_notes(time.ticks_ms())
+        inputs['n'] += 1
+        if inputs['n'] >= 5:
+            inputs['n'] = 0
+            poll_inputs()
         await runloop.sleep_ms(10)
 
 

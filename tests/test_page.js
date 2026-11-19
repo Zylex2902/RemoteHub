@@ -1,5 +1,5 @@
 // End-to-end test: runs the built page in headless Chrome against a simulated hub.
-// ONLY=AB node tests/test_page.js runs just those sections (A-G).
+// ONLY=AB node tests/test_page.js runs just those sections (A-H).
 const { chromium } = require('playwright');
 const jsQR = require('jsqr');
 const assert = require('assert');
@@ -9,7 +9,9 @@ const FILE = 'file://' + path.join(SITE, 'index.html');
 let HTTP = '';
 
 const fakeHub = (opts) => {
-  const H = (window.__hub = { tunnel: [], file: [], announced: null, started: false, events: [], writes: 0, maxWrite: 0, battery: 87, connects: 0, dist: 350, color: 9, force: 40 });
+  const H = (window.__hub = { tunnel: [], file: [], announced: null, started: false, events: [], writes: 0, maxWrite: 0, battery: 87, connects: 0, dist: 350, color: 9, force: 40,
+    imu: { face: 0, yaw: 0, pitch: 0, roll: 0 }, m: { C: { pos: 0, spd: 0, last: 0, goal: null, rate: 0 }, D: { pos: 0, spd: 0, last: 0, goal: null, rate: 0 } } });
+  const le16 = (x) => [x & 255, (x >> 8) & 255], le32 = (x) => [x & 255, (x >> 8) & 255, (x >> 16) & 255, (x >>> 24) & 255];
   const listeners = { tx: new Set(), dev: new Set() };
   let df = null, timer = null, running = 0;
   const notify = (payload) => {
@@ -32,7 +34,7 @@ const fakeHub = (opts) => {
         else { H.events.push('start:' + m[2]);
           const all = Uint8Array.from(H.file); H.fileOk = !!H.announced && Proto.crc(all) === H.announced.crc; H.program = new TextDecoder().decode(all);
           status(0x1f, H.fileOk); H.started = H.fileOk; notify(Uint8Array.of(0x20, 0));
-          if (H.fileOk) setTimeout(() => tun('rdy 4'), 30); }
+          if (H.fileOk) setTimeout(() => tun('rdy 5'), 30); }
         break;
       case 0x46: H.events.push('clear:' + m[1]); status(0x47, false); break;
       case 0x0c: { let e = m.indexOf(0, 1); H.announced = { name: new TextDecoder().decode(m.subarray(1, e)), slot: m[e + 1], crc: v.getUint32(e + 2, true) };
@@ -44,12 +46,25 @@ const fakeHub = (opts) => {
       case 0x28: { status(0x29, true); const iv = v.getUint16(1, true); H.events.push('devnot:' + iv);
         clearInterval(timer); timer = setInterval(() => {
           const d = H.dist < 0 ? 0xffff : H.dist;
-          const pay = [0, H.battery, 10, 2, 48, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 3, 48, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+          // simulated motors C and D: speed, or a move over degrees at its own rate; positions are reported
+          const dt = Math.max(50, iv) / 1000;
+          for (const k of ['C', 'D']) {
+            const mo = H.m[k];
+            if (mo.goal !== null) { const step = mo.rate * dt; if (Math.abs(mo.goal - mo.pos) <= step) { mo.pos = mo.goal; mo.goal = null; } else mo.pos += Math.sign(mo.goal - mo.pos) * step; }
+            else mo.pos += mo.spd * 10 * dt;
+          }
+          const mot = (k, i) => [10, i, 48, ...le16(((Math.round(H.m[k].pos) % 360) + 360) % 360), 0, 0, 0, ...le32(Math.round(H.m[k].pos))];
+          const imu = [1, H.imu.face, 0, ...le16(H.imu.yaw), ...le16(H.imu.pitch), ...le16(H.imu.roll), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+          const pay = [0, H.battery, ...mot('C', 2), ...mot('D', 3), ...imu];
           if (opts.sensors) pay.push(13, 0, d & 255, d >> 8, 12, 1, H.color, 0, 2, 16, 0, 32, 0, 11, 5, H.force, 1);
           notify(Uint8Array.from([0x3c, pay.length, 0, ...pay])); }, Math.max(50, iv)); break; }
       case 0x32: { const text = new TextDecoder().decode(Proto.parseTunnel(m));
         H.tunnel.push({ t: performance.now(), text });
-        if (H.started && text === '?') tun('rdy 4'); break; }
+        const parts = text.split(' ');
+        if (parts[0] === 'deg') parts.slice(1).forEach((tok) => { const [p, d, sp] = tok.split(':'); const mo = H.m[p]; if (mo) { mo.last = 0; mo.spd = 0; mo.goal = mo.pos + +d; mo.rate = +sp * 10; } });
+        else if (parts[0] === 'halt') Object.values(H.m).forEach((mo) => { mo.spd = 0; mo.last = 0; mo.goal = null; });
+        else if (/^[A-F]:-?\d+$/.test(parts[0])) parts.forEach((tok) => { const [p, v] = tok.split(':'); const mo = H.m[p]; if (mo && mo.last !== +v) { mo.last = +v; mo.spd = +v; mo.goal = null; } });
+        if (H.started && text === '?') tun('rdy 5'); break; }
     }
   };
   const ch = (name) => ({
@@ -69,6 +84,7 @@ const fakeHub = (opts) => {
         return { getPrimaryService: async () => ({ getCharacteristic: async (c) => (c.endsWith('0001-1000-8000-00805f9b34fb') ? rx : tx) }) }; },
       disconnect: () => { if (device.gatt.connected) H.events.push('gatt-disconnect'); device.gatt.connected = false; clearInterval(timer); } } };
   H.drop = () => { device.gatt.connected = false; clearInterval(timer); listeners.dev.forEach((f) => f({})); };
+  H.say = (text) => tun(text);
   H.hubStop = () => { H.started = false; notify(Uint8Array.of(0x20, 1)); };
   Object.defineProperty(navigator, 'bluetooth', { value: { requestDevice: async () => { H.choosers = (H.choosers || 0) + 1; return device; } }, configurable: true });
 };
@@ -595,6 +611,129 @@ const fakeHub = (opts) => {
   await page.screenshot({ path: OUT + '/play.png', fullPage: true });
   await page.context().close();
   console.log('G ok: songs, moods, faces, robot language, piano, dances, route, on/off motor, reactions');
+  }
+  // ---------- H. code tab: build a program with cards, run it against the simulated hub ----------
+  if (RUN('H')) {
+  page = await open({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+  page.on('dialog', (d) => d.accept(d.message().includes('variabele') ? 'teller' : 'Robotdans'));
+  const toastHas = (re, timeout) => page.waitForFunction((src) => new RegExp(src).test(document.getElementById('toasts').textContent), re.source, { timeout: timeout || 15000 });
+  const count = () => page.evaluate(() => window.__hub.tunnel.length);
+  const since = async (n) => (await tunnelOf(page)).slice(n);
+  const card = (i) => '#stacks .stack:nth-child(1) .pcard[data-i="' + i + '"]';
+  const depthsNow = () => page.$$eval('#stacks .pcard', (e) => e.map((x) => x.style.getPropertyValue('--d').trim()));
+  const addCard = async (fromSel, cat, type) => { await page.click(fromSel); await page.waitForTimeout(250); await page.click('.pcat.cat-' + cat); await page.click('.pcard.pick[data-t="' + type + '"]'); await page.waitForTimeout(250); };
+  await page.click('#btnConnect'); await waitPhase(page, 'ready');
+  await page.click('.tab[data-view="viewCode"]'); await page.waitForTimeout(400);
+  // the example program: smile, forward 10 cm, a happy sound, back 10 cm, write Hi!
+  assert.strictEqual(await page.$$eval('#stacks .pcard', (e) => e.length), 6);
+  let n0 = await count();
+  await page.click('#btnRun');
+  await page.waitForFunction(() => document.querySelector('#stacks .pcard.active'), null, { timeout: 3000 });
+  await toastHas(/Programma klaar/, 20000);
+  let msgs = await since(n0);
+  assert.deepStrictEqual(msgs.filter((x) => x.startsWith('deg ')), ['deg C:-206:50 D:206:50', 'deg C:206:50 D:-206:50'], msgs.join('|'));   // left motor C is reversed
+  assert.ok(msgs.includes('img 0000009090000009000909990'), 'smile');
+  assert.ok(msgs.some((x) => x.startsWith('tune ')), 'happy sound');
+  assert.ok(msgs.filter((x) => x.startsWith('img ')).length > 10, 'text scrolls');
+  assert.ok(msgs.includes('halt'), 'everything stopped at the end');
+  let pos = await page.evaluate(() => ({ c: window.__hub.m.C.pos, d: window.__hub.m.D.pos }));
+  assert.ok(Math.abs(pos.c) < 3 && Math.abs(pos.d) < 3, 'back where it started ' + JSON.stringify(pos));
+  assert.strictEqual(await page.$$eval('#stacks .pcard.active', (e) => e.length), 0);
+  assert.ok((await page.evaluate(() => window.__hub.events)).includes('devnot:50'), 'fast sensor updates while running');
+  // a new program, built from the card menu: repeat 2 { beep }, motor C 90 degrees, a variable, a picture
+  await page.click('#btnProgNew'); await page.waitForTimeout(300);
+  assert.strictEqual(await page.$$eval('#stacks .pcard', (e) => e.length), 1);
+  await addCard('#stacks .stackfoot .btn', 'control', 'repeat');
+  assert.deepStrictEqual(await depthsNow(), ['0', '1', '1']);
+  await page.fill(card(1) + ' input.vnum', '2');
+  await addCard(card(1) + ' ~ .ptools .btn.primary', 'sound', 'beepFor');
+  await page.fill(card(2) + ' input.vnum', '0.2');
+  assert.deepStrictEqual(await depthsNow(), ['0', '1', '2', '1'], 'beep inside the repeat');
+  await addCard('#stacks .stackfoot .btn', 'motor', 'motorFor');
+  const sels = await page.$$(card(4) + ' .pbody > select');
+  await sels[0].selectOption('C'); await sels[2].selectOption('deg'); await page.fill(card(4) + ' input.vnum', '90');
+  await addCard('#stacks .stackfoot .btn', 'var', 'setVar');
+  await page.selectOption(card(5) + ' select.var', '+'); await page.waitForTimeout(200);
+  assert.strictEqual(await page.$eval(card(5) + ' select.var', (e) => e.value), 'teller');
+  await page.selectOption(card(5) + ' .vsel', 's:dist');
+  await addCard('#stacks .stackfoot .btn', 'light', 'img');
+  await page.click(card(6) + ' .imgbtn'); await page.waitForTimeout(300);
+  await page.click('#imgPresets .imgbtn[aria-label="hartje"]'); await page.click('#imgGrid .px[data-i="12"]');
+  await page.click('#imgDone'); await page.waitForTimeout(300);
+  await page.click('#btnProgRename'); await page.waitForTimeout(200);
+  assert.strictEqual(await page.$eval('#selProg', (e) => e.selectedOptions[0].textContent), 'Robotdans');
+  n0 = await count();
+  await page.click('#btnRun'); await toastHas(/Programma klaar/, 15000);
+  msgs = await since(n0);
+  assert.strictEqual(msgs.filter((x) => x === 'tune 523:200').length, 2, msgs.join('|'));
+  assert.ok(msgs.indexOf('deg C:90:75') > msgs.lastIndexOf('tune 523:200'), 'motor after the beeps');
+  assert.ok(msgs.includes('img 0909099999990990999000900'), 'heart with the middle light off: ' + msgs.filter((x) => x.startsWith('img')).join(','));
+  // saved: reload and everything is still there
+  await page.reload(); await page.waitForTimeout(500);
+  const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('hubremote3')));
+  const rd = saved.programs.find((p) => p.name === 'Robotdans');
+  assert.ok(rd && rd.vars.includes('teller') && rd.stacks[0].length === 7, JSON.stringify(rd && rd.stacks[0].map((c) => c.t)));
+  assert.deepStrictEqual(rd.stacks[0][5].p.n, { k: 's', v: 'dist' });
+  await page.click('#btnConnect'); await waitPhase(page, 'ready');
+  await page.click('.tab[data-view="viewCode"]'); await page.waitForTimeout(300);
+  // STOP and leaving the screen stop a program that drives forever
+  await page.click('#btnProgNew'); await page.waitForTimeout(200);
+  await addCard('#stacks .stackfoot .btn', 'move', 'moveStart');
+  await addCard('#stacks .stackfoot .btn', 'control', 'wait'); await page.fill(card(2) + ' input.vnum', '10');   // a program that ends stops its motors
+  await page.click('#btnRun'); await page.waitForTimeout(700);
+  assert.notStrictEqual(await last(page), 'C:0 D:0', 'program drives');
+  assert.strictEqual(await page.$eval('#codeStatus', (e) => e.textContent), 'Programma loopt');
+  n0 = await count();
+  await page.dispatchEvent('#btnProgStop', 'pointerdown'); await page.waitForTimeout(400);
+  assert.ok((await since(n0)).includes('halt')); assert.strictEqual(await last(page), 'C:0 D:0');
+  assert.strictEqual(await page.evaluate(() => document.body.classList.contains('running')), false);
+  await page.click('#btnRun'); await page.waitForTimeout(500);
+  await page.click('.tab[data-view="viewPlay"]'); await page.waitForTimeout(400);
+  assert.strictEqual(await last(page), 'C:0 D:0', 'view switch stops the program');
+  assert.strictEqual(await page.evaluate(() => document.body.classList.contains('running')), false);
+  // events: wait until something is close, and when a hub button is pressed
+  await page.click('.tab[data-view="viewCode"]'); await page.waitForTimeout(300);
+  await page.click('#btnProgNew'); await page.waitForTimeout(200);
+  await addCard('#stacks .stackfoot .btn', 'control', 'waitUntil');
+  await addCard('#stacks .stackfoot .btn', 'sound', 'beepFor');
+  await page.click('#btnAddStack'); await page.waitForTimeout(250);
+  await page.click('.pcard.pick[data-t="when"]'); await page.waitForTimeout(250);
+  await page.selectOption('#stacks .stack:nth-child(2) .pcard[data-i="0"] select.ckind', 'btn'); await page.waitForTimeout(200);
+  await addCard('#stacks .stack:nth-child(2) .stackfoot .btn', 'sound', 'mood');
+  n0 = await count();
+  await page.click('#btnRun'); await page.waitForTimeout(500);
+  assert.strictEqual(await page.$eval('#codeStatus', (e) => e.textContent), 'Wacht op gebeurtenissen');
+  assert.ok(!(await since(n0)).some((x) => x.startsWith('tune')), 'nothing yet');
+  await page.evaluate(() => { window.__hub.dist = 60; }); await page.waitForTimeout(600);
+  assert.ok((await since(n0)).includes('tune 523:500'), 'beep once something is close');
+  n0 = await count();
+  await page.evaluate(() => window.__hub.say('btn L 1')); await page.waitForTimeout(500);
+  assert.ok((await since(n0)).some((x) => x.startsWith('tune ') && x !== 'tune 523:500'), 'mood on the hub button');
+  await page.evaluate(() => { window.__hub.dist = 350; });
+  await page.dispatchEvent('#btnProgStop', 'pointerdown'); await page.waitForTimeout(300);
+  // the joystick takes over from a running program
+  await page.click('#btnProgNew'); await page.waitForTimeout(200);
+  await addCard('#stacks .stackfoot .btn', 'move', 'moveStart');
+  await addCard('#stacks .stackfoot .btn', 'control', 'wait'); await page.fill(card(2) + ' input.vnum', '10');
+  await page.click('#btnRun'); await page.waitForTimeout(400);
+  assert.strictEqual(await page.evaluate(() => document.body.classList.contains('running')), true);
+  await page.setViewportSize({ width: 1280, height: 800 }); await page.waitForTimeout(400);   // wide: drive and code side by side
+  const P = await rect(page, '#pad');
+  await ptr(page, '#pad', 'pointerdown', P.cx, P.cy, 1); await page.waitForTimeout(300);
+  assert.strictEqual(await page.evaluate(() => document.body.classList.contains('running')), false, 'joystick takes over');
+  await ptr(page, '#pad', 'pointerup', P.cx, P.cy, 1);
+  // STOP stays on screen on small phones, also at the end of a long program
+  for (const [w, h] of [[280, 653], [844, 390], [375, 667]]) {
+    await page.setViewportSize({ width: w, height: h }); await page.waitForTimeout(300);
+    if (!(await page.$eval('#viewCode', (e) => e.classList.contains('active')))) { await page.click('.tab[data-view="viewCode"]'); await page.waitForTimeout(300); }
+    await page.evaluate(() => { document.getElementById('main').scrollTop = 1e6; }); await page.waitForTimeout(200);
+    const b = await rect(page, '#btnProgStop');
+    assert.ok(b.y >= 0 && b.y + b.h <= h && b.w > 60, w + 'x' + h + ' STOP visible: ' + JSON.stringify(b));
+  }
+  await page.setViewportSize({ width: 390, height: 844 }); await page.waitForTimeout(200);
+  await page.screenshot({ path: OUT + '/code.png' });
+  await page.context().close();
+  console.log('H ok: example program, card menu, nesting, variables, pictures, save, STOP, view switch, events, joystick');
   }
   await browser.close(); server.close();
   assert.deepStrictEqual(errors, [], 'page errors: ' + errors.join('\n'));
