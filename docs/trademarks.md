@@ -29,9 +29,13 @@ Pybricks, describe their compatibility the same way. This is a working checklist
 8. **Other brands:** no Apple or Google store badges until there is a published store app (their
    badge rules only allow them for live apps); "Scratch" and its cat are MIT trademarks and are not
    used. Plain words like "App Store", "Google Play", "iPhone", "Android" may describe availability.
-9. Keep `THIRD-PARTY-NOTICES.md`, `licenses/` and the comment at the top of `src/base.html` when
+9. **Building instructions are LEGO Education's.** We link to their instruction pages (a plain link
+   that opens their site) and may name the models to say which one a profile fits, but we never copy,
+   host, embed or redraw their instructions, pictures or PDFs. Our wiring diagram is our own
+   schematic of a hub with its port letters, not a picture of the product.
+10. Keep `THIRD-PARTY-NOTICES.md`, `licenses/` and the comment at the top of `src/base.html` when
    redistributing.
-10. A disclaimer does not make an otherwise misleading use acceptable.
+11. A disclaimer does not make an otherwise misleading use acceptable.
 
 ## Why
 

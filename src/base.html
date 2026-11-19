@@ -235,6 +235,17 @@
           <button class="btn sm danger" id="btnDelete" data-i18n="set.delete">Verwijderen</button>
         </div>
       </div>
+      <!-- Schema van de hub met wat er op elke poort hoort (eigen tekening), groen/rood als de hub verbonden is. -->
+      <h3 class="wiretitle" data-i18n="wire.title">Zo sluit je hem aan</h3>
+      <div class="wiring" id="wiring"></div>
+      <p class="small wirelive" id="wireLive" data-i18n="wire.live"></p>
+    </div>
+
+    <div class="card" id="robots">
+      <h2 data-i18n="robots.title">Bouw een robot</h2>
+      <p class="small" style="margin:0" data-i18n="robots.help"></p>
+      <div class="models" id="models"></div>
+      <p class="small disclaim" style="margin:0" data-i18n="robots.note"></p>
     </div>
 
     <div class="card">
@@ -347,6 +358,7 @@
   <div class="card box">
     <h2 id="shareTitle"></h2>
     <div class="qr" id="qr"></div>
+    <div class="wiring small2" id="shareWiring"></div>
     <p class="small" id="shareNote" style="margin:0"></p>
     <input type="text" id="shareLink" readonly>
     <div class="rowbtns">

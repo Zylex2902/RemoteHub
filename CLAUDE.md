@@ -81,6 +81,13 @@ no App Store or Google Play badges before then.
   It acts on pointer down (start when idle, STOP while running) and is registered with Blockly's
   component manager as a positionable, so Blockly moves its trash can and zoom buttons above it.
   In Python mode it moves into `#pyEdit` (`showCodeMode()`) and back into `#blocklyDiv` after.
+- Build a robot: `MODELS` in `src/app.js` (Driving Base C+D with tool motor E; Driving Base 3 adds a
+  colour sensor on B; Advanced Driving Base drives on E (left) + A (right), tools C+D, colour sensors
+  B+F; Essential car A+B). Ports were read from the wiring page of LEGO Education's instruction PDFs
+  and the `motor_pair.pair(PAIR_1, port.C, port.D)` / `(port.E, port.A)` lines in their Python lessons;
+  left/right of the Advanced Driving Base is not confirmed on hardware. We only LINK to their
+  instructions (rule 9 of `docs/trademarks.md`). Profiles store `model`; the share link appends it.
+  `wiringSvg()` is our own schematic; live colours come from `st.motors`/`st.sensors`.
 - Layout must keep STOP visible without scrolling on every size in `tests/test_page.js` section E
   and both fold postures in `tests/test_fold.js`.
 

@@ -572,3 +572,33 @@ html[data-theme="dark"] #pyCheat code{color:var(--accent-hi)}
 .codehead{display:flex;flex-wrap:wrap;align-items:center;gap:10px 12px}
 .codehead .codetop{flex:1 1 330px;min-width:0}
 .codehead .codekind{align-self:center}
+/* ---- versie 5.3: aansluitschema en bouwmodellen ---- */
+.wiretitle{margin:18px 0 6px;font:600 15px var(--head)}
+.wiring svg{display:block;width:100%;max-width:420px;height:auto;margin:0 auto;font-family:var(--font)}
+.wiring.modelwire svg{max-width:360px}
+.wiring.small2 svg{max-width:300px}
+.w-hub{fill:var(--panel2);stroke:var(--edge);stroke-width:2}
+.w-px{fill:var(--line)}
+.w-btn{fill:var(--panel);stroke:var(--edge);stroke-width:2}
+.w-plug{fill:var(--panel);stroke:var(--edge);stroke-width:1.5}
+.w-letter{font:700 13px var(--head);fill:var(--muted)}
+.w-port.used .w-letter{fill:var(--text)}
+.w-line{stroke:var(--muted);stroke-width:2;stroke-dasharray:4 3;fill:none}
+.w-ico{fill:var(--panel);stroke:var(--accent);stroke-width:2}
+.w-ico2{stroke:var(--accent);stroke-width:2;fill:none;stroke-linecap:round}
+.w-dot{fill:var(--accent)}
+.w-label{font:600 14.5px var(--font);fill:var(--text)}
+.w-port.ok .w-ico,.w-port.ok .w-plug{stroke:var(--ok)}.w-port.ok .w-ico2{stroke:var(--ok)}.w-port.ok .w-dot{fill:var(--ok)}.w-port.ok .w-line{stroke:var(--ok)}
+.w-port.bad .w-ico,.w-port.bad .w-plug{stroke:var(--danger)}.w-port.bad .w-ico2{stroke:var(--danger)}.w-port.bad .w-dot{fill:var(--danger)}.w-port.bad .w-line{stroke:var(--danger)}.w-port.bad .w-label{fill:var(--danger)}
+.w-port.extra{opacity:.6}.w-port.extra .w-ico,.w-port.extra .w-ico2{stroke:var(--muted)}.w-port.extra .w-dot{fill:var(--muted)}
+.wirelive{margin:6px 0 0;display:none}.wirelive.on{display:block}
+.models{display:grid;grid-template-columns:1fr;gap:12px;margin:12px 0}
+@media (min-width:640px){.models{grid-template-columns:1fr 1fr}}
+@media (min-width:900px){.models{grid-template-columns:1fr}}
+.model{display:flex;flex-direction:column;gap:8px;padding:14px;border-radius:16px;border:2px solid var(--line);background:var(--panel2)}
+.mhead{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.mhead b{font:600 16px var(--head)}
+.mkind{font-size:12px;color:var(--muted);white-space:nowrap}
+.model p{margin:0}
+.model .rowbtns .btn{flex:1;text-decoration:none;text-align:center;color:var(--text)}.model .rowbtns .btn.primary{color:var(--accent-ink)}
+.disclaim{opacity:.85}

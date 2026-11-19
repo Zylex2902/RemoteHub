@@ -12,8 +12,17 @@
   const KEY = 'hubremote3';
   const uid = () => Math.random().toString(36).slice(2, 9);
   const newAux = () => ({ port: '-', name: '', speed: 60, mode: 'hold', travel: 90 });
+  // Officiële bouwmodellen: de bouwinstructies blijven bij LEGO Education (we linken er alleen naar);
+  // de poorten komen uit het aansluitschema in die instructies en de Python-lessen van LEGO Education.
+  const MODELS = [
+    { id: 'db', hub: 'prime', left: 'C', right: 'D', aux: [['E', 'model.tool']], sens: {}, progs: ['square'] },
+    { id: 'db3', hub: 'prime', left: 'C', right: 'D', aux: [['E', 'model.tool']], sens: { B: 'color' }, progs: ['square', 'line'] },
+    { id: 'adb', hub: 'prime', left: 'E', right: 'A', aux: [['C', 'model.toolN'], ['D', 'model.toolN']], sens: { B: 'color', F: 'color' }, progs: ['square', 'line'] },
+    { id: 'ess', hub: 'essential', left: 'A', right: 'B', aux: [], sens: {}, progs: ['square'] },
+  ];
+  const modelOf = (p) => MODELS.find((m) => m.id === (p && p.model));
   const newProfile = (name) => ({ id: uid(), name, left: 'A', right: 'B', invL: true, invR: false, speed: 60, turn: 60, trim: 0, userPorts: false,
-    aux: [newAux(), newAux()], guard: false, guardCm: 20 });
+    aux: [newAux(), newAux()], guard: false, guardCm: 20, model: '' });
   const G = { lang: 'auto', theme: 'light', sound: true, haptic: true, slot: 19, mode: 'joy', active: '', profiles: [],
     hubVol: 60, voice: 'normal', react: true, song: [], path: [], programs: [], progActive: '', hubKind: 'auto',
     codeMode: 'blocks', py: [], pyActive: '' };
@@ -36,7 +45,7 @@
       name: String(p.name || '').slice(0, 30).trim() || t('profile.default'),
       left: isPort(p.left) ? p.left : 'A', right: isPort(p.right) ? p.right : 'B', invL: p.invL !== false, invR: p.invR === true,
       speed: num(p.speed, 10, 100, 60), turn: num(p.turn, 20, 100, 60), trim: num(p.trim, -20, 20, 0), userPorts: p.userPorts === true,
-      guard: p.guard === true, guardCm: num(p.guardCm, 5, 60, 20),
+      guard: p.guard === true, guardCm: num(p.guardCm, 5, 60, 20), model: modelOf(p) ? p.model : '',
       aux: [0, 1].map((i) => { const a = aux[i] && typeof aux[i] === 'object' ? aux[i] : {};
         return { port: isPort(a.port) ? a.port : '-', name: String(a.name || '').slice(0, 20), speed: num(a.speed, 10, 100, 60), mode: ['grip', 'toggle'].includes(a.mode) ? a.mode : 'hold', travel: num(a.travel, -720, 720, 90) }; }),
     };
@@ -280,7 +289,7 @@
     $('playWhere').textContent = whereText();
     if (p === 'idle') {
       showBattery(null); st.motors = []; st.gotMotors = false; showChips(); showSensors([]);
-      st.hw = null; st.product = null; st.kindLogged = ''; applyHubKind();
+      st.hw = null; st.product = null; st.kindLogged = ''; applyHubKind(); renderWiring();
       $('infoName').textContent = '-'; $('infoFw').textContent = '-';
     }
   }
@@ -332,6 +341,7 @@
       }
       box.classList.toggle('on', list.length > 0);
       if (list.length) log(t('msg.sensors', list.map((s) => t('sens.' + s.type) + ' ' + s.port).join(', ')));
+      renderWiring();
     }
     for (const s of list) {
       const chip = box.querySelector('[data-id="' + s.type + s.port + '"]');
@@ -353,7 +363,7 @@
   function showMotors(list) {
     if (st.gotMotors && list.join('') === st.motors.join('')) return;
     const first = !st.gotMotors;
-    st.motors = list; st.gotMotors = true; showChips();
+    st.motors = list; st.gotMotors = true; showChips(); renderWiring();
     if (first) {
       // Eerste keer: kies automatisch de eerste twee motorpoorten als de huidige keuze niet klopt.
       if (!S.userPorts && list.length >= 2 && !(list.includes(S.left) && list.includes(S.right))) {
@@ -1647,7 +1657,7 @@
   });
 
   /* voorbeelden: gebruiken de poorten van het gekozen robotprofiel */
-  const PY_EX = ['hello', 'square', 'wall', 'tilt', 'empty'];
+  const PY_EX = ['hello', 'square', 'wall', 'line', 'tilt', 'empty'];
   function pyExampleSrc(k) {
     const L = S.left, R = S.right, big = !smallHub(), c = (key, ...a) => '# ' + t(key, ...a);
     const free = (st.sensors || []).find((x) => x.type === 'distance');
@@ -1673,6 +1683,14 @@
       '        d = distance_sensor.distance(port.' + dport + ')  ' + c('py.x.mm'), '        if 0 <= d < 100:', '            break', '        await runloop.sleep_ms(50)',
       '    motor_pair.stop(motor_pair.PAIR_1)', '    print(d)', say('py.done'),
     ].concat(run).join('\n');
+    if (k === 'line') {
+      const cp = colorPort(S);
+      return [
+        'from hub import port', 'import motor_pair, color_sensor, color, runloop', '', 'async def main():', '    ' + c('py.x.line', cp),
+        '    motor_pair.pair(motor_pair.PAIR_1, port.' + L + ', port.' + R + ')', '    motor_pair.move(motor_pair.PAIR_1, 0, velocity=250)',
+        '    while color_sensor.color(port.' + cp + ') != color.BLACK:', '        await runloop.sleep_ms(20)', '    motor_pair.stop(motor_pair.PAIR_1)', say('py.done'),
+      ].concat(run).join('\n');
+    }
     if (k === 'tilt') return [
       'from hub import motion_sensor', 'import runloop', '', 'async def main():', '    ' + c('py.x.tilt'), '    for i in range(20):',
       '        yaw, pitch, roll = motion_sensor.tilt_angles()  ' + c('py.x.tenths'), '        print(yaw, pitch, roll)', '        await runloop.sleep_ms(500)',
@@ -1684,7 +1702,7 @@
     const sel = $('selPyEx');
     sel.textContent = '';
     const first = el('option'); first.value = ''; first.textContent = t('py.exPick'); sel.appendChild(first);
-    PY_EX.filter((k) => !(k === 'wall' && smallHub())).forEach((k) => { const o = el('option'); o.value = k; o.textContent = t('py.ex.' + k); sel.appendChild(o); });
+    PY_EX.filter((k) => !((k === 'wall' || k === 'line') && smallHub())).forEach((k) => { const o = el('option'); o.value = k; o.textContent = t('py.ex.' + k); sel.appendChild(o); });
     sel.value = '';
   }
   $('selPyEx').addEventListener('change', (e) => {
@@ -1879,6 +1897,7 @@
   function encodeProfile(p) {
     const arr = [1, p.name, p.left, p.right, +p.invL, +p.invR, p.speed, p.turn, p.trim, +p.guard, p.guardCm];
     for (const a of p.aux) arr.push(a.port, a.name, a.speed, a.mode === 'grip' ? 1 : a.mode === 'toggle' ? 2 : 0, a.travel);
+    if (p.model) arr.push(p.model);
     let bin = '';
     enc.encode(JSON.stringify(arr)).forEach((b) => { bin += String.fromCharCode(b); });
     return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
@@ -1888,7 +1907,7 @@
     const a = JSON.parse(dec.decode(Uint8Array.from(bin, (c) => c.charCodeAt(0))));
     if (!Array.isArray(a) || a[0] !== 1 || a.length < 21) throw new Error('bad');
     const aux = [0, 1].map((i) => { const o = 11 + i * 5; return { port: a[o], name: a[o + 1], speed: a[o + 2], mode: a[o + 3] === 1 ? 'grip' : a[o + 3] === 2 ? 'toggle' : 'hold', travel: a[o + 4] }; });
-    return cleanProfile({ name: a[1], left: a[2], right: a[3], invL: a[4] === 1, invR: a[5] === 1, speed: a[6], turn: a[7], trim: a[8], guard: a[9] === 1, guardCm: a[10], aux, userPorts: true });
+    return cleanProfile({ name: a[1], left: a[2], right: a[3], invL: a[4] === 1, invR: a[5] === 1, speed: a[6], turn: a[7], trim: a[8], guard: a[9] === 1, guardCm: a[10], aux, userPorts: true, model: a[21] });
   }
   function importFromHash() {
     const m = /^#p=([\w-]+)$/.exec(location.hash);
@@ -1923,6 +1942,7 @@
         path.setAttribute('d', d); path.setAttribute('fill', '#0d1014'); svg.appendChild(path); box.appendChild(svg);
       } catch (e) { box.classList.add('off'); }
     }
+    $('shareWiring').innerHTML = wiringSvg(S, false, smallHub());
     $('btnNativeShare').style.display = navigator.share ? '' : 'none';
     $('sheet').classList.add('on'); $('sheet').setAttribute('aria-hidden', 'false'); sfx.open();
   }
@@ -1963,6 +1983,123 @@
     if (!G.profiles.length) G.profiles = [newProfile(t('profile.default'))];
     sfx.stop(); buzz(20); switchProfile(G.profiles[0].id);
   });
+
+  /* ---------- aansluitschema en bouwmodellen ---------- */
+  // Wat er volgens het profiel op elke poort hoort: rijmotoren, extra motoren en de sensoren van het model.
+  function wantedPorts(p) {
+    const want = {};
+    const put = (port, kind, label) => { if (isPort(port) && !want[port]) want[port] = { kind, label }; };
+    put(p.left, 'motor', t('wire.left')); put(p.right, 'motor', t('wire.right'));
+    p.aux.forEach((a, i) => put(a.port, 'motor', a.name || t('aux.n', i + 1)));
+    const m = modelOf(p);
+    if (m) for (const [port, kind] of Object.entries(m.sens)) put(port, kind, t('wire.' + kind));
+    return want;
+  }
+  // Eigen schematische tekening van de hub (geen foto of tekening van LEGO): poorten A, C, E links en B, D, F rechts.
+  function wiringSvg(p, live, small) {
+    const ports = small ? ['A', 'B'] : ['A', 'B', 'C', 'D', 'E', 'F'], want = wantedPorts(p);
+    const rows = small ? 1 : 3, H = 40 + rows * 52, hubY = 12, hubH = H - 24;
+    const seen = {};
+    if (live) {
+      st.motors.forEach((port) => { seen[port] = 'motor'; });
+      (st.sensors || []).forEach((x) => { seen[x.port] = x.type; });
+    }
+    const cut = (x) => (x.length > 15 ? x.slice(0, 14) + '…' : x);
+    // Breedte 440: de hub in het midden, links en rechts ruimte voor een naam.
+    const HL = 178, HR = 262;
+    let out = '<svg viewBox="0 0 440 ' + H + '" role="img" aria-label="' + escHtml(t('wire.title')) + '">';
+    out += '<rect class="w-hub" x="' + HL + '" y="' + hubY + '" width="' + (HR - HL) + '" height="' + hubH + '" rx="16"/>';
+    if (!small) for (let r = 0; r < 5; r++) for (let c = 0; c < 5; c++) out += '<rect class="w-px" x="' + (203 + c * 7) + '" y="' + (hubY + 16 + r * 7) + '" width="4.5" height="4.5" rx="1"/>';
+    out += '<circle class="w-btn" cx="220" cy="' + (hubY + hubH - 20) + '" r="9"/>';
+    ports.forEach((port, i) => {
+      const left = small ? i === 0 : i % 2 === 0, row = small ? 0 : Math.floor(i / 2);
+      const y = small ? hubY + hubH / 2 : hubY + 44 + row * 52;
+      const w = want[port], found = seen[port];
+      let cls = '', label = '', kind = '';
+      if (w) { label = w.label; kind = w.kind; if (live) cls = found === w.kind ? ' ok' : ' bad'; }
+      else if (found) { label = t('wire.' + (found === 'motor' ? 'motor' : found)); kind = found; cls = ' extra'; }
+      const px = left ? HL - 6 : HR - 10, ex = left ? 146 : 294, ix = left ? 134 : 306;
+      out += '<g class="w-port' + cls + (label ? ' used' : '') + '" data-port="' + port + '">';
+      out += '<rect class="w-plug" x="' + px + '" y="' + (y - 9) + '" width="16" height="18" rx="4"/>';
+      out += '<text class="w-letter" x="' + (left ? HL + 18 : HR - 18) + '" y="' + (y + 4) + '" text-anchor="middle">' + port + '</text>';
+      if (label) {
+        out += '<path class="w-line" d="M' + (left ? px : px + 16) + ' ' + y + 'H' + ex + '"/>';
+        if (kind === 'motor') out += '<circle class="w-ico" cx="' + ix + '" cy="' + y + '" r="10"/><path class="w-ico2" d="M' + (ix - 5) + ' ' + y + 'h10M' + ix + ' ' + (y - 5) + 'v10"/>';
+        else if (kind === 'color') out += '<rect class="w-ico" x="' + (ix - 10) + '" y="' + (y - 10) + '" width="20" height="20" rx="5"/><circle class="w-dot" cx="' + ix + '" cy="' + y + '" r="4.5"/>';
+        else if (kind === 'distance') out += '<rect class="w-ico" x="' + (ix - 11) + '" y="' + (y - 8) + '" width="22" height="16" rx="8"/><circle class="w-dot" cx="' + (ix - 5) + '" cy="' + y + '" r="3.5"/><circle class="w-dot" cx="' + (ix + 5) + '" cy="' + y + '" r="3.5"/>';
+        else out += '<rect class="w-ico" x="' + (ix - 9) + '" y="' + (y - 9) + '" width="18" height="18" rx="4"/><path class="w-ico2" d="M' + (ix - 4) + ' ' + y + 'h8"/>';
+        out += '<text class="w-label" x="' + (left ? ix - 16 : ix + 16) + '" y="' + (y + 4) + '" text-anchor="' + (left ? 'end' : 'start') + '">' + escHtml(cut(label)) + '</text>';
+        if (live) out += '<title>' + escHtml(port + ': ' + label + ' (' + t(cls === ' ok' ? 'wire.found' : cls === ' bad' ? 'wire.missing' : 'wire.extra') + ')') + '</title>';
+      }
+      out += '</g>';
+    });
+    return out + '</svg>';
+  }
+  const linkedLive = () => st.gotMotors && (st.phase === 'ready' || st.phase === 'python' || st.phase === 'stopped');
+  function renderWiring() {
+    const live = linkedLive();
+    $('wiring').innerHTML = wiringSvg(S, live, smallHub());
+    $('wireLive').classList.toggle('on', live);
+  }
+
+  // Profiel bij een bouwmodel; de namen van extra motoren komen uit het model.
+  function modelProfile(m, name) {
+    const p = newProfile(name);
+    Object.assign(p, { left: m.left, right: m.right, invL: true, invR: false, userPorts: true, model: m.id });
+    m.aux.forEach(([port, key], i) => { p.aux[i].port = port; p.aux[i].name = t(key, port).slice(0, 20); });
+    return p;
+  }
+  const colorPort = (p) => { const m = modelOf(p), mp = m && Object.keys(m.sens).find((k) => m.sens[k] === 'color'), d = (st.sensors || []).find((x) => x.type === 'color');
+    return mp || (d && d.port) || 'B'; };
+  function starterCards(k, p) {
+    const n = (v) => ({ k: 'n', v }), card = (tp, prm) => Object.assign(Cards.newCard(tp), prm ? { p: Object.assign(Cards.newCard(tp).p, prm) } : {});
+    if (k === 'line') return { stacks: [[card('start'), card('moveSpeed', { n: n(30) }), card('moveStart'), card('waitUntil', { c: { k: 'color', p: colorPort(p), col: 0 } }), card('moveStop'), card('mood', { mood: 'happy' })]] };
+    return { stacks: [[card('start'), card('repeat', { n: n(4) }), card('moveFor', { n: n(20) }), card('turn', { side: 'right', n: n(90) }), card('end'), card('mood', { mood: 'happy' })]] };
+  }
+  // Voorbeeldprogramma's bij het model, in blokken en in Python; bestaande programma's met dezelfde naam blijven.
+  function addStarters(m) {
+    let firstB = null, firstP = null;
+    for (const k of m.progs) {
+      const name = t('prog.' + k);
+      let b = G.programs.find((x) => x.name === name);
+      if (!b && G.programs.length < 30) { b = { id: uid(), name, ws: Cards.toBlocks(Cards.cleanProgram(starterCards(k, S))) }; G.programs.push(b); }
+      let y = G.py.find((x) => x.name === name);
+      if (!y && G.py.length < 30) { y = { id: uid(), name, src: pyExampleSrc(k) }; G.py.push(y); }
+      firstB = firstB || b; firstP = firstP || y;
+    }
+    if (firstB) G.progActive = firstB.id;
+    if (firstP) G.pyActive = firstP.id;
+    save(); renderProgs();
+    if (G.codeMode === 'python') loadPy(); else if (code.ws) loadWorkspace();
+  }
+  function useModel(m) {
+    const name = t('model.' + m.id + '.name');
+    let p = G.profiles.find((x) => x.model === m.id);
+    if (!p) { p = modelProfile(m, uniqueName(name)); G.profiles.push(p); }
+    switchProfile(p.id); addStarters(m);
+    toast(t('robots.used', p.name), 'ok'); log(t('robots.used', p.name), 'ok'); sfx.open(); buzz(15);
+    if ((m.hub === 'prime') === smallHub() && st.phase !== 'idle') toast(t('robots.wrongHub', t('model.' + m.hub)), 'warn');
+  }
+  const INSTR = { prime: 'spike-prime', essential: '45345-spike-essential-resource-page' };
+  const instrUrl = (m) => 'https://education.lego.com/' + (curLang() === 'nl' ? 'nl-nl' : 'en-us') + '/product-resources/' + INSTR[m.hub] + '/downloads/building-instructions/';
+  function renderModels() {
+    const box = $('models'); box.textContent = '';
+    for (const m of MODELS) {
+      const card = el('div', 'model'); card.dataset.model = m.id;
+      const head = el('div', 'mhead'), b = el('b'), kind = el('span', 'mkind');
+      b.textContent = t('model.' + m.id + '.name'); kind.textContent = t('model.' + m.hub);
+      head.append(b, kind);
+      const desc = el('p', 'small'); desc.textContent = t('model.' + m.id + '.desc');
+      const pic = el('div', 'wiring modelwire'); pic.innerHTML = wiringSvg(modelProfile(m, ''), false, m.hub === 'essential');
+      const row = el('div', 'rowbtns'), a = el('a', 'btn sm'), use = el('button', 'btn sm primary');
+      a.href = instrUrl(m); a.target = '_blank'; a.rel = 'noopener noreferrer'; a.textContent = t('robots.build') + ' ↗';
+      use.type = 'button'; use.textContent = t('robots.use');
+      use.addEventListener('click', () => useModel(m));
+      row.append(a, use);
+      card.append(head, desc, pic, row);
+      box.appendChild(card);
+    }
+  }
 
   /* ---------- instellingen-UI ---------- */
   function fill(sel, items) { const v = sel.value; sel.textContent = ''; for (const [val, txt] of items) { const o = el('option'); o.value = val; o.textContent = txt; sel.appendChild(o); } if (v) sel.value = v; }
@@ -2032,7 +2169,7 @@
     $('rngVol').value = G.hubVol; $('outVol').textContent = G.hubVol + '%'; $('chkReact').checked = G.react; $('selVoice').value = G.voice;
     $('btnRoute').disabled = !G.path.length; $('btnSongPlay').disabled = !G.song.length;
     $('warnPorts').classList.toggle('on', S.left === S.right);
-    renderAux();
+    renderAux(); renderWiring();
   }
   const bind = (id, ev, fn) => $(id).addEventListener(ev, (e) => { fn(e.target); save(); syncSettings(); if (e.target.tagName === 'SELECT') e.target.blur(); });
   bind('selLeft', 'change', (n) => { S.left = n.value; S.userPorts = true; sfx.tick(); });
@@ -2080,7 +2217,7 @@
     if (st.songRec) $('btnSongRec').textContent = t('piano.stopRec');
     $('pillText').dataset.t = ''; $('btnConnectText').dataset.t = ''; $('hint').dataset.t = '';
     phaseTexts(); setText($('hint'), t(...st.hint));
-    fillStatic(); fillProfiles(); renderAuxSettings(); syncSettings(); showChips(); rebuildEditor(); showCodeMode();
+    fillStatic(); fillProfiles(); renderAuxSettings(); syncSettings(); showChips(); rebuildEditor(); showCodeMode(); renderModels();
     showSensors(st.sensors);
     showBle();
   }

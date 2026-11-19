@@ -29,6 +29,12 @@ no light matrix) sounds play on the phone and pictures are skipped.
   loops and if/else, number and true/false blocks that fit in slots (sums, random numbers, sensor
   values, and/or/not), variables, pictures you draw, and several stacks that start on events; the
   running block lights up
+- Build a robot (Settings): the official SPIKE™ driving bases (Driving Base 1-3, Advanced Driving
+  Base) and a two-motor SPIKE™ Essential car. A link opens LEGO® Education's own free building
+  instructions; Use sets up a profile with the right ports and adds example programs (blocks and
+  Python). Ports come from the wiring page in those instructions and LEGO Education's Python lessons
+- Wiring diagram: a drawing of the hub showing what goes on each port, from the profile; when the
+  hub is connected it turns green or red per port (found or missing). Also in the share sheet
 - Python: switch the Code tab to Python and write real MicroPython that runs on the hub, with the
   same modules as the official app's Python (`motor`, `motor_pair`, `light_matrix`, `sound`,
   `distance_sensor`, `runloop`, ...). A coloured editor with line numbers and auto-indent, examples

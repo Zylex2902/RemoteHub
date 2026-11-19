@@ -1,5 +1,5 @@
 // End-to-end test: runs the built page in headless Chrome against a simulated hub.
-// ONLY=AB node tests/test_page.js runs just those sections (A-J).
+// ONLY=AB node tests/test_page.js runs just those sections (A-K).
 const { chromium } = require('playwright');
 const jsQR = require('jsqr');
 const assert = require('assert');
@@ -755,7 +755,7 @@ let HTTP = '';
   assert.ok(/runloop\.run\(main\(\)\)/.test(r.src) && /light_matrix\.write/.test(r.src), 'starts with the hello example');
   assert.ok(r.kw > 3, 'keywords coloured'); assert.strictEqual(r.fabIn, 'pyEdit');
   assert.ok(/slot 18/.test(r.help) && /slot 19/.test(r.help), r.help);
-  assert.deepStrictEqual(r.ex, ['', 'hello', 'square', 'wall', 'tilt', 'empty']); assert.ok(r.cheat > 10);
+  assert.deepStrictEqual(r.ex, ['', 'hello', 'square', 'wall', 'line', 'tilt', 'empty']); assert.ok(r.cheat > 10);
   const fab = await rect(page, '#btnPlay'), box = await rect(page, '#pyEdit');
   assert.ok(fab.x + fab.w <= box.x + box.w && fab.y + fab.h <= box.y + box.h && fab.y + fab.h <= 900, 'run button in the editor corner, on screen');
   // typing: Enter keeps the indent and adds 4 after a colon; Tab gives spaces
@@ -824,6 +824,65 @@ let HTTP = '';
   }
   await page.context().close();
   console.log('J ok: Python editor, run in its own slot, output, error line, STOP, view switch, examples, kept after reload, run button on every size');
+  }
+  // ---------- K. building models and the wiring diagram ----------
+  if (RUN('K')) {
+  page = await open({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true }, { sensors: true });
+  const wire = (sel) => page.$$eval(sel + ' .w-port', (g) => g.map((x) => x.dataset.port + ':' + (x.classList.contains('ok') ? 'ok' : x.classList.contains('bad') ? 'bad' : x.classList.contains('extra') ? 'extra' : x.classList.contains('used') ? 'used' : '-')));
+  await page.click('.tab[data-view="viewSettings"]'); await page.waitForTimeout(400);
+  assert.deepStrictEqual(await wire('#wiring'), ['A:used', 'B:used', 'C:-', 'D:-', 'E:-', 'F:-'], 'default profile: left A, right B, not connected');
+  assert.ok(!(await page.$eval('#wireLive', (e) => e.classList.contains('on'))));
+  await page.click('.tab[data-view="viewDrive"]'); await page.waitForTimeout(300);
+  await page.click('#btnConnect'); await waitPhase(page, 'ready');
+  await page.click('.tab[data-view="viewSettings"]'); await page.waitForTimeout(400);
+  // motors on C and D are taken over and shown green; the sensors the hub finds are grey extras
+  await page.waitForFunction(() => document.querySelector('#wiring .w-port[data-port="C"]').classList.contains('ok'));
+  assert.deepStrictEqual(await wire('#wiring'), ['A:extra', 'B:extra', 'C:ok', 'D:ok', 'E:-', 'F:extra']);
+  assert.ok(await page.$eval('#wireLive', (e) => e.classList.contains('on')));
+  // the catalogue: four models, links to LEGO Education's own instructions in a new tab
+  const models = await page.$$eval('#models .model', (m) => m.map((x) => ({ id: x.dataset.model, href: x.querySelector('a').href, target: x.querySelector('a').target, ports: x.querySelectorAll('.w-port').length, used: x.querySelectorAll('.w-port.used').length })));
+  assert.deepStrictEqual(models.map((m) => m.id), ['db', 'db3', 'adb', 'ess']);
+  assert.ok(models.every((m) => m.target === '_blank' && /^https:\/\/education\.lego\.com\/nl-nl\/product-resources\/.+\/building-instructions\/$/.test(m.href)), JSON.stringify(models));
+  assert.deepStrictEqual(models.map((m) => [m.ports, m.used]), [[6, 3], [6, 4], [6, 6], [2, 2]]);
+  // use the Advanced Driving Base: profile with its ports, example programs in blocks and Python
+  await page.click('#models .model[data-model="adb"] .btn.primary'); await page.waitForTimeout(300);
+  await page.waitForFunction(() => /Geavanceerde rijbasis" staat klaar/.test(document.getElementById('toasts').textContent));
+  let r = await page.evaluate(() => { const g = JSON.parse(localStorage.getItem('hubremote3')), p = g.profiles.find((x) => x.id === g.active);
+    return { p, n: g.profiles.length, progs: g.programs.map((x) => x.name), py: g.py.map((x) => x.name), line: (g.py.find((x) => x.name === 'Stop op zwart') || {}).src, active: g.progActive === g.programs.find((x) => x.name === 'Vierkant rijden').id }; });
+  assert.strictEqual(r.p.name, 'Geavanceerde rijbasis'); assert.strictEqual(r.p.model, 'adb');
+  assert.deepStrictEqual([r.p.left, r.p.right, r.p.aux[0].port, r.p.aux[1].port, r.p.aux[0].name], ['E', 'A', 'C', 'D', 'Werktuig C']);
+  assert.ok(r.progs.includes('Vierkant rijden') && r.progs.includes('Stop op zwart') && r.active, r.progs.join());
+  assert.ok(r.py.includes('Vierkant rijden') && r.py.includes('Stop op zwart'), r.py.join());
+  assert.ok(r.line.includes('motor_pair.pair(motor_pair.PAIR_1, port.E, port.A)') && r.line.includes('color_sensor.color(port.B) != color.BLACK'), r.line);
+  assert.strictEqual(await page.$eval('#selLeft', (e) => e.value), 'E');
+  // live check: A has a distance sensor instead of a motor (red), B has the colour sensor (green), no motor on E (red)
+  assert.deepStrictEqual(await wire('#wiring'), ['A:bad', 'B:ok', 'C:ok', 'D:ok', 'E:bad', 'F:bad']);
+  // using it again switches to the same profile instead of adding one
+  const nProfiles = r.n;
+  await page.click('#models .model[data-model="db"] .btn.primary'); await page.waitForTimeout(200);
+  await page.click('#models .model[data-model="adb"] .btn.primary'); await page.waitForTimeout(300);
+  r = await page.evaluate(() => { const g = JSON.parse(localStorage.getItem('hubremote3')); return { n: g.profiles.length, names: g.programs.filter((x) => x.name === 'Vierkant rijden').length }; });
+  assert.strictEqual(r.n, nProfiles + 1, 'one new profile for Driving Base, none for the second tap'); assert.strictEqual(r.names, 1, 'no duplicate programs');
+  // the starter program opens as blocks
+  await page.click('.tab[data-view="viewCode"]'); await page.waitForTimeout(800);
+  assert.deepStrictEqual(await page.evaluate(() => Blockly.getMainWorkspace().getTopBlocks(true).map((b) => { const o = []; for (let x = b; x; x = x.getNextBlock()) o.push(x.type); return o; })), [['start', 'repeat', 'mood']]);
+  await page.selectOption('#selProg', { label: 'Stop op zwart' }); await page.waitForTimeout(500);
+  assert.deepStrictEqual(await page.evaluate(() => Blockly.getMainWorkspace().getTopBlocks(true).map((b) => { const o = []; for (let x = b; x; x = x.getNextBlock()) o.push(x.type); return o; })), [['start', 'moveSpeed', 'moveStart', 'waitUntil', 'moveStop', 'mood']]);
+  // the share sheet shows the wiring, and the link carries the model
+  await page.click('.tab[data-view="viewSettings"]'); await page.waitForTimeout(400);
+  await page.click('#btnShare'); await page.waitForTimeout(300);
+  assert.strictEqual(await page.$$eval('#shareWiring .w-port.used', (g) => g.length), 6);
+  const link = await page.$eval('#shareLink', (e) => e.value);
+  await page.click('#btnCloseShare');
+  const p2 = await open({ viewport: { width: 390, height: 844 } }, {}, link);
+  r = await p2.evaluate(() => { const g = JSON.parse(localStorage.getItem('hubremote3')); return g.profiles.find((x) => x.id === g.active); });
+  assert.strictEqual(r.model, 'adb', 'model kept in the share link');
+  await p2.context().close();
+  // small hub: two ports in the diagram
+  await page.selectOption('#selHubKind', 'small'); await page.waitForTimeout(200);
+  assert.strictEqual(await page.$$eval('#wiring .w-port', (g) => g.length), 2);
+  await page.context().close();
+  console.log('K ok: wiring diagram with live check, four models linking to the official instructions, profile and example programs, share link, small hub');
   }
   await browser.close(); server.close();
   assert.deepStrictEqual(errors, [], 'page errors: ' + errors.join('\n'));
