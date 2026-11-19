@@ -969,6 +969,16 @@ let HTTP = '';
   assert.deepStrictEqual(await chips(), ['1×Plate 1 x 1 Round · donkergrijs', '1×Plate 1 x 1 Round · doorzichtig rood']);
   await settle(); await page.click('#btnBuildNext');   // Klaar! closes the guide
   await page.waitForFunction(() => !document.getElementById('buildSheet').classList.contains('on'));
+  // the Rover: only SPIKE Prime set parts, every part in the brick pack
+  await page.click('#btnBuildRover');
+  await page.waitForFunction(() => /Stap 1 van 9/.test(document.getElementById('buildStep').textContent), null, { timeout: 30000 });
+  assert.strictEqual(await page.$eval('#buildTitle', (e) => e.textContent), 'Rover');
+  assert.ok(!/grijs blok/.test(await page.$eval('#buildNote', (e) => e.textContent)), 'no missing parts');
+  await settle(); await page.click('#btnBuildNext');
+  await page.waitForFunction(() => document.getElementById('buildStep').textContent === 'Stap 2 van 9');
+  assert.deepStrictEqual(await chips(), ['2×Technic Pin Long with Friction and Slot · blauw', '1×Electric Powered Up Medium Angular Motor with Medium Azure Back and Hub Pattern · wit']);
+  await page.click('#btnBuildClose');
+  await page.waitForFunction(() => !document.getElementById('buildSheet').classList.contains('on'));
   assert.strictEqual(await page.$$eval('#buildView canvas', (c) => c.length), 0, 'viewer cleaned up');
   // an own file without steps, with a part that is not in the pack: steps made bottom-up, a grey block
   const at = (file, y, c = 4) => `1 ${c} 0 ${y} 0 1 0 0 0 1 0 0 0 1 ${file}`;

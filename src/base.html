@@ -245,7 +245,10 @@
     <div class="card" id="robots">
       <h2 data-i18n="robots.title">Bouw een robot</h2>
       <p class="small" style="margin:0" data-i18n="robots.help"></p>
-      <button class="btn sm" id="btnBuildDemo" style="align-self:flex-start;margin-top:10px" data-i18n="build.demo">Probeer een voorbeeld-bouwplan</button>
+      <div class="rowbtns demos">
+        <button class="btn sm" id="btnBuildRover" data-i18n="build.rover">Voorbeeld: Rover</button>
+        <button class="btn sm" id="btnBuildDemo" data-i18n="build.demo">Voorbeeld: Robotje van stenen</button>
+      </div>
       <div class="models" id="models"></div>
       <!-- Eigen ontwerp uit BrickLink Studio: als LDraw geëxporteerd bestand openen. -->
       <div class="ldrbox" id="ldrBox">

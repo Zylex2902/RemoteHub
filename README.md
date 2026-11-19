@@ -42,7 +42,9 @@ no light matrix) sounds play on the phone and pictures are skipped.
   colour and earlier steps lighter, a parts list per step. Files without steps get steps made from
   the bottom up. The guide is kept with the robot's profile. The viewer (three.js) and the brick
   shapes (a 5 MB pack from the LDraw parts library: Technic, the SPIKE electronics, wheels and
-  common bricks) load only when a guide opens; other parts show as a grey block
+  common bricks) load only when a guide opens; other parts show as a grey block. Two examples: a
+  little brick robot, and the Rover, a driving robot built only from parts of the SPIKE™ Prime set
+  (hub, two medium motors, two wheels, ball caster, distance sensor, two 7L beams and pins)
 - Wiring diagram: a drawing of the hub showing what goes on each port, from the profile; when the
   hub is connected it turns green or red per port (found or missing). Also in the share sheet
 - Python: switch the Code tab to Python and write real MicroPython that runs on the hub, with the

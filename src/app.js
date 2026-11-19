@@ -2285,11 +2285,14 @@
   $('btnBuildPrev').addEventListener('click', () => buildGo(-1));
   $('btnBuildNext').addEventListener('click', () => buildGo(1));
   $('buildRange').addEventListener('input', (e) => { if (bv.ctl) { bv.ctl.go(+e.target.value - 1); showBuildStep(); } });
-  $('btnBuildDemo').addEventListener('click', () => {
+  // Voorbeelden: Robotje (gewone stenen) en Rover (alleen onderdelen uit de SPIKE Prime-set, eigen ontwerp).
+  const openExample = (file, nameKey) => {
     if (location.protocol === 'file:') { toast(t('build.offline'), 'warn'); return; }
-    fetch('bricks/demo.ldr').then((r) => (r.ok ? r.text() : Promise.reject(new Error(r.status)))).then((txt) => openBuild(txt, t('build.demoName')))
+    fetch('bricks/' + file).then((r) => (r.ok ? r.text() : Promise.reject(new Error(r.status)))).then((txt) => openBuild(txt, t(nameKey)))
       .catch((e) => { toast(t('build.fail', e.message), 'err'); });
-  });
+  };
+  $('btnBuildDemo').addEventListener('click', () => openExample('demo.ldr', 'build.demoName'));
+  $('btnBuildRover').addEventListener('click', () => openExample('rover.ldr', 'build.roverName'));
   $('btnBuild').addEventListener('click', () => { const b = buildOf(S.id); if (b) openBuild(b.text, b.title); else toast(t('build.none'), 'warn'); });
   const showBuildBtn = () => $('btnBuild').classList.toggle('hide2', !buildOf(S.id));
   /* ---------- instellingen-UI ---------- */

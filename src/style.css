@@ -634,3 +634,5 @@ html[data-theme="dark"] #pyCheat code{color:var(--accent-hi)}
 .bnote:empty{display:none}
 .bcredit{margin:0;text-align:center;font-size:11.5px;opacity:.8}
 .bcredit a{color:inherit}
+.rowbtns.demos{flex-wrap:wrap;margin-top:10px}
+.rowbtns.demos .btn{flex:1 1 220px;min-width:0;white-space:normal;line-height:1.25}

@@ -18,7 +18,8 @@ Notes
 - `cobsEncode` and `cobsDecode` in `src/proto.js` are JavaScript ports of the reference example
   `examples/python/cobs.py` in LEGO/spike-prime-docs and have been modified. Everything else in
   `src/` was written for Hub Remote.
-- `site/app/bricks/demo.ldr` (the example building guide) is an own design made for Hub Remote.
+- `site/app/bricks/demo.ldr` and `site/app/bricks/rover.ldr` (the example building guides) are own designs
+  made for Hub Remote; `tools/designs/rover.py` generates and checks the Rover.
 - `tests/vectors.json` holds expected values produced by running the reference examples from
   LEGO/spike-prime-docs on random input. It contains no code from that repository.
 - The brick shapes are credited as "The LDraw Parts Library", as LDraw.org asks; the app shows this
