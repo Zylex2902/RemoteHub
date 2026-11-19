@@ -3,7 +3,7 @@
   const qsa = (sel, root) => Array.from((root || document).querySelectorAll(sel));
   const el = (tag, cls) => { const e = document.createElement(tag); if (cls) e.className = cls; return e; };
   const PORTS = ['A', 'B', 'C', 'D', 'E', 'F'];
-  const HUB_VERSION = '3';
+  const HUB_VERSION = '4';
   const enc = new TextEncoder(), dec = new TextDecoder();
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
@@ -14,7 +14,8 @@
   const newAux = () => ({ port: '-', name: '', speed: 60, mode: 'hold', travel: 90 });
   const newProfile = (name) => ({ id: uid(), name, left: 'A', right: 'B', invL: true, invR: false, speed: 60, turn: 60, trim: 0, userPorts: false,
     aux: [newAux(), newAux()], guard: false, guardCm: 20 });
-  const G = { lang: 'auto', theme: 'light', sound: true, haptic: true, slot: 19, mode: 'joy', active: '', profiles: [] };
+  const G = { lang: 'auto', theme: 'light', sound: true, haptic: true, slot: 19, mode: 'joy', active: '', profiles: [],
+    hubVol: 60, voice: 'normal', react: true, song: [], path: [] };
   const curLang = () => (G.lang === 'nl' || G.lang === 'en') ? G.lang : ((navigator.language || 'en').toLowerCase().startsWith('nl') ? 'nl' : 'en');
   const t = (k, ...a) => {
     let s = (I18N[curLang()] || I18N.en)[k];
@@ -38,6 +39,11 @@
         return { port: isPort(a.port) ? a.port : '-', name: String(a.name || '').slice(0, 20), speed: num(a.speed, 10, 100, 60), mode: a.mode === 'grip' ? 'grip' : 'hold', travel: num(a.travel, -720, 720, 90) }; }),
     };
   }
+  // Lijst van getallenparen (noten of routestappen) uit opslag controleren.
+  const MAX_PATH = 2400; // 2 minuten in stappen van 50 ms
+  function cleanPairs(v, max, fa, fb) {
+    return (Array.isArray(v) ? v : []).slice(0, max).filter((x) => Array.isArray(x) && x.length === 2).map((x) => [fa(x[0]), fb(x[1])]);
+  }
   (function load() {
     let raw = null;
     try { raw = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) {}
@@ -46,6 +52,9 @@
       if (raw.theme === 'dark') G.theme = 'dark';
       G.sound = raw.sound !== false; G.haptic = raw.haptic !== false; G.slot = num(raw.slot, 0, 19, 19);
       G.mode = ['joy', 'tank', 'tilt'].includes(raw.mode) ? raw.mode : 'joy';
+      G.hubVol = num(raw.hubVol, 0, 100, 60); G.voice = ['high', 'low'].includes(raw.voice) ? raw.voice : 'normal'; G.react = raw.react !== false;
+      G.song = cleanPairs(raw.song, 200, (f) => (f === 0 ? 0 : num(f, 100, 10000, 0)), (ms) => num(ms, 50, 2000, 300));
+      G.path = cleanPairs(raw.path, MAX_PATH, (v) => num(v, -100, 100, 0), (v) => num(v, -100, 100, 0));
       G.profiles = (Array.isArray(raw.profiles) ? raw.profiles : []).map(cleanProfile);
       G.active = raw.active;
     } else {
@@ -233,6 +242,8 @@
     $('bar').classList.toggle('on', p === 'uploading');
     $('drive').classList.toggle('idle', p !== 'ready');
     keepAwake(p === 'ready');
+    if (p !== 'ready' && st.rec) finishRec();
+    $('playWhere').textContent = t(p === 'ready' ? 'play.hub' : 'play.phone');
     if (p === 'idle') {
       showBattery(null); st.motors = []; st.gotMotors = false; showChips(); showSensors([]);
       $('infoName').textContent = '-'; $('infoFw').textContent = '-';
@@ -255,7 +266,7 @@
       if (pct <= lim && st.battWarned > lim) {
         st.battWarned = lim;
         const msg = t('msg.battLow', pct);
-        toast(msg, lim === 10 ? 'err' : 'warn'); log(msg, 'warn'); sfx.low(); buzz(120);
+        toast(msg, lim === 10 ? 'err' : 'warn'); log(msg, 'warn'); sfx.low(); buzz(120); react('sad');
         break;
       }
     }
@@ -420,6 +431,7 @@
 
   function goReady(noteKey) {
     setPhase('ready'); setHint('hint.ready'); sfx.ready(); buzz(30);
+    hub.text('vol ' + G.hubVol).catch(() => {}); react('hello');
     if (noteKey) { toast(t(noteKey), 'ok'); log(t(noteKey) + '.', 'ok'); }
   }
 
@@ -506,6 +518,7 @@
   function halt() {
     st.keys.clear(); st.codes.clear(); st.joy.x = 0; st.joy.y = 0; st.joy.on = false; st.joy.id = null;
     st.tank.l = stick(); st.tank.r = stick(); st.tilt.on = false; st.aux = [0, 0]; st.jog = [0, 0]; st.cur.l = 0; st.cur.r = 0; st.test = null;
+    if (st.macro) endMacro(false);
     setTurbo(false);
     $('knob').style.transform = ''; $('pad').classList.remove('grab');
     qsa('.vstick').forEach((v) => { v.classList.remove('grab'); v.querySelector('.vknob').style.transform = ''; });
@@ -584,6 +597,16 @@
       st.test = null;
     }
     const speed = st.turbo ? 100 : S.speed, hit = guardHit();
+    // Dans of opgenomen route: vaste snelheden per tik, tot je zelf stuurt.
+    if (st.macro) {
+      const m = st.macro, own = st.joy.on || st.tilt.on || st.keys.size || st.tank.l.on || st.tank.r.on;
+      if (own || st.phase !== 'ready' || m.i >= m.steps.length) endMacro(!own && st.phase === 'ready');
+      else {
+        let [ml, mr] = m.steps[m.i++];
+        if (hit && ml + mr > 5) { ml = 0; mr = 0; st.blocked = true; }
+        return [ml, mr];
+      }
+    }
     // Rechtuit-correctie: negatief remt de linkermotor iets af, positief de rechter.
     const tl = S.trim < 0 ? 1 + S.trim / 100 : 1, tr = S.trim > 0 ? 1 - S.trim / 100 : 1;
     let l, r;
@@ -613,11 +636,16 @@
 
   function tick() {
     const [tl, tr] = targets();
+    if (st.rec && st.phase === 'ready') {
+      // Route opnemen: begint bij de eerste beweging.
+      if (st.rec.length || tl || tr) st.rec.push([Math.round(tl), Math.round(tr)]);
+      if (st.rec.length >= MAX_PATH) finishRec();
+    }
     if (st.blocked) {
       // Obstakel: direct afremmen in plaats van uitlopen.
       st.cur.l = Math.min(st.cur.l, tl); st.cur.r = Math.min(st.cur.r, tr);
       const now = performance.now();
-      if (now - st.blockedAt > 3000) { toast(t('sens.obstacle', Math.round(st.dist / 10)), 'warn'); sfx.stop(); buzz(60); }
+      if (now - st.blockedAt > 3000) { toast(t('sens.obstacle', Math.round(st.dist / 10)), 'warn'); sfx.stop(); buzz(60); react('oops'); }
       st.blockedAt = now;
     }
     st.cur.l = approach(st.cur.l, tl);
@@ -787,11 +815,267 @@
     b.addEventListener('click', () => { sfx.tab(); buzz(8); setMode(b.dataset.mode, true); });
   });
 
+  /* ---------- spelen: liedjes, robotpraat, praten, piano, dansen ---------- */
+  const NOTE = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
+  function freqOf(name) {
+    const m = /^([A-G])([#b]?)(\d)$/.exec(name);
+    if (!m) return 0;
+    const midi = 12 * (+m[3] + 1) + NOTE[m[1]] + (m[2] === '#' ? 1 : m[2] === 'b' ? -1 : 0);
+    return Math.round(440 * Math.pow(2, (midi - 69) / 12));
+  }
+  // Melodie als "noot:lengte" (lengte in achtsten, R is een rust) naar [frequentie, ms], met een kort gaatje tussen noten.
+  function melody(src, eighth) {
+    const out = [];
+    for (const tok of src.trim().split(/\s+/)) {
+      const [n, len] = tok.split(':'), ms = Math.round((+len || 1) * eighth), f = n === 'R' ? 0 : freqOf(n);
+      if (!f) { out.push([0, ms]); continue; }
+      const gap = Math.min(40, Math.round(ms / 6));
+      out.push([f, ms - gap], [0, gap]);
+    }
+    return out;
+  }
+  // Alleen melodieën zonder auteursrecht (volksliedjes, Beethoven) en eigen deuntjes.
+  const SONGS = [
+    ['twinkle', '⭐', 230, 'C4:2 C4:2 G4:2 G4:2 A4:2 A4:2 G4:4 F4:2 F4:2 E4:2 E4:2 D4:2 D4:2 C4:4'],
+    ['jacob', '\u{1F514}', 210, 'C4:2 D4:2 E4:2 C4:2 C4:2 D4:2 E4:2 C4:2 E4:2 F4:2 G4:4 E4:2 F4:2 G4:4 G4:1 A4:1 G4:1 F4:1 E4:2 C4:2 G4:1 A4:1 G4:1 F4:1 E4:2 C4:2 C4:2 G3:2 C4:4 C4:2 G3:2 C4:4'],
+    ['ode', '\u{1F3BA}', 220, 'E4:2 E4:2 F4:2 G4:2 G4:2 F4:2 E4:2 D4:2 C4:2 C4:2 D4:2 E4:2 E4:3 D4:1 D4:4 E4:2 E4:2 F4:2 G4:2 G4:2 F4:2 E4:2 D4:2 C4:2 C4:2 D4:2 E4:2 D4:3 C4:1 C4:4'],
+    ['elise', '\u{1F3B9}', 150, 'E5:1 D#5:1 E5:1 D#5:1 E5:1 B4:1 D5:1 C5:1 A4:2 R:1 C4:1 E4:1 A4:1 B4:2 R:1 E4:1 G#4:1 B4:1 C5:2 R:1 E4:1 E5:1 D#5:1 E5:1 D#5:1 E5:1 B4:1 D5:1 C5:1 A4:2 R:1 C4:1 E4:1 A4:1 B4:2 R:1 E4:1 C5:1 B4:1 A4:4'],
+    ['fanfare', '\u{1F389}', 120, 'G4:1 C5:1 E5:1 G5:3 E5:1 G5:6'],
+  ];
+  // Gezichten voor het 5x5-lichtscherm: 25 helderheden 0-9, rij voor rij van boven naar beneden.
+  const FACES = {
+    smile: '00000' + '09090' + '00000' + '90009' + '09990',
+    wink: '00000' + '09099' + '00000' + '90009' + '09990',
+    sad: '00000' + '09090' + '00000' + '09990' + '90009',
+    wow: '09090' + '00000' + '00900' + '09090' + '00900',
+    oops: '09090' + '00000' + '99999' + '90909' + '99999',
+    angry: '90009' + '09090' + '00000' + '09990' + '90009',
+    sleep: '00000' + '99099' + '00000' + '00900' + '00000',
+    love: '09090' + '99999' + '99999' + '09990' + '00900',
+    note: '00990' + '00909' + '00900' + '99900' + '99900',
+    mOpen: '09090' + '00000' + '09990' + '90009' + '09990',
+    mHalf: '09090' + '00000' + '00000' + '99999' + '00000',
+    mShut: '09090' + '00000' + '00000' + '09990' + '00000',
+  };
+  const rnd = (a, b) => a + Math.random() * (b - a);
+  function glide(f0, f1, ms, steps) {
+    const out = [];
+    for (let i = 0; i < steps; i++) out.push([Math.round(f0 + ((f1 - f0) * i) / Math.max(1, steps - 1)), Math.round(ms / steps)]);
+    return out;
+  }
+  // Robotgeluidjes per stemming: piepjes en glijtonen, elke keer een beetje anders.
+  const MOODS = [
+    ['hello', '\u{1F44B}', 'wink', () => glide(500, 1100, 160, 5).concat([[0, 60], [1300, 70], [0, 40], [1500, 90]])],
+    ['happy', '\u{1F600}', 'smile', () => { const o = []; for (let i = 0; i < 7; i++) o.push([Math.round(rnd(900, 1700)), Math.round(rnd(50, 90))], [0, 25]); return o.concat(glide(1000, 1900, 150, 5)); }],
+    ['sad', '\u{1F622}', 'sad', () => glide(700, 520, 300, 6).concat([[0, 80]], glide(560, 260, 700, 10))],
+    ['wow', '\u{1F62E}', 'wow', () => glide(350, 1900, 380, 10).concat([[0, 60], [1900, 120]])],
+    ['oops', '\u{1F62C}', 'oops', () => [[740, 180], [0, 60], [494, 320]]],
+    ['angry', '\u{1F620}', 'angry', () => { const o = []; for (let i = 0; i < 8; i++) o.push([i % 2 ? 180 : 240, 70]); return o; }],
+    ['sleep', '\u{1F634}', 'sleep', () => glide(220, 160, 700, 8).concat([[0, 300]], glide(160, 220, 600, 6), [[0, 200]], glide(220, 150, 800, 8))],
+    ['love', '❤️', 'love', () => melody('G4:1 C5:1 E5:2 R:1 C5:1 E5:1 G5:4', 120)],
+  ];
+  const linked = () => st.phase === 'ready';
+  const totalMs = (notes) => notes.reduce((a, n) => a + n[1], 0);
+  function showFace(name) { if (linked() && FACES[name]) hub.text('img ' + FACES[name]).catch(() => {}); }
+  // Naar de hub in berichten van hooguit 24 noten: "tune" begint opnieuw, "tune+" sluit aan.
+  function sendNotes(notes) {
+    const toks = notes.map(([f, ms]) => Math.round(f) + ':' + Math.max(10, Math.round(ms)));
+    for (let i = 0; i < toks.length; i += 24) hub.text((i ? 'tune+ ' : 'tune ') + toks.slice(i, i + 24).join(' ')).catch(() => {});
+  }
+  // Zonder hub klinkt het op dit toestel, met dezelfde piepstem.
+  let musicOut = null;
+  function stopLocal() { if (musicOut) { try { musicOut.disconnect(); } catch (e) {} musicOut = null; } }
+  function playLocal(notes) {
+    stopLocal();
+    try {
+      actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+      if (actx.state === 'suspended') actx.resume();
+      const out = actx.createGain();
+      out.gain.value = 0.06 * Math.max(0.15, G.hubVol / 100); out.connect(actx.destination); musicOut = out;
+      let t0 = actx.currentTime + 0.03;
+      for (const [f, ms] of notes) {
+        const d = ms / 1000;
+        if (f > 0) {
+          const o = actx.createOscillator(), e = actx.createGain();
+          o.type = 'square'; o.frequency.value = f;
+          e.gain.setValueAtTime(0, t0); e.gain.linearRampToValueAtTime(1, t0 + 0.005);
+          e.gain.setValueAtTime(1, Math.max(t0 + 0.006, t0 + d - 0.012)); e.gain.linearRampToValueAtTime(0, t0 + d);
+          o.connect(e).connect(out); o.start(t0); o.stop(t0 + d + 0.01);
+        }
+        t0 += d;
+      }
+    } catch (e) {}
+  }
+  function play(notes, face) {
+    if (linked()) { sendNotes(notes); if (face) showFace(face); } else playLocal(notes);
+    return totalMs(notes);
+  }
+  function quiet() {
+    stopLocal(); stopSpeak();
+    if (linked()) hub.text('hush').catch(() => {});
+  }
+  const moodNotes = (id) => { const m = MOODS.find((x) => x[0] === id); return m ? [m[3](), m[2]] : [[], null]; };
+  function mood(id) { const [n, face] = moodNotes(id); play(n, face); }
+  // Vanzelf reageren (verbinden, obstakel, batterij), alleen op de hub.
+  function react(id) { if (G.react && linked()) setTimeout(() => { if (linked()) mood(id); }, 250); }
+
+  function funBtn(box, id, emo, key, onClick) {
+    const b = el('button', 'btn fun'), e = el('span', 'emo'), l = el('span');
+    b.id = id; e.textContent = emo; e.setAttribute('aria-hidden', 'true'); l.dataset.i18n = key;
+    b.append(e, l); box.appendChild(b);
+    b.addEventListener('click', () => { buzz(10); onClick(b); });
+    return b;
+  }
+  SONGS.forEach(([id, emo, eighth, src]) => funBtn($('songBtns'), 'song-' + id, emo, 'song.' + id, () => play(melody(src, eighth), 'note')));
+  funBtn($('songBtns'), 'song-quiet', '\u{1F92B}', 'music.stop', () => { quiet(); sfx.tick(); });
+  MOODS.forEach(([id, emo]) => funBtn($('moodBtns'), 'mood-' + id, emo, 'mood.' + id, () => mood(id)));
+
+  /* praten: het toestel spreekt, de hub beweegt zijn mond */
+  const synth = window.speechSynthesis && window.SpeechSynthesisUtterance ? window.speechSynthesis : null;
+  let mouth = null;
+  function startMouth() {
+    if (mouth || !linked()) return;
+    const frames = ['mOpen', 'mHalf', 'mShut', 'mHalf'];
+    let i = 0;
+    mouth = setInterval(() => {
+      if (i > 3 && !(synth && synth.speaking)) { endMouth(); return; }
+      showFace(frames[i++ % 4]);
+    }, 170);
+  }
+  function endMouth() { if (!mouth) return; clearInterval(mouth); mouth = null; showFace('smile'); }
+  function stopSpeak() { if (synth && (synth.speaking || synth.pending)) synth.cancel(); endMouth(); }
+  function speak(text) {
+    text = String(text || '').trim().slice(0, 200);
+    if (!text || !synth) return;
+    stopSpeak();
+    const u = new SpeechSynthesisUtterance(text), lang = curLang();
+    u.lang = lang === 'nl' ? 'nl-NL' : 'en-US';
+    const v = synth.getVoices().find((x) => (x.lang || '').toLowerCase().replace('_', '-').startsWith(lang));
+    try { if (v) u.voice = v; } catch (e) {} // zonder passende stem kiest de browser zelf
+    u.pitch = G.voice === 'high' ? 1.9 : G.voice === 'low' ? 0.3 : 1;
+    u.rate = G.voice === 'high' ? 1.15 : G.voice === 'low' ? 0.85 : 1;
+    u.onend = endMouth; u.onerror = endMouth;
+    synth.speak(u);
+    startMouth();
+  }
+  $('btnSay').addEventListener('click', () => { buzz(10); speak($('inpSay').value); });
+  $('inpSay').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); speak($('inpSay').value); } });
+  [1, 2, 3, 4].forEach((i) => {
+    const b = el('button', 'btn sm');
+    b.dataset.i18n = 'phrase.' + i; $('phrases').appendChild(b);
+    b.addEventListener('click', () => { buzz(10); speak(t('phrase.' + i)); });
+  });
+  if (!synth) { $('btnSay').disabled = true; $('inpSay').disabled = true; qsa('#phrases .btn').forEach((b) => { b.disabled = true; }); }
+
+  /* piano: één octaaf, opnemen en terugspelen */
+  const KEYS = ['C4', 'C#4', 'D4', 'D#4', 'E4', 'F4', 'F#4', 'G4', 'G#4', 'A4', 'A#4', 'B4', 'C5'];
+  (function renderPiano() {
+    const box = $('piano');
+    let white = 0;
+    for (const k of KEYS) {
+      const black = k.includes('#'), b = el('div', black ? 'bkey' : 'wkey');
+      b.dataset.note = k;
+      if (black) b.style.left = 'calc((100% + 4px) / 8 * ' + white + ' - 2px)';
+      else { b.textContent = k[0]; white++; }
+      box.appendChild(b);
+      b.addEventListener('pointerdown', (e) => {
+        e.preventDefault(); e.stopPropagation();
+        const f = freqOf(k);
+        play([[f, 320]]); buzz(8);
+        b.classList.add('on'); setTimeout(() => b.classList.remove('on'), 160);
+        if (st.songRec) st.songRec.push([f, performance.now()]);
+      });
+    }
+  })();
+  function songNotes(song) {
+    const out = [];
+    for (const [f, ms] of song) { const on = Math.min(ms - 30, 450); out.push([f, on], [0, ms - on]); }
+    return out;
+  }
+  $('btnSongRec').addEventListener('click', () => {
+    buzz(10);
+    if (!st.songRec) {
+      st.songRec = []; $('btnSongRec').textContent = t('piano.stopRec'); $('btnSongRec').classList.add('rec');
+      toast(t('piano.recording'), 'ok'); sfx.tick();
+      return;
+    }
+    const r = st.songRec;
+    st.songRec = null; $('btnSongRec').textContent = t('piano.rec'); $('btnSongRec').classList.remove('rec');
+    if (!r.length) { toast(t('piano.empty'), 'warn'); return; }
+    G.song = r.slice(0, 200).map(([f, at], i) => [f, clamp(Math.round(i + 1 < r.length ? r[i + 1][1] - at : 500), 120, 1500)]);
+    save(); syncSettings(); toast(t('piano.saved', G.song.length), 'ok'); sfx.open();
+  });
+  $('btnSongPlay').addEventListener('click', () => { buzz(10); if (!G.song.length) { toast(t('piano.empty'), 'warn'); return; } play(songNotes(G.song), 'note'); });
+  $('btnQuiet').addEventListener('click', () => { quiet(); sfx.tick(); });
+
+  /* bewegen: dansjes en een opgenomen route, gereden in het scherm Rijden */
+  function banner(text, btnText, rec) {
+    const b = $('banner');
+    if (!text) { b.classList.remove('on', 'rec'); return; }
+    $('bannerText').textContent = text; $('bannerBtn').textContent = btnText;
+    b.classList.toggle('rec', !!rec); b.classList.add('on');
+  }
+  $('bannerBtn').addEventListener('click', () => { if (st.rec) finishRec(); else emergencyStop(); });
+  // Danspassen als [links, rechts, ms] (-1..1 van de dans-snelheid), omgezet naar één stap per 50 ms.
+  const DANCES = {
+    dance1: { song: 'C5:1 R:1 G4:1 R:1 C5:1 E5:1 G5:2 R:1 G4:1 C5:1 E5:1 D5:2 R:2', eighth: 140,
+      moves: [[-1, 1, 350], [1, -1, 350], [-1, 1, 350], [1, -1, 350], [1, 1, 600], [-1, -1, 600], [-1, 1, 250], [1, -1, 250], [-1, 1, 250], [1, -1, 250], [0, 0, 200]] },
+    dance2: { song: 'G4:1 B4:1 D5:1 G5:1 R:1 D5:1 G5:2 R:2 E5:1 C5:1 A4:1 C5:1 D5:4 R:2', eighth: 130,
+      moves: [[1, -1, 1500], [0, 0, 200], [-1, 1, 1500], [0, 0, 200], [1, 1, 400], [-1, -1, 400], [1, 0.2, 1200], [0, 0, 200]] },
+  };
+  function danceSteps(moves) {
+    const a = Math.max(30, Math.round(S.speed * 0.8)), steps = [];
+    for (const [l, r, ms] of moves) for (let i = 0; i < Math.round(ms / 50); i++) steps.push([Math.round(l * a), Math.round(r * a)]);
+    return steps;
+  }
+  function startMacro(name, steps, notes) {
+    if (!needReady()) return;
+    if (st.rec) finishRec();
+    showView('viewDrive'); halt();
+    st.macro = { name, steps, i: 0, music: !!notes };
+    // Het deuntje herhalen zolang de dans duurt, maar hooguit 96 noten (vier korte berichten).
+    if (notes) { const n = []; while (totalMs(n) < steps.length * 50 && n.length + notes.length <= 96) n.push(...notes); play(n.length ? n : notes, 'note'); }
+    banner(t('move.playing', name), t('move.stop')); sfx.open();
+  }
+  function endMacro(done) {
+    const m = st.macro;
+    st.macro = null; banner(null);
+    if (m.music && linked()) hub.text('hush').catch(() => {});
+    if (done) { toast(t('move.end', m.name), 'ok'); sfx.ready(); }
+  }
+  [['btnDance1', 'dance1', 'move.dance1'], ['btnDance2', 'dance2', 'move.dance2']].forEach(([id, key, label]) => $(id).addEventListener('click', () => {
+    buzz(10);
+    const d = DANCES[key];
+    startMacro(t(label), danceSteps(d.moves), melody(d.song, d.eighth));
+  }));
+  $('btnRoute').addEventListener('click', () => {
+    buzz(10);
+    if (!G.path.length) { toast(t('move.empty'), 'warn'); return; }
+    startMacro(t('move.route'), G.path.map((x) => x.slice()), null);
+  });
+  $('btnRec').addEventListener('click', () => {
+    buzz(10);
+    if (!needReady()) return;
+    showView('viewDrive'); halt();
+    st.rec = []; banner(t('move.recording'), t('move.done'), true); sfx.tick();
+  });
+  function finishRec() {
+    const r = st.rec;
+    st.rec = null; banner(null);
+    if (!r) return;
+    while (r.length && !r[r.length - 1][0] && !r[r.length - 1][1]) r.pop();
+    if (r.length < 4) { toast(t('move.short'), 'warn'); return; }
+    r.push([0, 0]);
+    G.path = r; save(); syncSettings();
+    toast(t('move.saved', Math.round(r.length / 2) / 10), 'ok'); sfx.open();
+  }
+
   /* ---------- tabs ---------- */
   const tabs = qsa('.tab');
   function showView(id) {
     if (st.view === id) return;
     const old = $(st.view), nw = $(id);
+    if (st.rec && id !== 'viewDrive') finishRec();
     st.view = id; halt();
     tabs.forEach((tb, i) => { const on = tb.dataset.view === id; tb.classList.toggle('on', on); if (on) $('tabbar').style.setProperty('--i', i); });
     if (id === 'viewLog') $('logDot').classList.remove('on');
@@ -919,6 +1203,7 @@
     fill($('selSlot'), Array.from({ length: 20 }, (_, i) => [String(i), t('slot', i)]));
     fill($('selLang'), [['auto', t('lang.auto')], ['nl', 'Nederlands'], ['en', 'English']]);
     fill($('selTheme'), [['light', t('theme.light')], ['dark', t('theme.dark')]]);
+    fill($('selVoice'), [['normal', t('voice.normal')], ['high', t('voice.high')], ['low', t('voice.low')]]);
   }
 
   function renderAuxSettings() {
@@ -973,6 +1258,8 @@
     $('chkGuard').checked = S.guard; $('rngGuard').value = S.guardCm; $('outGuard').textContent = S.guardCm + ' cm';
     $('selSlot').value = String(G.slot); $('selLang').value = G.lang === 'nl' || G.lang === 'en' ? G.lang : 'auto';
     $('chkSound').checked = G.sound; $('chkHaptic').checked = G.haptic; $('selTheme').value = G.theme;
+    $('rngVol').value = G.hubVol; $('outVol').textContent = G.hubVol + '%'; $('chkReact').checked = G.react; $('selVoice').value = G.voice;
+    $('btnRoute').disabled = !G.path.length; $('btnSongPlay').disabled = !G.song.length;
     $('warnPorts').classList.toggle('on', S.left === S.right);
     renderAux();
   }
@@ -989,6 +1276,9 @@
   bind('selSlot', 'change', (n) => { G.slot = +n.value; sfx.tick(); if (st.phase !== 'idle') log(t('msg.slotLater'), 'warn'); });
   bind('chkSound', 'change', (n) => { G.sound = n.checked; sfx.tick(); });
   bind('chkHaptic', 'change', (n) => { G.haptic = n.checked; sfx.tick(); buzz(20); });
+  bind('rngVol', 'input', (n) => { G.hubVol = +n.value; if (st.phase === 'ready') hub.text('vol ' + G.hubVol).catch(() => {}); });
+  bind('chkReact', 'change', (n) => { G.react = n.checked; sfx.tick(); buzz(10); });
+  bind('selVoice', 'change', (n) => { G.voice = n.value; sfx.tick(); });
   function applyTheme() {
     document.documentElement.dataset.theme = G.theme;
     $('themeColor').setAttribute('content', G.theme === 'dark' ? '#161b22' : '#ffffff');
@@ -1012,6 +1302,10 @@
     qsa('[data-i18n]').forEach((n) => { n.textContent = t(n.dataset.i18n); });
     qsa('[data-i18n-title]').forEach((n) => { n.title = t(n.dataset.i18nTitle); });
     qsa('[data-i18n-aria]').forEach((n) => { n.setAttribute('aria-label', t(n.dataset.i18nAria)); });
+    qsa('[data-i18n-ph]').forEach((n) => { n.placeholder = t(n.dataset.i18nPh); });
+    $('playWhere').textContent = t(st.phase === 'ready' ? 'play.hub' : 'play.phone');
+    $('speakNote').textContent = t(synth ? 'speak.help' : 'speak.none');
+    if (st.songRec) $('btnSongRec').textContent = t('piano.stopRec');
     $('pillText').dataset.t = ''; $('btnConnectText').dataset.t = ''; $('hint').dataset.t = '';
     phaseTexts(); setText($('hint'), t(...st.hint));
     fillStatic(); fillProfiles(); renderAuxSettings(); syncSettings(); showChips();

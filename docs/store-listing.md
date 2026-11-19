@@ -27,6 +27,8 @@ robot hub. No game controller needed: connect over Bluetooth and drive.
 - Live distance, colour and force sensors, and an optional stop for obstacles
 - A profile for every robot, shared with a link or QR code
 - Horn, hub battery level and low-battery warning
+- Songs, robot sounds with faces on the hub's lights, a piano, and your phone speaking for the robot
+- Dances and a route you record once and drive again
 - Reconnects by itself, and the robot stops if the link drops
 - Phones, tablets and foldables, portrait or landscape
 - English and Dutch, light and dark theme
@@ -61,6 +63,8 @@ programmeerbare robothub. Geen gamecontroller nodig: verbind via Bluetooth en ri
 - Live afstands-, kleur- en krachtsensor, en optioneel stoppen voor obstakels
 - Een profiel per robot, te delen met een link of QR-code
 - Toeter, batterijniveau van de hub en een waarschuwing bij bijna leeg
+- Liedjes, robotgeluidjes met gezichtjes op de lampjes van de hub, een piano, en je telefoon die voor de robot praat
+- Dansjes en een route die je één keer rijdt en opnieuw laat afspelen
 - Verbindt vanzelf opnieuw, en de robot stopt als de verbinding wegvalt
 - Telefoons, tablets en vouwtelefoons, staand of liggend
 - Nederlands en Engels, licht en donker thema

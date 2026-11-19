@@ -109,6 +109,60 @@
     </div>
   </section>
 
+  <div class="side" id="side">
+  <section class="view" id="viewPlay">
+    <p class="small where" id="playWhere"></p>
+
+    <div class="card">
+      <h2 data-i18n="move.title">Bewegen</h2>
+      <div class="funbtns" id="moveBtns">
+        <button class="btn fun" id="btnDance1"><span class="emo" aria-hidden="true">&#x1F483;</span><span data-i18n="move.dance1">Wiebeldans</span></button>
+        <button class="btn fun" id="btnDance2"><span class="emo" aria-hidden="true">&#x1F300;</span><span data-i18n="move.dance2">Rondjesdans</span></button>
+        <button class="btn fun" id="btnRec"><span class="emo" aria-hidden="true">&#x23FA;&#xFE0F;</span><span data-i18n="move.rec">Route opnemen</span></button>
+        <button class="btn fun" id="btnRoute"><span class="emo" aria-hidden="true">&#x25B6;&#xFE0F;</span><span data-i18n="move.play">Route afspelen</span></button>
+      </div>
+      <p class="small" style="margin:12px 0 0" data-i18n="move.help"></p>
+    </div>
+
+    <div class="card">
+      <h2 data-i18n="music.title">Liedjes</h2>
+      <div class="funbtns" id="songBtns"></div>
+      <label class="f" style="margin-top:12px"><span data-i18n="music.vol">Volume van de hub</span>
+        <div class="range"><input type="range" id="rngVol" min="0" max="100" step="5"><output id="outVol"></output></div>
+      </label>
+    </div>
+
+    <div class="card">
+      <h2 data-i18n="talk.title">Robotpraat</h2>
+      <div class="funbtns moods" id="moodBtns"></div>
+      <label class="check" style="margin-top:12px"><input type="checkbox" id="chkReact"><span></span><em data-i18n="talk.react" style="font-style:normal">Robot reageert met geluidjes</em></label>
+      <p class="small" style="margin:8px 0 0" data-i18n="talk.help"></p>
+    </div>
+
+    <div class="card">
+      <h2 data-i18n="speak.title">Laat de robot praten</h2>
+      <div class="speakrow">
+        <input type="text" id="inpSay" maxlength="200" autocomplete="off" data-i18n-ph="speak.ph">
+        <button class="btn primary" id="btnSay" data-i18n="speak.go">Praat</button>
+      </div>
+      <div class="phrases" id="phrases"></div>
+      <label class="f" style="margin-top:12px"><span data-i18n="speak.voice">Stem</span>
+        <select id="selVoice"></select>
+      </label>
+      <p class="small" style="margin:12px 0 0" id="speakNote"></p>
+    </div>
+
+    <div class="card">
+      <h2 data-i18n="piano.title">Piano</h2>
+      <div class="piano" id="piano"></div>
+      <div class="rowbtns">
+        <button class="btn sm" id="btnSongRec" data-i18n="piano.rec">Opnemen</button>
+        <button class="btn sm" id="btnSongPlay" data-i18n="piano.play">Mijn liedje</button>
+        <button class="btn sm" id="btnQuiet" data-i18n="music.stop">Stil</button>
+      </div>
+    </div>
+  </section>
+
   <section class="view" id="viewSettings">
     <div class="card">
       <h2 data-i18n="set.robot">Robot</h2>
@@ -198,9 +252,10 @@
     <div class="card">
       <h2 data-i18n="about.title">Over</h2>
       <p class="small" style="margin:0" data-i18n="about.text"></p>
-      <p class="small" style="margin:8px 0 0">Hub Remote 3.0</p>
+      <p class="small" style="margin:8px 0 0">Hub Remote 4.0</p>
     </div>
   </section>
+  </div>
 
   <section class="view" id="viewLog">
     <div class="card logcard">
@@ -213,6 +268,9 @@
 <nav class="tabbar" id="tabbar" style="--i:0">
   <button class="tab on" data-view="viewDrive">
     <svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg><span data-i18n="tab.drive">Rijden</span>
+  </button>
+  <button class="tab" data-view="viewPlay">
+    <svg class="ico" viewBox="0 0 24 24"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg><span data-i18n="tab.play">Spelen</span>
   </button>
   <button class="tab" data-view="viewSettings">
     <svg class="ico" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg><span data-i18n="tab.settings">Instellingen</span>
@@ -235,6 +293,8 @@
     </div>
   </div>
 </div>
+
+<div class="banner" id="banner" aria-live="polite"><i id="bannerDot"></i><span id="bannerText"></span><button class="btn sm" id="bannerBtn"></button></div>
 
 <div id="toasts" aria-live="assertive"></div>
 

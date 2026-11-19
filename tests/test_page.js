@@ -1,5 +1,5 @@
 // End-to-end test: runs the built page in headless Chrome against a simulated hub.
-// ONLY=AB node tests/test_page.js runs just those sections.
+// ONLY=AB node tests/test_page.js runs just those sections (A-G).
 const { chromium } = require('playwright');
 const jsQR = require('jsqr');
 const assert = require('assert');
@@ -30,7 +30,7 @@ const fakeHub = (opts) => {
         else { H.events.push('start:' + m[2]);
           const all = Uint8Array.from(H.file); H.fileOk = !!H.announced && Proto.crc(all) === H.announced.crc; H.program = new TextDecoder().decode(all);
           status(0x1f, H.fileOk); H.started = H.fileOk; notify(Uint8Array.of(0x20, 0));
-          if (H.fileOk) setTimeout(() => tun('rdy 3'), 30); }
+          if (H.fileOk) setTimeout(() => tun('rdy 4'), 30); }
         break;
       case 0x46: H.events.push('clear:' + m[1]); status(0x47, false); break;
       case 0x0c: { let e = m.indexOf(0, 1); H.announced = { name: new TextDecoder().decode(m.subarray(1, e)), slot: m[e + 1], crc: v.getUint32(e + 2, true) };
@@ -47,7 +47,7 @@ const fakeHub = (opts) => {
           notify(Uint8Array.from([0x3c, pay.length, 0, ...pay])); }, Math.max(50, iv)); break; }
       case 0x32: { const text = new TextDecoder().decode(Proto.parseTunnel(m));
         H.tunnel.push({ t: performance.now(), text });
-        if (H.started && text === '?') tun('rdy 3'); break; }
+        if (H.started && text === '?') tun('rdy 4'); break; }
     }
   };
   const ch = (name) => ({
@@ -405,9 +405,9 @@ const fakeHub = (opts) => {
       const m3 = await measure(); assert.deepStrictEqual(m3.over, [], name + ' with aux row');
     }
     if (!m.tabbar) {
-      // wide layout: the page itself never scrolls; the settings column scrolls on its own and its last card is reachable
-      const w2 = await page.evaluate(() => { const s = document.getElementById('viewSettings'), mn = document.getElementById('main'); s.scrollTop = 1e6;
-        const lastCard = s.lastElementChild.getBoundingClientRect(); return { main: mn.scrollHeight - mn.clientHeight, settings: s.scrollHeight - s.clientHeight, lastBottom: lastCard.bottom, vh: innerHeight, logH: document.getElementById('log').getBoundingClientRect().height }; });
+      // wide layout: the page itself never scrolls; the right column (play + settings) scrolls on its own and the last settings card is reachable
+      const w2 = await page.evaluate(() => { const s = document.getElementById('side'), mn = document.getElementById('main'); s.scrollTop = 1e6;
+        const lastCard = document.getElementById('viewSettings').lastElementChild.getBoundingClientRect(); return { main: mn.scrollHeight - mn.clientHeight, settings: s.scrollHeight - s.clientHeight, lastBottom: lastCard.bottom, vh: innerHeight, logH: document.getElementById('log').getBoundingClientRect().height }; });
       assert.ok(w2.main <= 1, name + ': page scrolls by ' + w2.main); assert.ok(m.scroll <= 2, name + ': drive column is clipped by ' + m.scroll); assert.ok(w2.settings > 50, name + ': settings column should scroll');
       assert.ok(w2.lastBottom <= w2.vh + 1, name + ': last settings card not reachable'); assert.ok(w2.logH >= 60, name + ': log too small ' + w2.logH);
       await page.screenshot({ path: OUT + '/' + name + '-scrolled.png' });
@@ -427,6 +427,150 @@ const fakeHub = (opts) => {
     assert.strictEqual(await p.$eval('#btnConnect', (e) => e.disabled), true);
     await ctx.close();
   }
+  }
+  // ---------- G. play: songs, robot talk, faces, speech, piano, dances, recorded route ----------
+  if (RUN('G')) {
+  // Speech is replaced by a recorder: it "speaks" for 900 ms.
+  const fakeSpeech = () => {
+    window.__said = [];
+    if (!window.SpeechSynthesisUtterance) window.SpeechSynthesisUtterance = function (text) { this.text = text; };
+    // Chrome's speechSynthesis cannot be replaced, so its methods are patched on the object itself.
+    const s = window.speechSynthesis || {};
+    let busy = false;
+    const def = (k, v) => Object.defineProperty(s, k, Object.assign({ configurable: true }, v));
+    def('speaking', { get: () => busy }); def('pending', { get: () => false });
+    def('getVoices', { value: () => [] });
+    def('cancel', { value: () => { busy = false; } });
+    def('speak', { value: (u) => { window.__said.push({ text: u.text, lang: u.lang, pitch: u.pitch }); busy = true;
+      setTimeout(() => { busy = false; if (u.onend) u.onend(); }, 900); } });
+    if (!window.speechSynthesis) Object.defineProperty(window, 'speechSynthesis', { value: s, configurable: true });
+  };
+  const toastHas = (re) => page.waitForFunction((src) => new RegExp(src).test(document.getElementById('toasts').textContent), re.source);
+  const since = async (n) => (await tunnelOf(page)).slice(n);
+  const count = () => page.evaluate(() => window.__hub.tunnel.length);
+  const NOTE_OK = (tok) => { const [f, ms] = tok.split(':').map(Number); return Number.isInteger(f) && Number.isInteger(ms) && (f === 0 || (f >= 100 && f <= 10000)) && ms >= 10 && ms <= 3000; };
+  const tunes = (msgs) => msgs.filter((x) => /^tune\+? /.test(x));
+  const imgs = (msgs) => msgs.filter((x) => x.startsWith('img ')).map((x) => x.slice(4));
+  page = await open({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true }, {}, undefined, fakeSpeech);
+  // not connected: everything plays on the phone, nothing goes to the hub
+  await page.click('.tab[data-view="viewPlay"]'); await page.waitForTimeout(300);
+  assert.ok(/Niet verbonden/.test(await page.$eval('#playWhere', (e) => e.textContent)));
+  await page.click('#song-twinkle'); await page.click('#mood-happy');
+  await page.click('#btnDance1'); await toastHas(/Verbind eerst/);
+  assert.strictEqual(await page.$eval('#btnRoute', (e) => e.disabled), true, 'no route yet');
+  // connect: volume is sent and the robot says hello with a wink
+  await page.click('.tab[data-view="viewDrive"]'); await page.waitForTimeout(300);
+  await page.click('#btnConnect'); await waitPhase(page, 'ready'); await page.waitForTimeout(500);
+  let msgs = await cmds(page);
+  assert.ok(msgs.includes('vol 60'), msgs.join('|'));
+  assert.ok(tunes(msgs).length >= 1 && imgs(msgs).includes('0000009099000009000909990'), 'hello reaction: ' + msgs.join('|'));
+  // songs: a tune in messages of at most 24 notes, then "tune+"; Quiet sends hush
+  await page.click('.tab[data-view="viewPlay"]'); await page.waitForTimeout(300);
+  assert.ok(/Verbonden/.test(await page.$eval('#playWhere', (e) => e.textContent)));
+  let n0 = await count();
+  await page.click('#song-twinkle'); await page.waitForTimeout(300);
+  msgs = await since(n0);
+  const tw = tunes(msgs);
+  assert.strictEqual(tw.length, 2, msgs.join('|'));
+  assert.ok(tw[0].startsWith('tune 262:420 0:40 262:420 0:40 392:420') && tw[1].startsWith('tune+ '), tw[0]);
+  assert.strictEqual(tw[0].split(' ').length - 1, 24); assert.strictEqual(tw[1].split(' ').length - 1, 4);
+  assert.ok(imgs(msgs).length === 1, 'note face');
+  n0 = await count(); await page.click('#song-quiet'); await page.waitForTimeout(200);
+  assert.ok((await since(n0)).includes('hush'));
+  for (const id of ['jacob', 'ode', 'elise', 'fanfare']) {
+    n0 = await count(); await page.click('#song-' + id); await page.waitForTimeout(250);
+    const toks = tunes(await since(n0)).flatMap((x) => x.split(' ').slice(1));
+    assert.ok(toks.length > 4 && toks.every(NOTE_OK), id + ': ' + toks.join(' '));
+  }
+  await setRange(page, '#rngVol', 40); await page.waitForTimeout(200);
+  assert.ok((await cmds(page)).includes('vol 40'));
+  // robot talk: every mood sends valid notes and a 25-pixel face
+  for (const id of ['hello', 'happy', 'sad', 'wow', 'oops', 'angry', 'sleep', 'love']) {
+    n0 = await count(); await page.click('#mood-' + id); await page.waitForTimeout(250);
+    msgs = await since(n0);
+    const toks = tunes(msgs).flatMap((x) => x.split(' ').slice(1));
+    assert.ok(toks.length >= 3 && toks.every(NOTE_OK), id + ': ' + toks.join(' '));
+    assert.ok(imgs(msgs).length === 1 && /^[0-9]{25}$/.test(imgs(msgs)[0]), id + ' face');
+  }
+  // speech: the device speaks in the page language, the hub moves its mouth, then smiles
+  n0 = await count();
+  await page.fill('#inpSay', 'Hallo test'); await page.click('#btnSay');
+  await page.waitForTimeout(1500);
+  let said = await page.evaluate(() => window.__said);
+  assert.deepStrictEqual(said[0], { text: 'Hallo test', lang: 'nl-NL', pitch: 1 });
+  let faces = imgs(await since(n0));
+  assert.ok(faces.includes('0909000000099909000909990') && faces.length >= 4, 'mouth moves: ' + faces.length);
+  assert.strictEqual(faces[faces.length - 1], '0000009090000009000909990', 'smile when done');
+  await page.selectOption('#selVoice', 'high'); await page.click('#phrases .btn'); await page.waitForTimeout(100);
+  said = await page.evaluate(() => window.__said);
+  assert.strictEqual(said[1].text, 'Hallo! Ik ben een robot.'); assert.ok(Math.abs(said[1].pitch - 1.9) < 0.01, 'high voice');
+  // piano: a key plays one note; record three keys and play them back
+  n0 = await count();
+  await ptr(page, '.wkey[data-note="E4"]', 'pointerdown', 0, 0, 1); await page.waitForTimeout(150);
+  assert.ok((await since(n0)).includes('tune 330:320'));
+  await page.click('#btnSongRec'); await toastHas(/Opnemen/);
+  for (const k of ['C4', 'F#4', 'G4']) { await ptr(page, '[data-note="' + k + '"]', 'pointerdown', 0, 0, 1); await page.waitForTimeout(300); }
+  await page.click('#btnSongRec'); await toastHas(/Liedje bewaard \(3 noten\)/);
+  n0 = await count(); await page.click('#btnSongPlay'); await page.waitForTimeout(200);
+  const song = tunes(await since(n0))[0].split(' ').slice(1).filter((x) => !x.startsWith('0:')).map((x) => +x.split(':')[0]);
+  assert.deepStrictEqual(song, [262, 370, 392]);
+  // dance: drives in the Drive screen with a banner; STOP ends it, stops the motors and the music
+  await page.click('#btnDance1'); await page.waitForTimeout(500);
+  assert.ok(await page.$eval('.tab[data-view="viewDrive"]', (e) => e.classList.contains('on')), 'switched to Drive');
+  assert.ok(await page.$eval('#banner', (e) => e.classList.contains('on')));
+  assert.strictEqual(await page.$eval('#bannerText', (e) => e.textContent), 'Wiebeldans rijdt');
+  assert.notStrictEqual(await last(page), 'C:0 D:0', 'dance drives');
+  n0 = await count();
+  await page.dispatchEvent('#btnStop', 'pointerdown'); await page.waitForTimeout(400);
+  assert.strictEqual(await page.$eval('#banner', (e) => e.classList.contains('on')), false);
+  assert.ok((await since(n0)).includes('hush')); assert.strictEqual(await last(page), 'C:0 D:0');
+  // dance to the end
+  await page.click('.tab[data-view="viewPlay"]'); await page.waitForTimeout(300);
+  await page.click('#btnDance1'); await toastHas(/Wiebeldans is klaar/);
+  await page.waitForTimeout(400); assert.strictEqual(await last(page), 'C:0 D:0');
+  // the joystick takes over from a dance; leaving the Drive screen stops one
+  await page.click('.tab[data-view="viewPlay"]'); await page.waitForTimeout(300);
+  await page.click('#btnDance2'); await page.waitForTimeout(400);
+  let P = await rect(page, '#pad');
+  await ptr(page, '#pad', 'pointerdown', P.cx, P.cy, 1); await page.waitForTimeout(200);
+  assert.strictEqual(await page.$eval('#banner', (e) => e.classList.contains('on')), false, 'joystick takes over');
+  await ptr(page, '#pad', 'pointerup', P.cx, P.cy, 1);
+  await page.click('.tab[data-view="viewPlay"]'); await page.waitForTimeout(300);
+  await page.click('#btnDance2'); await page.waitForTimeout(400);
+  await page.click('.tab[data-view="viewSettings"]'); await page.waitForTimeout(400);
+  assert.strictEqual(await page.$eval('#banner', (e) => e.classList.contains('on')), false, 'view switch ends the dance');
+  assert.strictEqual(await last(page), 'C:0 D:0');
+  // record a route with the joystick, then drive it back
+  await page.click('.tab[data-view="viewPlay"]'); await page.waitForTimeout(300);
+  await page.click('#btnRec'); await page.waitForTimeout(400);
+  assert.ok(await page.$eval('#banner', (e) => e.classList.contains('rec')));
+  P = await rect(page, '#pad');
+  await page.waitForTimeout(300);                                       // standing still first is not recorded
+  await ptr(page, '#pad', 'pointerdown', P.cx, P.cy - P.h / 3, 1); await page.waitForTimeout(800);
+  await ptr(page, '#pad', 'pointerup', P.cx, P.cy - P.h / 3, 1); await page.waitForTimeout(800);
+  await page.click('#bannerBtn'); await toastHas(/Route bewaard/);
+  const route = await page.evaluate(() => JSON.parse(localStorage.getItem('hubremote3')).path);
+  assert.ok(route.length >= 12 && route.length <= 40, 'route length ' + route.length);
+  assert.ok(route[0][0] !== 0 || route[0][1] !== 0, 'starts with movement');
+  assert.deepStrictEqual(route[route.length - 1], [0, 0]); assert.ok(route.some(([l, r]) => l > 30 && r > 30), 'drove forward');
+  await page.click('.tab[data-view="viewPlay"]'); await page.waitForTimeout(300);
+  assert.strictEqual(await page.$eval('#btnRoute', (e) => e.disabled), false);
+  await page.evaluate(() => (window.__hub.tunnel.length = 0));
+  await page.click('#btnRoute'); await toastHas(/Route is klaar/); await page.waitForTimeout(400);   // soft stop takes a few ticks
+  const drove = (await tunnelOf(page)).filter(isDrive);
+  assert.ok(drove.some((x) => x !== 'C:0 D:0'), 'route drives'); assert.strictEqual(drove[drove.length - 1], 'C:0 D:0');
+  // reactions can be switched off
+  await page.click('.tab[data-view="viewPlay"]'); await page.waitForTimeout(300);
+  await page.click('#chkReact + span'); await page.waitForTimeout(100);
+  assert.strictEqual(await page.evaluate(() => JSON.parse(localStorage.getItem('hubremote3')).react), false);
+  // English
+  await page.click('.tab[data-view="viewSettings"]'); await page.waitForTimeout(300);
+  await page.selectOption('#selLang', 'en'); await page.waitForTimeout(300);
+  assert.strictEqual(await page.$eval('#song-ode span:last-child', (e) => e.textContent), 'Ode to Joy');
+  assert.strictEqual(await page.$eval('#inpSay', (e) => e.placeholder), 'Type what the robot should say');
+  await page.screenshot({ path: OUT + '/play.png', fullPage: true });
+  await page.context().close();
+  console.log('G ok: songs, moods, faces, speech, piano, dances, route, reactions');
   }
   await browser.close(); server.close();
   assert.deepStrictEqual(errors, [], 'page errors: ' + errors.join('\n'));

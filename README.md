@@ -23,6 +23,11 @@ program in a program slot on the hub, and then sends live drive commands to it.
 - Live sensors: distance, colour and force, plus an optional stop-for-obstacles guard
 - A profile per robot, shareable as a link or QR code
 - Hub battery level with low-battery warnings
+- Play tab: public-domain songs and a one-octave piano on the hub's speaker, robot moods with a face
+  on the hub's light matrix, and the phone speaking typed text while the hub moves its mouth
+- Two dances and a route you record with the joystick and drive again; STOP, the space bar or the
+  joystick takes over at once
+- Without a hub, songs, moods and the piano play on the phone itself
 - Reconnects by itself; the robot stops within about a second if the link drops
 - Dutch and English, light and dark theme
 - Phones, tablets and foldables, portrait and landscape; installable and usable offline
@@ -56,8 +61,10 @@ Good to know:
 ## Status
 
 Early. Version 1 was confirmed on a real hub. Everything since then (reconnect, battery, horn,
-gripper, sensors, tank and tilt steering, profiles) is covered by automated tests against a
-simulated hub, and still needs confirming on real hardware, on Android and in Bluefy.
+gripper, sensors, tank and tilt steering, profiles, and the version 4 songs, faces, speech, dances
+and routes) is covered by automated tests against a simulated hub, and still needs confirming on
+real hardware, on Android and in Bluefy. The sound features depend on `sound.beep` working on the
+hub; the horn is the quickest check.
 
 One part of the hub side is not documented by the LEGO Group: the program receives live data
 through `hub.config['module_tunnel']`. Other community projects use the same call, but a firmware
@@ -96,8 +103,9 @@ docs/                store listing text and trademark notes
 
 How the link works: the page speaks the hub's Bluetooth protocol as published in
 [LEGO/spike-prime-docs](https://github.com/LEGO/spike-prime-docs) to upload and start the program.
-Live commands then travel as small text messages (`A:-60 B:60`, `pos E 120 80`, `beep`, `?`) in
-tunnel messages. If no message arrives for 800 ms the hub program stops the drive motors.
+Live commands then travel as small text messages (`A:-60 B:60`, `pos E 120 80`, `beep`, `?`,
+`tune 440:200 0:50`, `vol 60`, `img` with 25 brightness digits, `hush`) in tunnel messages. If no
+message arrives for 800 ms the hub program stops the drive motors and clears any queued notes.
 
 ## Contributing
 

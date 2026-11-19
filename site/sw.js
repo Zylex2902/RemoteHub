@@ -1,5 +1,5 @@
 // Hub Remote - eenvoudige service worker: werkt offline, haalt online altijd de nieuwste versie op.
-const CACHE = 'hub-remote-v3';
+const CACHE = 'hub-remote-v4';
 const SHELL = ['./', 'index.html', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png',
   'fonts/fredoka-latin-wght-normal.woff2', 'fonts/nunito-latin-wght-normal.woff2'];
 

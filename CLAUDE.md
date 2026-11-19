@@ -22,21 +22,30 @@ CI (`.github/workflows/pages.yml`) fails if `site/index.html` is not rebuilt and
   the page skips the upload when a running program answers `?` with the same version.
 - Hub API calls that are confirmed on a real hub: `motor.run`, `motor.stop`, the tunnel
   (`hub.config['module_tunnel']`, undocumented), `light_matrix`. Used but not yet confirmed on
-  hardware: `sound.beep`, `motor.run_for_degrees` (called without `await`, as other projects do).
+  hardware: `sound.beep`, `sound.stop`, `motor.run_for_degrees` (called without `await`, as other
+  projects do). Music is a note queue played from the drive loop, one `sound.beep` at a time, so
+  it never blocks driving; faces use `light_matrix.set_pixel`.
   Wrap anything new in try/except so a missing API cannot stop the drive loop.
 - Upload packets start at min(hub limit, 180) bytes and fall back to 20 if the upload fails;
   phones often allow less than the hub reports.
 - Every user-facing string lives in `src/i18n.js` under both `nl` and `en`. Keep the key sets equal.
 - Safety behaviour to preserve: hub-side stop after 800 ms without a message; page keepalive
   every 250 ms; STOP acts on pointer down; everything stops on blur, tab hidden and view switch.
+  Dances and route replay run only in the Drive view and end on `halt()` or on any joystick,
+  tilt, tank or key input.
+- Songs in the app are public domain or written for this project. Do not add copyrighted melodies.
+- CI: the GitHub Pages deploy runs only when the repository variable `DEPLOY_PAGES` is `true`;
+  the app is hosted on Netlify (`netlify.toml`, publishes `site/` with no build step).
 - Layout must keep STOP visible without scrolling on every size in `tests/test_page.js` section E
   and both fold postures in `tests/test_fold.js`.
 
 ## Status and open work
 
-- v1 (connect, upload, drive) was confirmed on a real hub by the owner. v2 and v3 features are
-  tested only against the simulated hub.
-- To confirm on hardware: horn, gripper moves, sensors and obstacle guard, reconnect, battery.
+- v1 (connect, upload, drive) was confirmed on a real hub by the owner. v2, v3 and v4 features
+  are tested only against the simulated hub.
+- To confirm on hardware: horn, gripper moves, sensors and obstacle guard, reconnect, battery,
+  v4 songs and moods (does each short `sound.beep` play cleanly one after another?), faces,
+  dances, recorded routes.
 - To confirm on devices: Android Chrome, Bluefy on iPhone and iPad, tilt steering (the sign of
   the axes in landscape is a guess), a real foldable.
 - Not started: update notice when a new version is online; native iOS wrapper (needs a native
