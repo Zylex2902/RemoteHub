@@ -1,5 +1,5 @@
 // End-to-end test: runs the built page in headless Chrome against a simulated hub.
-// ONLY=AB node tests/test_page.js runs just those sections (A-L).
+// ONLY=AB node tests/test_page.js runs just those sections (A-M).
 const { chromium } = require('playwright');
 const jsQR = require('jsqr');
 const assert = require('assert');
@@ -10,7 +10,8 @@ let HTTP = '';
 
 (async () => {
   const server = await serve(); HTTP = server.url + 'app/';
-  const browser = await chromium.launch(launchOptions());
+  // WebGL for the building-guide viewer runs on the software renderer in headless Chrome.
+  const browser = await chromium.launch(launchOptions(['--enable-unsafe-swiftshader']));
   const errors = [];
   const open = async (ctxOpts, hubOpts, url, init) => {
     const ctx = await browser.newContext(Object.assign({ locale: 'nl-NL' }, ctxOpts));
@@ -931,6 +932,68 @@ let HTTP = '';
   assert.strictEqual(await page.$('#btnLdrMake'), null);
   await page.context().close();
   console.log('L ok: LDraw import (.ldr, .mpd), part list, port guess, official model recognised, profile with sensors, share link, .io and bad files');
+  }
+  // ---------- M. building guides: LDraw models step by step in 3D ----------
+  if (RUN('M')) {
+  // as a single file there is no viewer: a clear message
+  page = await open({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+  await page.click('.tab[data-view="viewSettings"]'); await page.waitForTimeout(300);
+  await page.click('#btnBuildDemo');
+  await page.waitForFunction(() => /werken via de website/.test(document.getElementById('toasts').textContent));
+  await page.context().close();
+  page = await open({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true }, {}, server.url + 'app/');
+  // headless Chrome draws 3D in software: let queued input and frames finish before reading the page
+  const settle = () => page.evaluate(() => new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(ok, 30)))));
+  const stepText = async () => { await settle(); return page.$eval('#buildStep', (e) => e.textContent); };
+  const chips = async () => { await settle(); return page.$$eval('#buildParts .bpart', (c) => c.map((x) => x.textContent)); };
+  await page.click('.tab[data-view="viewSettings"]'); await page.waitForTimeout(300);
+  assert.ok(await page.$eval('#btnBuild', (e) => e.classList.contains('hide2')), 'no guide for the default profile');
+  // the example: loads the viewer and the brick pack, 12 steps, parts per step in Dutch colours
+  await page.click('#btnBuildDemo');
+  await page.waitForFunction(() => /Stap 1 van 12/.test(document.getElementById('buildStep').textContent), null, { timeout: 30000 });
+  assert.deepStrictEqual(await chips(), ['1×Plate 2 x 6 · donkergrijs']);
+  let canvas = await page.$eval('#buildView canvas', (c) => [c.clientWidth, c.clientHeight]);
+  assert.ok(canvas[0] > 300 && canvas[1] > 300, 'canvas fills the view: ' + canvas);
+  const shot1 = await page.locator('#buildView').screenshot();
+  await page.click('#btnBuildNext');
+  await page.waitForFunction(() => document.getElementById('buildStep').textContent === 'Stap 2 van 12', null, { timeout: 5000 });
+  assert.deepStrictEqual(await chips(), ['2×Brick 2 x 2 · blauw']);
+  const shot2 = await page.locator('#buildView').screenshot();
+  assert.ok(shot1.length > 3000 && !shot1.equals(shot2), 'the model is drawn and changes per step');
+  await page.$eval('#buildRange', (e) => { e.value = '12'; e.dispatchEvent(new Event('input', { bubbles: true })); });
+  assert.strictEqual(await stepText(), 'Stap 12 van 12'); assert.strictEqual(await page.$eval('#btnBuildNext', (e) => e.textContent), 'Klaar!');
+  assert.deepStrictEqual(await chips(), ['1×Plate 1 x 1 Round · donkergrijs', '1×Plate 1 x 1 Round · doorzichtig rood']);
+  await settle(); await page.click('#btnBuildNext');   // Klaar! closes the guide
+  await page.waitForFunction(() => !document.getElementById('buildSheet').classList.contains('on'));
+  assert.strictEqual(await page.$$eval('#buildView canvas', (c) => c.length), 0, 'viewer cleaned up');
+  // an own file without steps, with a part that is not in the pack: steps made bottom-up, a grey block
+  const at = (file, y, c = 4) => `1 ${c} 0 ${y} 0 1 0 0 0 1 0 0 0 1 ${file}`;
+  const tower = ['0 Toren', at('3001.dat', -48), at('3001.dat', 0), at('3001.dat', -24), at('99999.dat', -72, 1), at('45601c01.dat', -200, 16)].join('\n');
+  await page.setInputFiles('#ldrFile', { name: 'toren.ldr', mimeType: 'text/plain', buffer: Buffer.from(tower) });
+  await page.waitForFunction(() => document.getElementById('btnLdrBuild'));
+  await page.click('#btnLdrBuild');
+  await page.waitForFunction(() => /Stap 1 van 5/.test(document.getElementById('buildStep').textContent), null, { timeout: 30000 });
+  const note = await page.$eval('#buildNote', (e) => e.textContent);
+  assert.ok(/geen bouwstappen/.test(note) && /1 soort\(en\) onderdelen/.test(note), note);
+  assert.deepStrictEqual(await chips(), ['1×Brick 2 x 4 · rood'], 'lowest brick first');
+  for (let k = 0; k < 3; k++) { await settle(); await page.keyboard.press('ArrowRight'); }
+  assert.strictEqual(await stepText(), 'Stap 4 van 5');
+  assert.ok((await chips())[0].includes('99999.dat'), 'unknown part listed');
+  assert.ok(await page.$eval('#buildParts .bpart', (e) => e.classList.contains('miss')));
+  await page.keyboard.press('Escape');
+  await page.waitForFunction(() => !document.getElementById('buildSheet').classList.contains('on'));
+  // make a profile from it: the guide is kept with the profile and opens again after a reload
+  await page.click('#btnLdrMake'); await page.waitForTimeout(300);
+  assert.ok(!(await page.$eval('#btnBuild', (e) => e.classList.contains('hide2'))), 'guide button for this profile');
+  await page.reload(); await page.waitForTimeout(400);
+  await page.click('.tab[data-view="viewSettings"]'); await page.waitForTimeout(300);
+  await page.click('#btnBuild');
+  await page.waitForFunction(() => /Stap 1 van 5/.test(document.getElementById('buildStep').textContent), null, { timeout: 30000 });
+  assert.strictEqual(await page.$eval('#buildTitle', (e) => e.textContent), 'Toren');
+  // opening a guide stops the robot like any other screen; drive keys do nothing meanwhile
+  await page.click('#btnBuildClose');
+  await page.context().close();
+  console.log('M ok: building guides: example, steps and parts, own file with made-up steps and a grey block, kept with the profile, keys, offline message');
   }
   await browser.close(); server.close();
   assert.deepStrictEqual(errors, [], 'page errors: ' + errors.join('\n'));

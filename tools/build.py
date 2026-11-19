@@ -7,7 +7,7 @@
   python3 tools/build.py --standalone FILE  -> also writes FILE with the fonts embedded,
                                                a single file that works on its own
 """
-import base64, pathlib, sys
+import base64, pathlib, subprocess, sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SRC, SITE = ROOT / "src", ROOT / "site" / "app"
@@ -38,6 +38,19 @@ def build():
     return html
 
 
+def viewer():
+    # Bouwplan-viewer: src/buildview.js met three.js gebundeld tot site/app/ldraw/viewer.js (pas geladen bij gebruik).
+    esb = ROOT / "node_modules" / ".bin" / "esbuild"
+    out = SITE / "ldraw" / "viewer.js"
+    if not esb.exists():
+        print("skipped site/app/ldraw/viewer.js (run npm install for esbuild)")
+        return
+    banner = "/*! Hub Remote building-guide viewer. Includes three.js 0.170.0, Copyright 2010-2024 three.js authors, MIT License (see LICENSE-NOTICES.txt). */"
+    subprocess.run([str(esb), str(SRC / "buildview.js"), "--bundle", "--minify", "--format=iife", "--target=es2020",
+                    "--legal-comments=none", "--log-level=warning", "--banner:js=" + banner, "--outfile=" + str(out)], check=True, cwd=ROOT)
+    print("built site/app/ldraw/viewer.js", out.stat().st_size, "bytes")
+
+
 def landing():
     # De website rond de app: src/landing.html met src/landing.css erin.
     html, css = rd(SRC / "landing.html"), rd(SRC / "landing.css")
@@ -57,6 +70,7 @@ if __name__ == "__main__":
     page = build()
     (SITE / "index.html").write_text(page, encoding="utf8")
     print("built site/app/index.html", len(page.encode()), "bytes")
+    viewer()
     land = landing()
     LANDING.write_text(land, encoding="utf8")
     print("built site/index.html (landing)", len(land.encode()), "bytes")

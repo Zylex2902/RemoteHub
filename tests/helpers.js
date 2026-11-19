@@ -7,7 +7,7 @@ const OUT = path.join(__dirname, 'out');
 fs.mkdirSync(OUT, { recursive: true });
 
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.webmanifest': 'application/manifest+json',
-  '.png': 'image/png', '.svg': 'image/svg+xml', '.woff2': 'font/woff2', '.txt': 'text/plain; charset=utf-8', '.css': 'text/css', '.webp': 'image/webp', '.mp3': 'audio/mpeg' };
+  '.png': 'image/png', '.svg': 'image/svg+xml', '.woff2': 'font/woff2', '.txt': 'text/plain; charset=utf-8', '.css': 'text/css', '.webp': 'image/webp', '.mp3': 'audio/mpeg', '.pack': 'application/octet-stream', '.ldr': 'text/plain; charset=utf-8' };
 
 // Serves site/ on a free localhost port (service workers and share links need http, not file://).
 function serve() {

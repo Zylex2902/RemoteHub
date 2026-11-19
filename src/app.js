@@ -775,6 +775,11 @@
 
   const typing = (e) => e.target && /^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName) && e.target.type !== 'range' && e.target.type !== 'checkbox';
   window.addEventListener('keydown', (e) => {
+    if (bv.open) {
+      if (e.code === 'Escape') closeBuild();
+      else if ((e.code === 'ArrowRight' || e.code === 'ArrowLeft') && !typing(e)) { e.preventDefault(); buildGo(e.code === 'ArrowRight' ? 1 : -1); }
+      return;
+    }
     if (e.code === 'Escape') { closeShare(); return; }
     if (e.ctrlKey || e.metaKey || e.altKey || typing(e)) return;
     if (e.code === 'Space') { e.preventDefault(); if (!e.repeat) emergencyStop(); return; }
@@ -2110,7 +2115,7 @@
 
 
   /* zelf ontworpen in BrickLink Studio: een LDraw-bestand lezen (alleen onderdeelnummers, niets tekenen) */
-  let ldrPlan = null;
+  let ldrPlan = null, ldrSrc = '';
   function ldrProfile(res, sug) {
     const m = MODELS.find((x) => x.id === sug.model);
     const name = uniqueName((res.title || t('profile.default')).slice(0, 30));
@@ -2151,6 +2156,10 @@
       ldrPlan = { plan, model: sug.model, drive: !!sug.drive };
     }
     const row = el('div', 'rowbtns');
+    if (ldrSrc && res.parts) {
+      const bp = el('button', 'btn sm'); bp.type = 'button'; bp.id = 'btnLdrBuild'; bp.textContent = t('build.open');
+      const src = ldrSrc; bp.addEventListener('click', () => openBuild(src, title)); row.appendChild(bp);
+    }
     if (ldrPlan) { const mk = el('button', 'btn sm primary'); mk.type = 'button'; mk.id = 'btnLdrMake'; mk.textContent = t('ldr.make'); mk.addEventListener('click', makeLdr); row.appendChild(mk); }
     const cl = el('button', 'btn sm'); cl.type = 'button'; cl.textContent = t('ldr.close');
     cl.addEventListener('click', () => { box.hidden = true; box.textContent = ''; ldrPlan = null; });
@@ -2166,6 +2175,8 @@
     if (m) addStarters(m);
     else if (drive) addStarters({ progs: Object.values(plan.sens).includes('color') ? ['square', 'line'] : ['square'] });
     toast(t('ldr.made', plan.name), 'ok'); log(t('ldr.made', plan.name), 'ok'); sfx.ready(); buzz(15);
+    // Het bestand zelf bewaren bij het profiel: daarmee kan het bouwplan later weer open.
+    if (ldrSrc) { if (saveBuild(plan.id, plan.name, ldrSrc)) log(t('build.saved', plan.name)); else toast(t('build.noRoom'), 'warn'); showBuildBtn(); }
     $('ldrResult').hidden = true; $('ldrResult').textContent = ''; ldrPlan = null;
     $('wiring').scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
@@ -2180,9 +2191,107 @@
     f.text().then((text) => {
       let res;
       try { res = LDraw.parse(text); } catch (err) { fail('ldr.bad'); return; }
-      showLdr(res, f.name);
+      ldrSrc = text; showLdr(res, f.name);
     }).catch(() => fail('ldr.bad'));
   });
+
+  /* ---------- bouwplannen: een LDraw-model stap voor stap in 3D ---------- */
+  // De viewer (three.js) en de bouwstenen worden pas geladen als iemand een bouwplan opent.
+  const BUILDS_KEY = 'hubremote3-builds';
+  const loadBuilds = () => { try { const b = JSON.parse(localStorage.getItem(BUILDS_KEY) || '{}'); return b && typeof b === 'object' ? b : {}; } catch (e) { return {}; } };
+  function saveBuild(id, title, text) {
+    const all = loadBuilds();
+    all[id] = { title: String(title).slice(0, 60), text };
+    for (const k of Object.keys(all)) if (!G.profiles.some((p) => p.id === k)) delete all[k];   // van verwijderde profielen
+    try { localStorage.setItem(BUILDS_KEY, JSON.stringify(all)); return true; } catch (e) { return false; }
+  }
+  const buildOf = (id) => loadBuilds()[id] || null;
+  const bv = { ctl: null, open: false, token: 0 };
+  let viewerLoad = null;
+  function loadViewer() {
+    if (window.HRBuild) return Promise.resolve(window.HRBuild);
+    if (!viewerLoad) viewerLoad = new Promise((ok, fail) => {
+      const sc = document.createElement('script');
+      sc.src = 'ldraw/viewer.js';
+      sc.onload = () => (window.HRBuild ? ok(window.HRBuild) : fail(new Error('viewer')));
+      sc.onerror = () => { viewerLoad = null; fail(new Error('viewer')); };
+      document.head.appendChild(sc);
+    });
+    return viewerLoad;
+  }
+  const ldColour = (p) => { const k = 'ldc.' + p.code, v = t(k); return v === k ? p.colour.toLowerCase() : v; };
+  function showBuildStep() {
+    const c = bv.ctl;
+    if (!c) return;
+    const n = c.step;
+    $('buildStep').textContent = t('build.step', n + 1, c.steps);   // direct: no fade between steps
+    $('buildRange').max = String(c.steps); $('buildRange').value = String(n + 1);
+    $('btnBuildPrev').disabled = n === 0;
+    $('btnBuildNext').textContent = t(n === c.steps - 1 ? 'build.done' : 'build.next');
+    const box = $('buildParts'); box.textContent = '';
+    for (const p of c.partsFor(n)) {
+      const chip = el('span', 'bpart' + (p.missing ? ' miss' : '')), sw = el('i'), cnt = el('b'), txt = el('span');
+      sw.style.background = p.hex; cnt.textContent = p.count + '×';
+      txt.textContent = p.desc + (p.colour ? ' · ' + ldColour(p) : '');
+      chip.title = p.file; chip.append(sw, cnt, txt); box.appendChild(chip);
+    }
+  }
+  function buildGo(d) {
+    if (!bv.ctl) return;
+    const c = bv.ctl, n = c.step + d;
+    if (n >= c.steps) { closeBuild(); sfx.ready(); return; }
+    c.go(n); showBuildStep(); sfx.tick(); buzz(8);
+  }
+  async function openBuild(text, title) {
+    if (location.protocol === 'file:') { toast(t('build.offline'), 'warn'); return; }
+    halt();   // net als bij een ander scherm: de robot stopt
+    closeBuild(true);
+    const my = ++bv.token, load = $('buildLoad');
+    bv.open = true;
+    $('buildSheet').classList.add('on'); $('buildSheet').setAttribute('aria-hidden', 'false');
+    $('buildTitle').textContent = title || t('build.title'); $('buildStep').textContent = ''; $('buildParts').textContent = ''; $('buildNote').textContent = '';
+    load.textContent = t('build.loading', 0);
+    sfx.open();
+    try {
+      const B = await loadViewer();
+      if (my !== bv.token) return;
+      const bg = getComputedStyle(document.body).getPropertyValue('--panel2').trim() || '#f0f4ff';
+      const ctl = await B.open($('buildView'), text, { packUrl: 'ldraw/parts.pack', background: bg,
+        onProgress: (f) => { if (my === bv.token) load.textContent = f < 1 ? t('build.loading', Math.round(f * 100)) : t('build.making'); } });
+      if (my !== bv.token) { ctl.dispose(); return; }
+      bv.ctl = ctl; load.textContent = '';
+      const notes = [t('build.help')];
+      if (ctl.autoSteps) notes.unshift(t('build.auto'));
+      if (ctl.missing.length) notes.unshift(t('build.missing', ctl.missing.length));
+      $('buildNote').textContent = notes.join(' ');
+      showBuildStep();
+    } catch (e) {
+      if (my !== bv.token) return;
+      load.textContent = t('build.fail', e && e.message ? e.message : e);
+      log(t('build.fail', e && e.message ? e.message : e), 'err');
+    }
+  }
+  function closeBuild(quiet) {
+    bv.token++;
+    if (bv.ctl) { bv.ctl.dispose(); bv.ctl = null; }
+    $('buildView').querySelectorAll('canvas').forEach((c) => c.remove());
+    if (!bv.open) return;
+    bv.open = false;
+    $('buildSheet').classList.remove('on'); $('buildSheet').setAttribute('aria-hidden', 'true');
+    if (!quiet) sfx.tab();
+  }
+  $('btnBuildClose').addEventListener('click', () => closeBuild());
+  $('btnBuildReset').addEventListener('click', () => { if (bv.ctl) bv.ctl.reset(); });
+  $('btnBuildPrev').addEventListener('click', () => buildGo(-1));
+  $('btnBuildNext').addEventListener('click', () => buildGo(1));
+  $('buildRange').addEventListener('input', (e) => { if (bv.ctl) { bv.ctl.go(+e.target.value - 1); showBuildStep(); } });
+  $('btnBuildDemo').addEventListener('click', () => {
+    if (location.protocol === 'file:') { toast(t('build.offline'), 'warn'); return; }
+    fetch('ldraw/demo.ldr').then((r) => (r.ok ? r.text() : Promise.reject(new Error(r.status)))).then((txt) => openBuild(txt, t('build.demoName')))
+      .catch((e) => { toast(t('build.fail', e.message), 'err'); });
+  });
+  $('btnBuild').addEventListener('click', () => { const b = buildOf(S.id); if (b) openBuild(b.text, b.title); else toast(t('build.none'), 'warn'); });
+  const showBuildBtn = () => $('btnBuild').classList.toggle('hide2', !buildOf(S.id));
   /* ---------- instellingen-UI ---------- */
   function fill(sel, items) { const v = sel.value; sel.textContent = ''; for (const [val, txt] of items) { const o = el('option'); o.value = val; o.textContent = txt; sel.appendChild(o); } if (v) sel.value = v; }
   const portItems = () => hubPorts().map((p) => [p, t('port', p)]);
@@ -2251,7 +2360,7 @@
     $('rngVol').value = G.hubVol; $('outVol').textContent = G.hubVol + '%'; $('chkReact').checked = G.react; $('selVoice').value = G.voice;
     $('btnRoute').disabled = !G.path.length; $('btnSongPlay').disabled = !G.song.length;
     $('warnPorts').classList.toggle('on', S.left === S.right);
-    renderAux(); renderWiring();
+    renderAux(); renderWiring(); showBuildBtn();
   }
   const bind = (id, ev, fn) => $(id).addEventListener(ev, (e) => { fn(e.target); save(); syncSettings(); if (e.target.tagName === 'SELECT') e.target.blur(); });
   bind('selLeft', 'change', (n) => { S.left = n.value; S.userPorts = true; sfx.tick(); });

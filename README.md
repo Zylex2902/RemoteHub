@@ -37,6 +37,12 @@ no light matrix) sounds play on the phone and pictures are skipped.
   robot: the app counts the SPIKE™ hub, motors and sensors by their LDraw part numbers (nothing is
   drawn), recognises the official driving bases, and otherwise suggests ports (LDraw has no cables,
   so this is a guess to check with the live wiring diagram). Studio's own `.io` files are not read
+- Building guides (test): open an LDraw model (your own Studio export, or the example robot) as a
+  step-by-step 3D guide: turn and zoom with your fingers, the new parts of each step in their real
+  colour and earlier steps lighter, a parts list per step. Files without steps get steps made from
+  the bottom up. The guide is kept with the robot's profile. The viewer (three.js) and the brick
+  shapes (a 5 MB pack from the LDraw parts library: Technic, the SPIKE electronics, wheels and
+  common bricks) load only when a guide opens; other parts show as a grey block
 - Wiring diagram: a drawing of the hub showing what goes on each port, from the profile; when the
   hub is connected it turns green or red per port (found or missing). Also in the share sheet
 - Python: switch the Code tab to Python and write real MicroPython that runs on the hub, with the

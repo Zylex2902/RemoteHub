@@ -34,7 +34,7 @@ jobs:
           exit 1
       - run: npm run build
       - name: Built page is committed and up to date
-        run: git diff --exit-code site/app/index.html site/index.html
+        run: git diff --exit-code site/app/index.html site/index.html site/app/ldraw/viewer.js
       - run: npm test
         env:
           NO_SANDBOX: "1"

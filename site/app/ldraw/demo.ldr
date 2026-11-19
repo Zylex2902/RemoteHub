@@ -1,0 +1,41 @@
+0 Robotje
+0 Name: demo.ldr
+0 Author: Hub Remote (own design, free to use)
+0 !LICENSE Licensed under CC BY 4.0
+0 // Feet
+1 72 0 0 0 1 0 0 0 1 0 0 0 1 3795.dat
+0 STEP
+0 // Legs
+1 1 -40 -24 0 1 0 0 0 1 0 0 0 1 3003.dat
+1 1 40 -24 0 1 0 0 0 1 0 0 0 1 3003.dat
+0 STEP
+1 1 -40 -48 0 1 0 0 0 1 0 0 0 1 3003.dat
+1 1 40 -48 0 1 0 0 0 1 0 0 0 1 3003.dat
+0 STEP
+0 // Body
+1 4 0 -72 0 1 0 0 0 1 0 0 0 1 2456.dat
+0 STEP
+1 4 0 -96 0 1 0 0 0 1 0 0 0 1 2456.dat
+0 STEP
+0 // Arms hang under the shoulders
+1 72 0 -104 0 1 0 0 0 1 0 0 0 1 3832.dat
+0 STEP
+1 71 -80 -96 0 1 0 0 0 1 0 0 0 1 3003.dat
+1 71 80 -96 0 1 0 0 0 1 0 0 0 1 3003.dat
+0 STEP
+0 // Neck and head
+1 72 0 -128 0 1 0 0 0 1 0 0 0 1 3941.dat
+0 STEP
+1 15 0 -152 0 1 0 0 0 1 0 0 0 1 3001.dat
+0 STEP
+1 15 0 -176 10 1 0 0 0 1 0 0 0 1 3010.dat
+1 43 0 -176 -10 1 0 0 0 1 0 0 0 1 3065.dat
+1 15 -30 -176 -10 1 0 0 0 1 0 0 0 1 3005.dat
+1 15 30 -176 -10 1 0 0 0 1 0 0 0 1 3005.dat
+0 STEP
+1 4 0 -184 0 1 0 0 0 1 0 0 0 1 3020.dat
+0 STEP
+0 // Antenna
+1 72 10 -192 10 1 0 0 0 1 0 0 0 1 6141.dat
+1 36 10 -200 10 1 0 0 0 1 0 0 0 1 6141.dat
+0 STEP

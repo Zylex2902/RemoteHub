@@ -22,7 +22,11 @@ Pybricks, describe their compatibility the same way. This is a working checklist
 5. **No suggestion of endorsement:** no "official", "certified", "by LEGO", and no co-branding.
 6. **No LEGO imagery:** no LEGO logo, minifigure, brick or stud imagery, product photos from
    LEGO, screenshots of LEGO apps, or LEGO's red-and-yellow look. Screenshots of our own app are
-   fine.
+   fine. **One exception, decided by the owner:** inside the app, the building-guide viewer may
+   draw 3D bricks from LDraw files (the user's own models and our own example), using the LDraw
+   parts library as fan tools do. Such 3D drawings stay out of the website, the landing-page
+   screenshots and any store listing or store screenshots, and the viewer never shows LEGO's own
+   instructions or set models.
 7. **App stores are stricter than the law:** the store name, subtitle, short description and
    keywords carry no third-party marks (Apple guideline 2.3.7, Google Play impersonation policy).
    Compatibility goes in the long description, with symbols and the disclaimer.

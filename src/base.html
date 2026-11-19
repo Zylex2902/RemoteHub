@@ -232,6 +232,7 @@
         <div class="rowbtns span2">
           <button class="btn sm" id="btnNew" data-i18n="set.new">Nieuw</button>
           <button class="btn sm" id="btnShare" data-i18n="set.share">Delen</button>
+          <button class="btn sm hide2" id="btnBuild" data-i18n="build.open">Bouwplan</button>
           <button class="btn sm danger" id="btnDelete" data-i18n="set.delete">Verwijderen</button>
         </div>
       </div>
@@ -244,6 +245,7 @@
     <div class="card" id="robots">
       <h2 data-i18n="robots.title">Bouw een robot</h2>
       <p class="small" style="margin:0" data-i18n="robots.help"></p>
+      <button class="btn sm" id="btnBuildDemo" style="align-self:flex-start;margin-top:10px" data-i18n="build.demo">Probeer een voorbeeld-bouwplan</button>
       <div class="models" id="models"></div>
       <!-- Eigen ontwerp uit BrickLink Studio: als LDraw geëxporteerd bestand openen. -->
       <div class="ldrbox" id="ldrBox">
@@ -375,6 +377,23 @@
       <button class="btn sm" id="btnCloseShare" data-i18n="share.close">Sluiten</button>
     </div>
   </div>
+</div>
+
+<!-- Bouwplan: een LDraw-model stap voor stap in 3D (viewer en bouwstenen worden pas geladen bij openen). -->
+<div class="buildsheet" id="buildSheet" aria-hidden="true" role="dialog" aria-labelledby="buildTitle">
+  <div class="bhead">
+    <div class="btitle"><b id="buildTitle"></b><span class="small" id="buildStep"></span></div>
+    <button class="btn sm" id="btnBuildReset" data-i18n="build.reset">Recht zetten</button>
+    <button class="btn sm" id="btnBuildClose" data-i18n="build.close">Sluiten</button>
+  </div>
+  <div class="bview" id="buildView"><div class="bload" id="buildLoad"></div></div>
+  <div class="bparts" id="buildParts" aria-live="polite"></div>
+  <div class="bnav">
+    <button class="btn" id="btnBuildPrev" data-i18n="build.prev">Vorige</button>
+    <input type="range" id="buildRange" min="1" max="1" value="1" data-i18n-aria="build.title" aria-label="Bouwplan">
+    <button class="btn primary" id="btnBuildNext" data-i18n="build.next">Volgende</button>
+  </div>
+  <p class="small bnote" id="buildNote"></p>
 </div>
 
 <div class="sheet" id="imgSheet" aria-hidden="true">

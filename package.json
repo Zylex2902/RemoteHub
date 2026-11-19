@@ -1,6 +1,6 @@
 {
   "name": "hub-remote",
-  "version": "5.4.0",
+  "version": "5.5.0",
   "private": true,
   "description": "Drive a programmable robot hub from the browser over Web Bluetooth.",
   "license": "MIT",
@@ -12,13 +12,16 @@
     "test:unit": "node tests/test_proto.js && node tests/test_cards.js && node tests/test_ldraw.js && python3 -I tests/test_hub_program.py",
     "test:browser": "node tests/test_page.js && node tests/test_fold.js && node tests/test_sw.js && node tests/test_landing.js",
     "vendor:blockly": "cp node_modules/blockly/blockly_compressed.js vendor/blockly/ && cp node_modules/blockly/msg/nl.js vendor/blockly/msg-nl.js && cp node_modules/blockly/msg/en.js vendor/blockly/msg-en.js && cp node_modules/blockly/media/* site/blockly-media/ && cp node_modules/blockly/LICENSE licenses/Apache-2.0-Blockly.txt",
-    "screenshots": "node tools/screenshots.js"
+    "screenshots": "node tools/screenshots.js",
+    "ldraw:pack": "python3 -I tools/ldraw_pack.py"
   },
   "devDependencies": {
     "blockly": "13.4.0",
+    "esbuild": "0.24.0",
     "jsqr": "^1.4.0",
     "playwright": "^1.63.0",
     "qrcode-generator": "^2.0.4",
-    "terser": "^5.51.2"
+    "terser": "^5.51.2",
+    "three": "0.170.0"
   }
 }
