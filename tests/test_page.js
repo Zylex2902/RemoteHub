@@ -25,7 +25,9 @@ const fakeHub = (opts) => {
     const v = new DataView(m.buffer, m.byteOffset, m.byteLength);
     switch (m[0]) {
       case 0x00: { const r = new Uint8Array(17); const d = new DataView(r.buffer); r[0] = 1; r[1] = 1; r[2] = 4; d.setUint16(3, 9, true); r[5] = 3; r[6] = 4; d.setUint16(7, 2, true);
-        d.setUint16(9, opts.maxPacket, true); d.setUint16(11, 2048, true); d.setUint16(13, 102, true); notify(r); break; }
+        d.setUint16(9, opts.maxPacket, true); d.setUint16(11, 2048, true); d.setUint16(13, 102, true); notify(r);
+        if (opts.dropAfterInfo > 0) { opts.dropAfterInfo--; setTimeout(() => H.drop(), 20); }   // seen in Bluefy on iPhone
+        break; }
       case 0x1e: if (m[1] === 1) { H.events.push('stop'); status(0x1f, H.started); if (H.started) notify(Uint8Array.of(0x20, 1)); H.started = false; }
         else { H.events.push('start:' + m[2]);
           const all = Uint8Array.from(H.file); H.fileOk = !!H.announced && Proto.crc(all) === H.announced.crc; H.program = new TextDecoder().decode(all);
@@ -51,7 +53,7 @@ const fakeHub = (opts) => {
     }
   };
   const ch = (name) => ({
-    properties: {}, addEventListener: (n, f) => listeners[name].add(f), removeEventListener: (n, f) => listeners[name].delete(f),
+    properties: { writeWithoutResponse: true, notify: true }, addEventListener: (n, f) => listeners[name].add(f), removeEventListener: (n, f) => listeners[name].delete(f),
     startNotifications: async () => {},
     writeValueWithoutResponse: async (buf) => {
       let b = new Uint8Array(buf.buffer ? buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength) : buf);
@@ -359,7 +361,20 @@ const fakeHub = (opts) => {
   assert.deepStrictEqual([mig.slot, mig.sound, mig.profiles.length, mig.profiles[0].left, mig.profiles[0].right, mig.profiles[0].invL, mig.profiles[0].invR, mig.profiles[0].speed, mig.profiles[0].trim, mig.profiles[0].aux[0].port, mig.profiles[0].aux[0].speed],
     [7, false, 1, 'E', 'F', false, true, 85, 5, 'B', 85]);
   await page.context().close();
-  console.log('D ok: fallback, 20-byte hub, migration');
+  // the hub drops the link right after its first answer (seen in Bluefy): retried without the chooser
+  page = await open({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true }, { dropAfterInfo: 1 });
+  await page.click('#btnConnect'); await waitPhase(page, 'ready', 20000);
+  let lg = await page.$eval('#log', (e) => e.textContent);
+  assert.ok(/De hub verbrak de verbinding/.test(lg) && /poging 1/.test(lg) && /Stap: meldingen aanzetten \[wwr /.test(lg), lg);
+  assert.strictEqual(await page.evaluate(() => window.__hub.choosers), 1);
+  await page.context().close();
+  page = await open({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true }, { dropAfterInfo: 9 });
+  await page.click('#btnConnect'); await page.waitForFunction(() => /Fout: .*\(bij /.test(document.getElementById('log').textContent), null, { timeout: 20000 });
+  lg = await page.$eval('#log', (e) => e.textContent);
+  assert.ok(/poging 2/.test(lg) && !/poging 3/.test(lg), lg);
+  assert.strictEqual(await page.$eval('#pill', (e) => e.dataset.phase), 'idle');
+  await page.context().close();
+  console.log('D ok: fallback, 20-byte hub, migration, link drops while connecting');
 
   }
   // ---------- E. layouts with sensors and an extra motor showing ----------

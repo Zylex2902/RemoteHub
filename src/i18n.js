@@ -80,6 +80,10 @@ const I18N = {
     'phrase.1': 'Hallo! Ik ben een robot.', 'phrase.2': 'Opzij, opzij, hier kom ik!', 'phrase.3': 'Ik heb honger. Heb je een batterij voor me?', 'phrase.4': 'Doei! Tot de volgende keer.',
     'piano.title': 'Piano', 'piano.rec': 'Opnemen', 'piano.stopRec': 'Klaar met opnemen', 'piano.play': 'Mijn liedje',
     'piano.recording': 'Opnemen: speel je liedje op de piano.', 'piano.saved': 'Liedje bewaard ({0} noten).', 'piano.empty': 'Neem eerst een liedje op.',
+    'dbg.step': 'Stap: {0}', 'dbg.at': 'bij {0}', 'dbg.retry': 'Verbinding viel weg tijdens het verbinden, poging {0} om opnieuw te verbinden.',
+    'dbg.lost': 'De hub verbrak de verbinding (laatste stap: {0}).',
+    'dbg.choose': 'hub kiezen', 'dbg.gatt': 'Bluetooth-verbinding maken', 'dbg.service': 'dienst van de hub zoeken', 'dbg.chars': 'kanalen openen',
+    'dbg.notify': 'meldingen aanzetten', 'dbg.linked': 'verbonden, kennismaken met de hub', 'dbg.dropped': 'versturen na wegvallen van de verbinding',
   },
   en: {
     'app.tagline': 'Remote control for your robot hub',
@@ -162,6 +166,10 @@ const I18N = {
     'phrase.1': 'Hello! I am a robot.', 'phrase.2': 'Out of my way, here I come!', 'phrase.3': 'I am hungry. Do you have a battery for me?', 'phrase.4': 'Bye! See you next time.',
     'piano.title': 'Piano', 'piano.rec': 'Record', 'piano.stopRec': 'Stop recording', 'piano.play': 'My song',
     'piano.recording': 'Recording: play your song on the piano.', 'piano.saved': 'Song saved ({0} notes).', 'piano.empty': 'Record a song first.',
+    'dbg.step': 'Step: {0}', 'dbg.at': 'at {0}', 'dbg.retry': 'The connection dropped while connecting, retry {0}.',
+    'dbg.lost': 'The hub closed the connection (last step: {0}).',
+    'dbg.choose': 'choosing the hub', 'dbg.gatt': 'making the Bluetooth connection', 'dbg.service': 'finding the hub service', 'dbg.chars': 'opening the channels',
+    'dbg.notify': 'turning on notifications', 'dbg.linked': 'connected, greeting the hub', 'dbg.dropped': 'sending after the connection dropped',
   },
 };
 if (typeof module !== 'undefined') module.exports = I18N;

@@ -46,6 +46,10 @@ CI (`.github/workflows/pages.yml`) fails if `site/index.html` is not rebuilt and
 - To confirm on hardware: horn, gripper moves, sensors and obstacle guard, reconnect, battery,
   v4 songs and moods (does each short `sound.beep` play cleanly one after another?), faces,
   dances, recorded routes.
+- Bluefy on iPhone (owner, hub firmware 1.8.149): the hub answers the info request, then the link
+  drops at once ("Niet verbonden"); a first try failed with the bare message "2". Cause unknown.
+  The page now logs each connection step and the step where the link dropped, and retries twice
+  without the chooser. Ask for a log screenshot before changing more.
 - To confirm on devices: Android Chrome, Bluefy on iPhone and iPad, tilt steering (the sign of
   the axes in landscape is a guess), a real foldable.
 - Not started: update notice when a new version is online; native iOS wrapper (needs a native

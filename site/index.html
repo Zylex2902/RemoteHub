@@ -1280,6 +1280,10 @@ const I18N = {
     'phrase.1': 'Hallo! Ik ben een robot.', 'phrase.2': 'Opzij, opzij, hier kom ik!', 'phrase.3': 'Ik heb honger. Heb je een batterij voor me?', 'phrase.4': 'Doei! Tot de volgende keer.',
     'piano.title': 'Piano', 'piano.rec': 'Opnemen', 'piano.stopRec': 'Klaar met opnemen', 'piano.play': 'Mijn liedje',
     'piano.recording': 'Opnemen: speel je liedje op de piano.', 'piano.saved': 'Liedje bewaard ({0} noten).', 'piano.empty': 'Neem eerst een liedje op.',
+    'dbg.step': 'Stap: {0}', 'dbg.at': 'bij {0}', 'dbg.retry': 'Verbinding viel weg tijdens het verbinden, poging {0} om opnieuw te verbinden.',
+    'dbg.lost': 'De hub verbrak de verbinding (laatste stap: {0}).',
+    'dbg.choose': 'hub kiezen', 'dbg.gatt': 'Bluetooth-verbinding maken', 'dbg.service': 'dienst van de hub zoeken', 'dbg.chars': 'kanalen openen',
+    'dbg.notify': 'meldingen aanzetten', 'dbg.linked': 'verbonden, kennismaken met de hub', 'dbg.dropped': 'versturen na wegvallen van de verbinding',
   },
   en: {
     'app.tagline': 'Remote control for your robot hub',
@@ -1362,6 +1366,10 @@ const I18N = {
     'phrase.1': 'Hello! I am a robot.', 'phrase.2': 'Out of my way, here I come!', 'phrase.3': 'I am hungry. Do you have a battery for me?', 'phrase.4': 'Bye! See you next time.',
     'piano.title': 'Piano', 'piano.rec': 'Record', 'piano.stopRec': 'Stop recording', 'piano.play': 'My song',
     'piano.recording': 'Recording: play your song on the piano.', 'piano.saved': 'Song saved ({0} notes).', 'piano.empty': 'Record a song first.',
+    'dbg.step': 'Step: {0}', 'dbg.at': 'at {0}', 'dbg.retry': 'The connection dropped while connecting, retry {0}.',
+    'dbg.lost': 'The hub closed the connection (last step: {0}).',
+    'dbg.choose': 'choosing the hub', 'dbg.gatt': 'making the Bluetooth connection', 'dbg.service': 'finding the hub service', 'dbg.chars': 'opening the channels',
+    'dbg.notify': 'turning on notifications', 'dbg.linked': 'connected, greeting the hub', 'dbg.dropped': 'sending after the connection dropped',
   },
 };
 if (typeof module !== 'undefined') module.exports = I18N;
@@ -1511,6 +1519,8 @@ if (typeof module !== 'undefined') module.exports = I18N;
       this.deframer = new Proto.Deframer(); this.waiters = new Map();
       this.queue = Promise.resolve(); this.packet = 20; this.chunk = 64;
       this.onMessage = null; this.onLost = null;
+      // Stappenlog voor het logboek (helpt bij problemen in een bepaalde browser), en de stap waar we zijn.
+      this.trace = null; this.step = '';
       this._data = (ev) => {
         const v = ev.target.value;
         const bytes = new Uint8Array(v.buffer, v.byteOffset, v.byteLength);
@@ -1520,23 +1530,34 @@ if (typeof module !== 'undefined') module.exports = I18N;
           if (this.onMessage) { try { this.onMessage(msg); } catch (e) { console.error(e); } }
         }
       };
-      this._lost = () => { this.cleanup(); if (this.onLost) this.onLost(); };
+      this._lost = () => { this.lostStep = this.step; this.cleanup(); if (this.onLost) this.onLost(); };
     }
     get connected() { return !!(this.device && this.device.gatt && this.device.gatt.connected); }
     async open() {
-      this.device = await navigator.bluetooth.requestDevice({ filters: [{ services: [Proto.SERVICE] }] });
+      this.step = 'choose';
+      try { this.device = await navigator.bluetooth.requestDevice({ filters: [{ services: [Proto.SERVICE] }] }); }
+      catch (e) { e.step = e.step || this.step; throw e; }
       this.device.addEventListener('gattserverdisconnected', this._lost);
       await this.attach();
     }
+    note(step, extra) { this.step = step; if (this.trace) this.trace(step, extra); }
     // Verbindt (opnieuw) met het al gekozen apparaat, zonder keuzevenster.
     async attach() {
       if (!this.device) throw new Error(t('err.notConnected'));
-      const server = await this.device.gatt.connect();
-      const service = await server.getPrimaryService(Proto.SERVICE);
-      this.rx = await service.getCharacteristic(Proto.RX);
-      this.tx = await service.getCharacteristic(Proto.TX);
-      this.tx.addEventListener('characteristicvaluechanged', this._data);
-      await this.tx.startNotifications();
+      try {
+        this.note('gatt');
+        const server = await this.device.gatt.connect();
+        this.note('service');
+        const service = await server.getPrimaryService(Proto.SERVICE);
+        this.note('chars');
+        const rx = await service.getCharacteristic(Proto.RX), tx = await service.getCharacteristic(Proto.TX);
+        const pr = rx.properties || {};
+        this.note('notify', (pr.writeWithoutResponse ? 'wwr ' : '') + (pr.write ? 'w ' : '') + (rx.writeValueWithoutResponse ? 'api-wwr' : 'api-w'));
+        tx.addEventListener('characteristicvaluechanged', this._data);
+        await tx.startNotifications();
+        this.rx = rx; this.tx = tx;
+        this.note('linked');
+      } catch (e) { e.step = e.step || this.step; throw e; }
       this.deframer = new Proto.Deframer(); this.queue = Promise.resolve();
     }
     cleanup() {
@@ -1558,7 +1579,7 @@ if (typeof module !== 'undefined') module.exports = I18N;
     text(s) { return this.send(Proto.tunnel(enc.encode(s))); }
     raw(frame) {
       const job = this.queue.then(async () => {
-        if (!this.rx) throw new Error(t('err.notConnected'));
+        if (!this.rx) { const e = new Error(t('err.notConnected')); if (this.lostStep) e.step = 'dropped'; throw e; }
         for (let i = 0; i < frame.length; i += this.packet) await this.write(frame.slice(i, i + this.packet));
       });
       this.queue = job.catch(() => {});
@@ -1805,6 +1826,13 @@ if (typeof module !== 'undefined') module.exports = I18N;
     if (noteKey) { toast(t(noteKey), 'ok'); log(t(noteKey) + '.', 'ok'); }
   }
 
+  // Foutmelding met de naam van de fout en de stap waarin het misging.
+  function describe(e) {
+    if (!e) return '?';
+    const name = e.name && e.name !== 'Error' ? e.name + ': ' : '';
+    return name + (e.message || String(e)) + (e.step ? ' (' + t('dbg.at', t('dbg.' + e.step)) + ')' : '');
+  }
+  hub.trace = (step, extra) => { if (st.phase !== 'ready' && st.phase !== 'idle') log(t('dbg.step', t('dbg.' + step)) + (extra ? ' [' + extra + ']' : '')); };
   async function connect() {
     if (!navigator.bluetooth) return;
     const my = ++st.session;
@@ -1813,7 +1841,19 @@ if (typeof module !== 'undefined') module.exports = I18N;
       await hub.open();
       sfx.link();
       log(t('msg.connected', hub.device.name || 'hub'), 'ok');
-      await handshake();
+      // Valt de verbinding weg tijdens het kennismaken (gebeurt op iPhone), dan zelf nog twee keer proberen.
+      for (let attempt = 1; ; attempt++) {
+        hub.lostStep = '';
+        try { await handshake(); break; }
+        catch (e) {
+          if (my !== st.session) return;
+          if (hub.connected || !hub.device || attempt > 2) throw e;
+          log(t('dbg.retry', attempt), 'warn');
+          hub.cleanup(); await sleep(800 * attempt);
+          if (my !== st.session) return;
+          await hub.attach();
+        }
+      }
       if (my !== st.session) return;
       goReady();
     } catch (e) {
@@ -1821,7 +1861,7 @@ if (typeof module !== 'undefined') module.exports = I18N;
       const cancelled = e && e.name === 'NotFoundError';
       hub.close(); setPhase('idle');
       setHint(cancelled ? 'hint.nochoice' : 'hint.fail');
-      if (!cancelled) { log(t('msg.err', e && e.message ? e.message : e), 'err'); toast(t('msg.connectFail'), 'err'); sfx.err(); }
+      if (!cancelled) { log(t('msg.err', describe(e)), 'err'); toast(t('msg.connectFail'), 'err'); sfx.err(); }
     }
   }
 
@@ -1873,6 +1913,7 @@ if (typeof module !== 'undefined') module.exports = I18N;
   hub.onLost = () => {
     halt();
     if (st.closing) return;
+    if (st.phase === 'connecting' || st.phase === 'uploading') log(t('dbg.lost', t('dbg.' + (hub.lostStep || 'linked'))), 'warn');
     if (st.phase === 'ready' || st.phase === 'stopped') reconnect();
     // Tijdens verbinden of herstellen vangt de lopende poging de fout zelf af.
   };
