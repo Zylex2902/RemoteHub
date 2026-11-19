@@ -1,5 +1,5 @@
 // End-to-end test: runs the built page in headless Chrome against a simulated hub.
-// ONLY=AB node tests/test_page.js runs just those sections (A-K).
+// ONLY=AB node tests/test_page.js runs just those sections (A-L).
 const { chromium } = require('playwright');
 const jsQR = require('jsqr');
 const assert = require('assert');
@@ -552,7 +552,8 @@ let HTTP = '';
   const migrated = await page.evaluate(() => JSON.parse(localStorage.getItem('hubremote3')).programs[0]);
   assert.ok(migrated.ws && migrated.ws.blocks && !migrated.stacks, 'stored as blocks');
   await page.selectOption('#selProg', 'old1');
-  await page.waitForTimeout(700);   // let pending saves finish first
+  // let pending (debounced) saves finish first: storage must stay the same for 600 ms
+  await page.waitForFunction(() => new Promise((ok) => { const a = localStorage.getItem('hubremote3'); setTimeout(() => ok(a === localStorage.getItem('hubremote3')), 600); }), null, { timeout: 10000 });
   await page.evaluate(() => { localStorage.setItem('hubremote3', JSON.stringify({ profiles: [] })); }); await page.reload(); await page.waitForTimeout(300);   // fresh start: the example program
   await page.click('#btnConnect'); await waitPhase(page, 'ready');
   await page.click('.tab[data-view="viewCode"]'); await page.waitForTimeout(800);
@@ -883,6 +884,53 @@ let HTTP = '';
   assert.strictEqual(await page.$$eval('#wiring .w-port', (g) => g.length), 2);
   await page.context().close();
   console.log('K ok: wiring diagram with live check, four models linking to the official instructions, profile and example programs, share link, small hub');
+  }
+  // ---------- L. importing an LDraw file exported from BrickLink Studio ----------
+  if (RUN('L')) {
+  page = await open({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+  const at = (file, x = 0) => `1 16 ${x} 0 0 1 0 0 0 1 0 0 0 1 ${file}`;
+  const pick = (name, text) => page.setInputFiles('#ldrFile', { name, mimeType: 'text/plain', buffer: Buffer.from(text) });
+  const toastHas = (re) => page.waitForFunction((src) => new RegExp(src).test(document.getElementById('toasts').textContent), re.source, { timeout: 5000 });
+  await page.click('.tab[data-view="viewSettings"]'); await page.waitForTimeout(400);
+  // a project file and a non-LDraw file are refused with a hint
+  await page.setInputFiles('#ldrFile', { name: 'robot.io', mimeType: 'application/octet-stream', buffer: Buffer.from('PK\u0003\u0004') });
+  await toastHas(/Studio-projectbestand \(\.io\)/);
+  await pick('notes.txt', 'just some text'); await toastHas(/niet lezen als LDraw/);
+  assert.ok(await page.$eval('#ldrResult', (e) => e.hidden));
+  // an own design: hub, two medium motors, a large motor and a distance sensor -> ports are a guess
+  await pick('Mijn robot.ldr', ['0 Untitled Model', '0 Name: Mijn robot.ldr', '0 Author: test', at('45601c01.dat'), at('54696p01c01.dat', 40), at('54696p01c01.dat', -40),
+    at('54675c01.dat', 60), at('37316c01.dat', 90), at('3001.dat'), at('32524.dat'), at('32524.dat', 8)].join('\r\n'));
+  await page.waitForFunction(() => !document.getElementById('ldrResult').hidden);
+  let r = await page.evaluate(() => ({ text: document.getElementById('ldrResult').innerText, chips: [...document.querySelectorAll('#ldrResult .chip')].map((c) => c.textContent),
+    used: [...document.querySelectorAll('#ldrResult .w-port.used')].map((g) => g.dataset.port) }));
+  assert.deepStrictEqual(r.chips, ['1× SPIKE™ Prime-hub', '1× grote motor', '2× middelgrote motor', '1× afstandssensor']);
+  assert.ok(/"Untitled Model": 8 onderdelen/.test(r.text) && /Dit is een gok/.test(r.text), r.text);
+  assert.deepStrictEqual(r.used, ['A', 'B', 'C', 'D']);
+  await page.click('#btnLdrMake');
+  await toastHas(/Profiel "Untitled Model" gemaakt/);
+  r = await page.evaluate(() => { const g = JSON.parse(localStorage.getItem('hubremote3')); return { p: g.profiles.find((x) => x.id === g.active), progs: g.programs.map((x) => x.name) }; });
+  assert.deepStrictEqual([r.p.left, r.p.right, r.p.aux[0].port, r.p.aux[0].name, r.p.sens, r.p.model], ['A', 'B', 'C', 'Grote motor', { D: 'distance' }, '']);
+  assert.ok(r.progs.includes('Vierkant rijden') && !r.progs.includes('Stop op zwart'), r.progs.join());
+  assert.deepStrictEqual(await page.$$eval('#wiring .w-port.used', (g) => g.map((x) => x.dataset.port)), ['A', 'B', 'C', 'D']);
+  // the share link keeps the sensor
+  await page.click('#btnShare'); await page.waitForTimeout(300);
+  const link = await page.$eval('#shareLink', (e) => e.value); await page.click('#btnCloseShare');
+  const p2 = await open({ viewport: { width: 390, height: 844 } }, {}, link);
+  r = await p2.evaluate(() => { const g = JSON.parse(localStorage.getItem('hubremote3')); return g.profiles.find((x) => x.id === g.active).sens; });
+  assert.deepStrictEqual(r, { D: 'distance' }); await p2.context().close();
+  // a Studio .mpd with submodels that matches Driving Base 3: the ports from its instructions are used
+  await pick('db3.mpd', ['0 FILE main.ldr', '0 Rijrobot', at('45601.dat'), at('drive.ldr'), at('54675c01.dat'), at('37308c01.dat'),
+    '0 FILE drive.ldr', at('54696p01c01.dat'), at('54696p01c01.dat', 40), at('3001.dat')].join('\n'));
+  await page.waitForFunction(() => /Rijbasis 3/.test(document.getElementById('ldrResult').innerText));
+  await page.click('#btnLdrMake'); await page.waitForTimeout(300);
+  r = await page.evaluate(() => { const g = JSON.parse(localStorage.getItem('hubremote3')); return g.profiles.find((x) => x.id === g.active); });
+  assert.deepStrictEqual([r.name, r.model, r.left, r.right, r.aux[0].port], ['Rijrobot', 'db3', 'C', 'D', 'E']);
+  // nothing from SPIKE in the file
+  await pick('house.ldr', ['0 House', at('3001.dat'), at('3003.dat')].join('\n'));
+  await page.waitForFunction(() => /Geen SPIKE™-hub/.test(document.getElementById('ldrResult').innerText));
+  assert.strictEqual(await page.$('#btnLdrMake'), null);
+  await page.context().close();
+  console.log('L ok: LDraw import (.ldr, .mpd), part list, port guess, official model recognised, profile with sensors, share link, .io and bad files');
   }
   await browser.close(); server.close();
   assert.deepStrictEqual(errors, [], 'page errors: ' + errors.join('\n'));

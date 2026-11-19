@@ -29,7 +29,7 @@ def blockly():
 def build():
     html = rd(SRC / "base.html")
     parts = {"CSS": rd(SRC / "style.css"), "HUB": rd(SRC / "hub_program.py"), "PROTO": rd(SRC / "proto.js"),
-             "QR": rd(ROOT / "vendor" / "qrcode.min.js").strip(), "I18N": rd(SRC / "i18n.js"), "BLOCKLY": blockly(), "CARDS": rd(SRC / "cards.js"),
+             "QR": rd(ROOT / "vendor" / "qrcode.min.js").strip(), "I18N": rd(SRC / "i18n.js"), "BLOCKLY": blockly(), "CARDS": rd(SRC / "cards.js"), "LDRAW": rd(SRC / "ldraw.js"),
              "APP": rd(SRC / "app.js")}
     for key, text in parts.items():
         assert "</script>" not in text and "</style>" not in text, key

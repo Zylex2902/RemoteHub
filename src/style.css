@@ -602,3 +602,10 @@ html[data-theme="dark"] #pyCheat code{color:var(--accent-hi)}
 .model p{margin:0}
 .model .rowbtns .btn{flex:1;text-decoration:none;text-align:center;color:var(--text)}.model .rowbtns .btn.primary{color:var(--accent-ink)}
 .disclaim{opacity:.85}
+.ldrbox{display:flex;flex-direction:column;gap:8px;align-items:flex-start;padding:14px;margin-bottom:12px;border-radius:16px;border:2px dashed var(--line)}
+.ldrbox > b{font:600 16px var(--head)}
+.ldrresult{display:flex;flex-direction:column;gap:8px;align-self:stretch}
+.ldrresult[hidden]{display:none}
+.ldrresult p{margin:0}
+.ldrresult .warnp{color:var(--warn)}
+.ldrresult .rowbtns .btn{flex:1}

@@ -33,6 +33,10 @@ no light matrix) sounds play on the phone and pictures are skipped.
   Base) and a two-motor SPIKE™ Essential car. A link opens LEGO® Education's own free building
   instructions; Use sets up a profile with the right ports and adds example programs (blocks and
   Python). Ports come from the wiring page in those instructions and LEGO Education's Python lessons
+- Designed in BrickLink Studio? Export the model as LDraw (.ldr or .mpd) and open it under Build a
+  robot: the app counts the SPIKE™ hub, motors and sensors by their LDraw part numbers (nothing is
+  drawn), recognises the official driving bases, and otherwise suggests ports (LDraw has no cables,
+  so this is a guess to check with the live wiring diagram). Studio's own `.io` files are not read
 - Wiring diagram: a drawing of the hub showing what goes on each port, from the profile; when the
   hub is connected it turns green or red per port (found or missing). Also in the share sheet
 - Python: switch the Code tab to Python and write real MicroPython that runs on the hub, with the

@@ -22,7 +22,10 @@
   ];
   const modelOf = (p) => MODELS.find((m) => m.id === (p && p.model));
   const newProfile = (name) => ({ id: uid(), name, left: 'A', right: 'B', invL: true, invR: false, speed: 60, turn: 60, trim: 0, userPorts: false,
-    aux: [newAux(), newAux()], guard: false, guardCm: 20, model: '' });
+    aux: [newAux(), newAux()], guard: false, guardCm: 20, model: '', sens: {} });
+  // Sensoren die bij een zelf ontworpen robot horen (uit een Studio-bestand): poort -> soort.
+  const SENS_KINDS = ['color', 'distance', 'force', 'matrix'];
+  const cleanSens = (o) => { const out = {}; if (o && typeof o === 'object') for (const [k, v] of Object.entries(o)) if (isPort(k) && SENS_KINDS.includes(v)) out[k] = v; return out; };
   const G = { lang: 'auto', theme: 'light', sound: true, haptic: true, slot: 19, mode: 'joy', active: '', profiles: [],
     hubVol: 60, voice: 'normal', react: true, song: [], path: [], programs: [], progActive: '', hubKind: 'auto',
     codeMode: 'blocks', py: [], pyActive: '' };
@@ -45,7 +48,7 @@
       name: String(p.name || '').slice(0, 30).trim() || t('profile.default'),
       left: isPort(p.left) ? p.left : 'A', right: isPort(p.right) ? p.right : 'B', invL: p.invL !== false, invR: p.invR === true,
       speed: num(p.speed, 10, 100, 60), turn: num(p.turn, 20, 100, 60), trim: num(p.trim, -20, 20, 0), userPorts: p.userPorts === true,
-      guard: p.guard === true, guardCm: num(p.guardCm, 5, 60, 20), model: modelOf(p) ? p.model : '',
+      guard: p.guard === true, guardCm: num(p.guardCm, 5, 60, 20), model: modelOf(p) ? p.model : '', sens: cleanSens(p.sens),
       aux: [0, 1].map((i) => { const a = aux[i] && typeof aux[i] === 'object' ? aux[i] : {};
         return { port: isPort(a.port) ? a.port : '-', name: String(a.name || '').slice(0, 20), speed: num(a.speed, 10, 100, 60), mode: ['grip', 'toggle'].includes(a.mode) ? a.mode : 'hold', travel: num(a.travel, -720, 720, 90) }; }),
     };
@@ -1897,7 +1900,9 @@
   function encodeProfile(p) {
     const arr = [1, p.name, p.left, p.right, +p.invL, +p.invR, p.speed, p.turn, p.trim, +p.guard, p.guardCm];
     for (const a of p.aux) arr.push(a.port, a.name, a.speed, a.mode === 'grip' ? 1 : a.mode === 'toggle' ? 2 : 0, a.travel);
-    if (p.model) arr.push(p.model);
+    const sens = Object.entries(p.sens || {}).map(([k, v]) => k + v[0]).join('');
+    if (p.model || sens) arr.push(p.model || '');
+    if (sens) arr.push(sens);
     let bin = '';
     enc.encode(JSON.stringify(arr)).forEach((b) => { bin += String.fromCharCode(b); });
     return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
@@ -1907,7 +1912,8 @@
     const a = JSON.parse(dec.decode(Uint8Array.from(bin, (c) => c.charCodeAt(0))));
     if (!Array.isArray(a) || a[0] !== 1 || a.length < 21) throw new Error('bad');
     const aux = [0, 1].map((i) => { const o = 11 + i * 5; return { port: a[o], name: a[o + 1], speed: a[o + 2], mode: a[o + 3] === 1 ? 'grip' : a[o + 3] === 2 ? 'toggle' : 'hold', travel: a[o + 4] }; });
-    return cleanProfile({ name: a[1], left: a[2], right: a[3], invL: a[4] === 1, invR: a[5] === 1, speed: a[6], turn: a[7], trim: a[8], guard: a[9] === 1, guardCm: a[10], aux, userPorts: true, model: a[21] });
+    return cleanProfile({ name: a[1], left: a[2], right: a[3], invL: a[4] === 1, invR: a[5] === 1, speed: a[6], turn: a[7], trim: a[8], guard: a[9] === 1, guardCm: a[10], aux, userPorts: true, model: a[21],
+      sens: Object.fromEntries((String(a[22] || '').match(/[A-F][cdfm]/g) || []).map((x) => [x[0], SENS_KINDS.find((k) => k[0] === x[1])])) });
   }
   function importFromHash() {
     const m = /^#p=([\w-]+)$/.exec(location.hash);
@@ -1993,6 +1999,7 @@
     p.aux.forEach((a, i) => put(a.port, 'motor', a.name || t('aux.n', i + 1)));
     const m = modelOf(p);
     if (m) for (const [port, kind] of Object.entries(m.sens)) put(port, kind, t('wire.' + kind));
+    for (const [port, kind] of Object.entries(p.sens || {})) put(port, kind, t('wire.' + kind));
     return want;
   }
   // Eigen schematische tekening van de hub (geen foto of tekening van LEGO): poorten A, C, E links en B, D, F rechts.
@@ -2049,7 +2056,7 @@
     m.aux.forEach(([port, key], i) => { p.aux[i].port = port; p.aux[i].name = t(key, port).slice(0, 20); });
     return p;
   }
-  const colorPort = (p) => { const m = modelOf(p), mp = m && Object.keys(m.sens).find((k) => m.sens[k] === 'color'), d = (st.sensors || []).find((x) => x.type === 'color');
+  const colorPort = (p) => { const m = modelOf(p), all = Object.assign({}, m ? m.sens : {}, p.sens || {}), mp = Object.keys(all).find((k) => all[k] === 'color'), d = (st.sensors || []).find((x) => x.type === 'color');
     return mp || (d && d.port) || 'B'; };
   function starterCards(k, p) {
     const n = (v) => ({ k: 'n', v }), card = (tp, prm) => Object.assign(Cards.newCard(tp), prm ? { p: Object.assign(Cards.newCard(tp).p, prm) } : {});
@@ -2101,6 +2108,81 @@
     }
   }
 
+
+  /* zelf ontworpen in BrickLink Studio: een LDraw-bestand lezen (alleen onderdeelnummers, niets tekenen) */
+  let ldrPlan = null;
+  function ldrProfile(res, sug) {
+    const m = MODELS.find((x) => x.id === sug.model);
+    const name = uniqueName((res.title || t('profile.default')).slice(0, 30));
+    if (m) { const p = modelProfile(m, name); return p; }
+    const p = newProfile(name);
+    p.userPorts = true; p.invL = true; p.invR = false;
+    if (sug.drive) { p.left = sug.drive.left; p.right = sug.drive.right; }
+    sug.aux.forEach((a, i) => { p.aux[i].port = a.port; const nm = t('ldr.' + a.type); p.aux[i].name = (nm[0].toUpperCase() + nm.slice(1)).slice(0, 20); });
+    p.sens = Object.assign({}, sug.sens);
+    return p;
+  }
+  function showLdr(res, fileName) {
+    const box = $('ldrResult'); box.textContent = ''; box.hidden = false;
+    const title = res.title || fileName.replace(/\.[^.]+$/, '');
+    res.title = title;
+    const sug = LDraw.suggest(res.counts), found = Object.keys(res.counts);
+    const para = (txt, cls) => { const p = el('p', 'small' + (cls ? ' ' + cls : '')); p.textContent = txt; box.appendChild(p); return p; };
+    if (!found.some((k) => k !== 'otherHub')) {
+      para(t('ldr.none', title, res.parts), 'warnp');
+      if (sug.otherHub) para(t('ldr.otherHubNote'), 'warnp');
+      ldrPlan = null;
+    } else {
+      para(t('ldr.found', title, res.parts));
+      const chips = el('div', 'chips');
+      for (const k of ['hub6', 'hub2', 'motorL', 'motorM', 'motorS', 'color', 'distance', 'force', 'matrix', 'otherHub']) {
+        if (!res.counts[k]) continue;
+        const c = el('span', 'chip'); c.textContent = res.counts[k] + '× ' + t('ldr.' + k); chips.appendChild(c);
+      }
+      box.appendChild(chips);
+      if (sug.model) para(t('ldr.like', t('model.' + sug.model + '.name')));
+      else para(t('ldr.guess'));
+      if (sug.noHub) para(t('ldr.noHub', t(sug.hub === 'small' ? 'hub.small' : 'hub.big')), 'warnp');
+      if (sug.otherHub) para(t('ldr.otherHubNote'), 'warnp');
+      if (!sug.drive && !sug.model) para(t('ldr.noDrive'), 'warnp');
+      if (sug.notPlaced) para(t('ldr.notPlaced', sug.notPlaced), 'warnp');
+      const plan = ldrProfile(res, sug);
+      const pic = el('div', 'wiring modelwire'); pic.innerHTML = wiringSvg(plan, false, sug.hub === 'small'); box.appendChild(pic);
+      ldrPlan = { plan, model: sug.model, drive: !!sug.drive };
+    }
+    const row = el('div', 'rowbtns');
+    if (ldrPlan) { const mk = el('button', 'btn sm primary'); mk.type = 'button'; mk.id = 'btnLdrMake'; mk.textContent = t('ldr.make'); mk.addEventListener('click', makeLdr); row.appendChild(mk); }
+    const cl = el('button', 'btn sm'); cl.type = 'button'; cl.textContent = t('ldr.close');
+    cl.addEventListener('click', () => { box.hidden = true; box.textContent = ''; ldrPlan = null; });
+    row.appendChild(cl); box.appendChild(row);
+    sfx.open();
+  }
+  function makeLdr() {
+    if (!ldrPlan) return;
+    const { plan, model, drive } = ldrPlan;
+    G.profiles.push(plan); switchProfile(plan.id);
+    const m = MODELS.find((x) => x.id === model);
+    // Voorbeeldprogramma's alleen als de robot kan rijden; "stop op zwart" alleen met een kleursensor.
+    if (m) addStarters(m);
+    else if (drive) addStarters({ progs: Object.values(plan.sens).includes('color') ? ['square', 'line'] : ['square'] });
+    toast(t('ldr.made', plan.name), 'ok'); log(t('ldr.made', plan.name), 'ok'); sfx.ready(); buzz(15);
+    $('ldrResult').hidden = true; $('ldrResult').textContent = ''; ldrPlan = null;
+    $('wiring').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+  $('btnLdr').addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $('ldrFile').click(); } });
+  $('ldrFile').addEventListener('change', (e) => {
+    const f = e.target.files && e.target.files[0];
+    e.target.value = '';
+    if (!f) return;
+    const fail = (key) => { toast(t(key), 'warn'); log(t(key), 'warn'); sfx.err(); };
+    if (/\.io$/i.test(f.name)) { fail('ldr.io'); return; }
+    if (f.size > 20 * 1024 * 1024) { fail('ldr.big'); return; }
+    f.text().then((text) => {
+      let res;
+      try { res = LDraw.parse(text); } catch (err) { fail('ldr.bad'); return; }
+      showLdr(res, f.name);
+    }).catch(() => fail('ldr.bad'));
+  });
   /* ---------- instellingen-UI ---------- */
   function fill(sel, items) { const v = sel.value; sel.textContent = ''; for (const [val, txt] of items) { const o = el('option'); o.value = val; o.textContent = txt; sel.appendChild(o); } if (v) sel.value = v; }
   const portItems = () => hubPorts().map((p) => [p, t('port', p)]);

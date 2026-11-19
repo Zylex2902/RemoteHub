@@ -245,6 +245,14 @@
       <h2 data-i18n="robots.title">Bouw een robot</h2>
       <p class="small" style="margin:0" data-i18n="robots.help"></p>
       <div class="models" id="models"></div>
+      <!-- Eigen ontwerp uit BrickLink Studio: als LDraw geëxporteerd bestand openen. -->
+      <div class="ldrbox" id="ldrBox">
+        <b data-i18n="ldr.title">Zelf ontworpen?</b>
+        <p class="small" style="margin:0" data-i18n="ldr.help"></p>
+        <label class="btn sm" id="btnLdr" for="ldrFile" tabindex="0" role="button" data-i18n="ldr.open">Studio-bestand openen</label>
+        <input type="file" id="ldrFile" accept=".ldr,.mpd,.l3b,.io,text/plain" hidden>
+        <div class="ldrresult" id="ldrResult" hidden></div>
+      </div>
       <p class="small disclaim" style="margin:0" data-i18n="robots.note"></p>
     </div>
 
@@ -410,6 +418,10 @@
 <!-- Programmeerblokken: blokkenset, omzetting en uitvoerder (geen DOM). -->
 <script id="cards">
 {{CARDS}}</script>
+
+<!-- LDraw-bestanden (bijv. uit BrickLink Studio) lezen: SPIKE-onderdelen tellen, poorten voorstellen (geen DOM). -->
+<script id="ldraw">
+{{LDRAW}}</script>
 
 <script id="app">
 {{APP}}</script>

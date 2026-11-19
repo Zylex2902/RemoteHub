@@ -88,6 +88,12 @@ no App Store or Google Play badges before then.
   left/right of the Advanced Driving Base is not confirmed on hardware. We only LINK to their
   instructions (rule 9 of `docs/trademarks.md`). Profiles store `model`; the share link appends it.
   `wiringSvg()` is our own schematic; live colours come from `st.motors`/`st.sensors`.
+- LDraw import (`src/ldraw.js`, no DOM, `tests/test_ldraw.js`): reads type-1 lines of .ldr/.mpd (submodels
+  via `0 FILE`), maps part numbers to kinds (hub 45601/67718/53444, Essential hub 67351, motors 54675/69730
+  large, 54696 medium, 68488 small, sensors 37308 colour, 37316 distance, 37312 force, matrix 47592; checked
+  against the official LDraw library), matches the official driving bases by their electronics, else
+  suggests ports (drive pair A+B, extra motors next, then sensors). Profiles keep `sens` {port: kind},
+  also in the share link. Studio `.io` (password-protected zip) is deliberately not read.
 - Layout must keep STOP visible without scrolling on every size in `tests/test_page.js` section E
   and both fold postures in `tests/test_fold.js`.
 
