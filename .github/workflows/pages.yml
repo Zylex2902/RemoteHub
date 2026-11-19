@@ -35,8 +35,10 @@ jobs:
         with:
           path: site
 
+  # Optional: the app is hosted on Netlify (netlify.toml). To also publish to GitHub Pages, enable
+  # Pages with "GitHub Actions" as the source and set the repository variable DEPLOY_PAGES to true.
   deploy:
-    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && vars.DEPLOY_PAGES == 'true'
     needs: build
     runs-on: ubuntu-latest
     environment:

@@ -35,10 +35,10 @@ program in a program slot on the hub, and then sends live drive commands to it.
 | Android phone or tablet | Chrome | needs https; can be installed to the home screen |
 | iPhone, iPad | a Web Bluetooth browser such as Bluefy | needs https; Safari has no Web Bluetooth |
 
-Web Bluetooth needs a secure address, so phones and tablets need the app hosted over https. This
-repository deploys `site/` to GitHub Pages on every push to `main` (see
-`.github/workflows/pages.yml`); enable Pages with "GitHub Actions" as the source. It can also be
-hosted on Netlify: `netlify.toml` publishes `site/` as is, with no build step.
+Web Bluetooth needs a secure address, so phones and tablets need the app hosted over https. The
+app is hosted on Netlify: `netlify.toml` publishes `site/` as is, with no build step. GitHub Pages
+works too: enable Pages with "GitHub Actions" as the source and set the repository variable
+`DEPLOY_PAGES` to `true`; `.github/workflows/pages.yml` then deploys every push to `main`.
 
 ## Using it
 
