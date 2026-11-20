@@ -1126,6 +1126,12 @@ let HTTP = '';
   await page.context().close();
   // offline and not cached: English, with a note
   page = await open({ viewport: { width: 390, height: 844 }, locale: 'pl-PL' }, {}, HTTP, null);
+  // with the service worker in charge, as in the installed app (its offline answer must not be the page)
+  await page.evaluate(() => navigator.serviceWorker && navigator.serviceWorker.ready);
+  await page.evaluate(() => caches.keys().then((ks) => Promise.all(ks.map((k) => caches.open(k).then((c) => c.keys().then((rs) => Promise.all(rs.filter((r) => /\/lang\//.test(r.url)).map((r) => c.delete(r)))))))));
+  await page.reload(); await page.waitForTimeout(300);
+  assert.ok(await page.evaluate(() => !!navigator.serviceWorker.controller), 'service worker controls the page');
+  await page.evaluate(() => caches.keys().then((ks) => Promise.all(ks.map((k) => caches.open(k).then((c) => c.keys().then((rs) => Promise.all(rs.filter((r) => /\/lang\//.test(r.url)).map((r) => c.delete(r)))))))));
   await page.context().route('**/lang/*.js', (rt) => rt.abort());
   await page.reload(); await page.waitForTimeout(500);
   assert.strictEqual(await tabText(page), L('en')['tab.drive']);

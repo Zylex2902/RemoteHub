@@ -133,6 +133,8 @@ no App Store or Google Play badges before then.
 - Game controller: `pollPad()` in the 50 ms tick, standard mapping only. Ignored in Code and the building
   guide; B/Start = STOP; after any `halt()` the stick must return to centre (`st.pad.lock`) before it
   drives again; disconnect calls `halt()`.
+- Service worker (`site/app/sw.js`): network first; offline it serves the cache, and only a page load may fall
+  back to `index.html` (a script such as `lang/xx.js` must fail, not get HTML). Bump `CACHE` on changes.
 - Light animation (`G.anim`, Play tab, and the `anim` block): frames go out as `img`; `halt()` stops it.
 - Layout must keep STOP visible without scrolling on every size in `tests/test_page.js` section E
   and both fold postures in `tests/test_fold.js`.
