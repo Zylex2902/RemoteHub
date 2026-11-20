@@ -1,4 +1,4 @@
-# Hub Remote: notes for Claude Code
+# BrickHubRemote: notes for Claude Code
 
 Web app (PWA) that drives a LEGO Education SPIKE Prime or SPIKE Essential hub on stock firmware over
 Web Bluetooth.
@@ -11,7 +11,7 @@ npm run build              # src/ -> site/app/index.html (app) + site/index.html
 npm run screenshots        # landing page screenshots (site/img/) from the app; rerun after UI changes
 npm run test:unit          # protocol vectors + hub program logic (fast, no browser)
 npm run test:browser       # headless Chrome against a simulated hub (ONLY=AE limits sections)
-npm run build:standalone   # dist/hub-remote.html, single file with fonts embedded
+npm run build:standalone   # dist/brickhubremote.html, single file with fonts embedded
 ```
 
 Browser tests: set `CHROME_PATH` or run `npx playwright install chromium`; `NO_SANDBOX=1` as root.

@@ -11,12 +11,12 @@ const { serve, launchOptions } = require('./helpers');
   await page.goto(server.url + 'app/');   // the app lives under /app/; the root is the landing page
   await page.evaluate(() => navigator.serviceWorker.ready.then(() => new Promise((r) => setTimeout(r, 600))));
   const man = await page.evaluate(() => fetch('manifest.webmanifest').then((r) => r.json()));
-  assert.strictEqual(man.name, 'Hub Remote'); assert.strictEqual(man.icons.length, 3);
+  assert.strictEqual(man.name, 'BrickHubRemote'); assert.strictEqual(man.icons.length, 3);
   assert.ok(!/lego|spike/i.test(JSON.stringify(man)), 'no third-party marks in the manifest');
   await page.reload(); await page.waitForTimeout(600);
   await ctx.setOffline(true);
   await page.reload(); await page.waitForTimeout(600);
-  assert.strictEqual(await page.title(), 'Hub Remote'); assert.ok(await page.$('#btnConnect'), 'page loads offline from cache');
+  assert.strictEqual(await page.title(), 'BrickHubRemote'); assert.ok(await page.$('#btnConnect'), 'page loads offline from cache');
   assert.strictEqual(await page.evaluate(() => fetch('icon-192.png').then((r) => r.ok)), true, 'icon cached');
   assert.strictEqual(await page.evaluate(() => document.fonts.ready.then(() => [...document.fonts].filter((f) => f.status === 'loaded').length >= 2)), true, 'fonts available offline');
   assert.deepStrictEqual(errs, []);

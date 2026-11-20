@@ -45,7 +45,7 @@ def viewer():
     if not esb.exists():
         print("skipped site/app/bricks/viewer.js (run npm install for esbuild)")
         return
-    banner = "/*! Hub Remote building-guide viewer. Includes three.js 0.170.0, Copyright 2010-2024 three.js authors, MIT License (see LICENSE-NOTICES.txt). */"
+    banner = "/*! BrickHubRemote building-guide viewer. Includes three.js 0.170.0, Copyright 2010-2024 three.js authors, MIT License (see LICENSE-NOTICES.txt). */"
     subprocess.run([str(esb), str(SRC / "buildview.js"), "--bundle", "--minify", "--format=iife", "--target=es2020",
                     "--legal-comments=none", "--log-level=warning", "--banner:js=" + banner, "--outfile=" + str(out)], check=True, cwd=ROOT)
     print("built site/app/bricks/viewer.js", out.stat().st_size, "bytes")

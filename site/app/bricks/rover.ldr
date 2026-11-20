@@ -1,6 +1,6 @@
 0 Rover
 0 Name: rover.ldr
-0 Author: Hub Remote (own design, free to use)
+0 Author: BrickHubRemote (own design, free to use)
 0 !LICENSE Licensed under CC BY 4.0
 0 // A small driving robot, built only from parts of the LEGO Education SPIKE Prime set (45678).
 0 // Cables (not drawn): the motors to ports A and B, the distance sensor to port C.

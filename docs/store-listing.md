@@ -5,7 +5,7 @@ keywords; compatibility once, in the long description, with symbols and the disc
 
 ## English
 
-**App name** (30): Hub Remote
+**App name** (30): BrickHubRemote
 
 **Subtitle** (30): Drive your robot hub by phone
 
@@ -16,7 +16,7 @@ steering, a horn and one big stop button. The robot stops by itself if the conne
 
 **Description**
 
-Hub Remote turns your phone, tablet or laptop into a live remote control for your programmable
+BrickHubRemote turns your phone, tablet or laptop into a live remote control for your programmable
 robot hub. No game controller needed: connect over Bluetooth and drive.
 
 - Three ways to drive: joystick, tank sliders or tilting your phone
@@ -35,17 +35,17 @@ robot hub. No game controller needed: connect over Bluetooth and drive.
 - English and Dutch, light and dark theme
 
 Compatibility: works with the LEGO® Education SPIKE™ Prime and SPIKE™ Essential hubs on their standard firmware. The
-firmware is not modified. Hub Remote stores a small control program in a program slot you choose;
+firmware is not modified. BrickHubRemote stores a small control program in a program slot you choose;
 whatever was in that slot is replaced.
 
-Hub Remote is an independent app. LEGO® and SPIKE™ are trademarks of the LEGO Group, which does
+BrickHubRemote is an independent app. LEGO® and SPIKE™ are trademarks of the LEGO Group, which does
 not sponsor, authorize or endorse this app.
 
 **Keywords** (100): robot,remote,control,bluetooth,hub,joystick,stem,robotics,rc,drive,education,coding
 
 ## Nederlands
 
-**Naam:** Hub Remote
+**Naam:** BrickHubRemote
 
 **Ondertitel:** Bestuur je robothub met je telefoon
 
@@ -53,7 +53,7 @@ not sponsor, authorize or endorse this app.
 
 **Beschrijving**
 
-Hub Remote maakt van je telefoon, tablet of laptop een live afstandsbediening voor je
+BrickHubRemote maakt van je telefoon, tablet of laptop een live afstandsbediening voor je
 programmeerbare robothub. Geen gamecontroller nodig: verbind via Bluetooth en rijd.
 
 - Drie manieren van sturen: joystick, tankschuiven of je telefoon kantelen
@@ -72,10 +72,10 @@ programmeerbare robothub. Geen gamecontroller nodig: verbind via Bluetooth en ri
 - Nederlands en Engels, licht en donker thema
 
 Compatibiliteit: werkt met de LEGO® Education SPIKE™ Prime-hub en SPIKE™ Essential-hub op de standaardfirmware. De
-firmware wordt niet aangepast. Hub Remote zet een klein besturingsprogramma in een programmaslot
+firmware wordt niet aangepast. BrickHubRemote zet een klein besturingsprogramma in een programmaslot
 naar keuze; wat daar stond wordt vervangen.
 
-Hub Remote is een onafhankelijke app. LEGO® en SPIKE™ zijn handelsmerken van de LEGO Group, die
+BrickHubRemote is een onafhankelijke app. LEGO® en SPIKE™ zijn handelsmerken van de LEGO Group, die
 deze app niet sponsort, autoriseert of onderschrijft.
 
 ## Repository description

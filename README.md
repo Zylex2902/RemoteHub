@@ -1,16 +1,16 @@
-# Hub Remote
+# BrickHubRemote
 
 Drive a programmable robot hub from your browser: phone, tablet or laptop, over Bluetooth, with no
 game controller and no custom firmware.
 
-Hub Remote is a small web app (a PWA). It connects with Web Bluetooth, stores one short Python
+BrickHubRemote is a small web app (a PWA). It connects with Web Bluetooth, stores one short Python
 program in a program slot on the hub, and then sends live drive commands to it.
 
 **Compatibility:** works with the LEGO® Education SPIKE™ Prime and SPIKE™ Essential hubs on their
 standard firmware (app version 3). The firmware is not modified. On the small hub (2 ports, no speaker,
 no light matrix) sounds play on the phone and pictures are skipped.
 
-> Hub Remote is an independent project. LEGO® and SPIKE™ are trademarks of the LEGO Group, which
+> BrickHubRemote is an independent project. LEGO® and SPIKE™ are trademarks of the LEGO Group, which
 > does not sponsor, authorize or endorse this project.
 
 ## Features
@@ -113,7 +113,7 @@ Requirements: Node 20+, Python 3.9+, Chrome for the browser tests.
 ```
 npm install
 npm run build              # src/ -> site/app/index.html (the app) and site/index.html (landing page)
-npm run build:standalone   # also dist/hub-remote.html, one file with the fonts embedded
+npm run build:standalone   # also dist/brickhubremote.html, one file with the fonts embedded
 npm run test:unit          # protocol vectors + hub program logic
 npm run test:browser       # full flow in headless Chrome against a simulated hub
 npm run vendor:blockly     # after updating the blockly package: copy it into vendor/ and site/app/
@@ -167,5 +167,5 @@ identifiers and addresses; `docs/trademarks.md` explains why and how compatibili
 
 ## Licence
 
-MIT for the code written for Hub Remote: see `LICENSE`. Third-party parts keep their own licences:
+MIT for the code written for BrickHubRemote: see `LICENSE`. Third-party parts keep their own licences:
 see `THIRD-PARTY-NOTICES.md` and `licenses/`.

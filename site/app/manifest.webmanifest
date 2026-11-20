@@ -1,6 +1,6 @@
 {
-  "name": "Hub Remote",
-  "short_name": "Hub Remote",
+  "name": "BrickHubRemote",
+  "short_name": "BrickHubRemote",
   "description": "Independent remote control for a programmable robot hub over Bluetooth.",
   "start_url": "./",
   "scope": "./",

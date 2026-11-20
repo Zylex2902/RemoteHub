@@ -71,7 +71,7 @@ def check(parts):
     return ok
 
 def ldr(title, name, notes, steps):
-    out = ['0 ' + title, '0 Name: ' + name, '0 Author: Hub Remote (own design, free to use)', '0 !LICENSE Licensed under CC BY 4.0']
+    out = ['0 ' + title, '0 Name: ' + name, '0 Author: BrickHubRemote (own design, free to use)', '0 !LICENSE Licensed under CC BY 4.0']
     out += ['0 // ' + n for n in notes] + ['']
     # Designed with the front at +Z; LDraw models face -Z, so turn everything half a turn around the vertical.
     T = np.diag([-1.0, 1.0, -1.0])

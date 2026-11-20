@@ -1971,7 +1971,7 @@
     if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText($('shareLink').value).then(done).catch(fallback);
     else fallback();
   });
-  $('btnNativeShare').addEventListener('click', () => { navigator.share({ title: 'Hub Remote', text: S.name, url: $('shareLink').value }).catch(() => {}); });
+  $('btnNativeShare').addEventListener('click', () => { navigator.share({ title: 'BrickHubRemote', text: S.name, url: $('shareLink').value }).catch(() => {}); });
   $('selProfile').addEventListener('change', (e) => { sfx.tick(); switchProfile(e.target.value); e.target.blur(); });
   $('inpName').addEventListener('input', (e) => {
     S.name = e.target.value.slice(0, 30).trim() || t('profile.default'); save();

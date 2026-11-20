@@ -1,6 +1,6 @@
 # Trademarks: how this project refers to other brands
 
-Hub Remote works with hardware made by the LEGO Group, and has no relationship with it. The rules
+BrickHubRemote works with hardware made by the LEGO Group, and has no relationship with it. The rules
 below keep that clear. They follow referential (nominative) use: naming another company's product
 to say what ours works with, honestly and no more than needed. Comparable projects, such as
 Pybricks, describe their compatibility the same way. This is a working checklist, not legal advice.
@@ -47,6 +47,17 @@ Pybricks, describe their compatibility the same way. This is a working checklist
    redistributing.
 12. A disclaimer does not make an otherwise misleading use acceptable.
 
+## The name
+
+The project is called **BrickHubRemote** (chosen November 2026; it was "Hub Remote" before). "Brick" is
+an ordinary word that many fan tools use, and the LEGO Group does not claim it, but it opposes trademark
+registrations with "brick" that do not disclaim the word. So if the name is ever registered, disclaim
+"brick". Checked at the time: no app or product with this exact name and no domains in use for it; an
+unofficial collector app called "BrickHub" and a web app called "Brick Remote" exist, so never shorten
+the name to either. The EU/Benelux register (TMview) still has to be searched by hand. Internal
+identifiers (storage keys `hubremote3`, `hubremote-site-lang`) keep the old name on purpose, so users
+keep their data.
+
 ## Why
 
 - Trademark law (EU: art. 14 of the EU Trade Mark Regulation; US: nominative fair use) allows
@@ -61,7 +72,7 @@ Pybricks, describe their compatibility the same way. This is a working checklist
 ## Money
 
 - A free app with an optional donation is fine in principle. Keep the donation tied to the
-  developer ("Support the developer of Hub Remote"), never to a LEGO trademark.
+  developer ("Support the developer of BrickHubRemote"), never to a LEGO trademark.
 - Paid features or licences (as Pybricks does for block coding) do not change the rules above,
   but make the project more visible: have a trademark lawyer look at it before charging.
 - Put a donation link on the website. Apple requires in-app purchase for tips inside an app,

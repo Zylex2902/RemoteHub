@@ -1,6 +1,6 @@
 # Third-party notices
 
-Hub Remote is an independent project. It is not affiliated with, sponsored, authorized or
+BrickHubRemote is an independent project. It is not affiliated with, sponsored, authorized or
 endorsed by the LEGO Group.
 
 | Part | Where | Origin | Licence |
@@ -17,14 +17,14 @@ Notes
 
 - `cobsEncode` and `cobsDecode` in `src/proto.js` are JavaScript ports of the reference example
   `examples/python/cobs.py` in LEGO/spike-prime-docs and have been modified. Everything else in
-  `src/` was written for Hub Remote.
+  `src/` was written for BrickHubRemote.
 - `site/app/bricks/demo.ldr`, `rover.ldr` and `veegbot.ldr` (the example building guides) are own designs
-  made for Hub Remote; `tools/designs/` generates and checks the Rover and the Veegbot.
+  made for BrickHubRemote; `tools/designs/` generates and checks the Rover and the Veegbot.
 - `tests/vectors.json` holds expected values produced by running the reference examples from
   LEGO/spike-prime-docs on random input. It contains no code from that repository.
 - The brick shapes are credited as "The LDraw Parts Library", as LDraw.org asks; the app shows this
   credit and a link to these notices in every building guide. LDraw™ is a trademark owned and
-  licensed by the Estate of James Jessiman. Hub Remote is not part of LDraw.org and does not use
+  licensed by the Estate of James Jessiman. BrickHubRemote is not part of LDraw.org and does not use
   the LDraw name in its own name or addresses (https://www.ldraw.org/legal-info,
   https://www.ldraw.org/article/239.html).
 - LEGO® and SPIKE™ are trademarks of the LEGO Group. "QR Code" is a registered trademark of
