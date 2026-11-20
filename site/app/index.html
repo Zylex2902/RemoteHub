@@ -24,12 +24,12 @@
 @font-face{font-family:"Fredoka";font-style:normal;font-display:swap;font-weight:300 700;src:url(fonts/fredoka-latin-wght-normal.woff2) format("woff2")}
 @font-face{font-family:"Nunito";font-style:normal;font-display:swap;font-weight:200 1000;src:url(fonts/nunito-latin-wght-normal.woff2) format("woff2")}
 :root{
-  --bg:#e9f0ff; --panel:#ffffff; --panel2:#f0f4ff; --line:#d2dbf4; --edge:#bcc8ea;
-  --text:#1c2550; --muted:#636e94; --accent:#6a4cf5; --accent-ink:#ffffff; --accent-deep:#4a30c9; --accent-hi:#a594ff;
+  --bg:#eaf1ef; --panel:#ffffff; --panel2:#f2f7f5; --line:#d0dfda; --edge:#b9cdc7;
+  --text:#17302c; --muted:#587470; --accent:#0a7f72; --accent-ink:#ffffff; --accent-deep:#075a51; --accent-hi:#59cdbd;
   --ok:#0ea968; --warn:#c96a00; --danger:#ff4a5e; --danger-ink:#ffffff; --danger-deep:#cf2c45;
-  --accent-line:rgba(106,76,245,.45); --accent-soft:rgba(106,76,245,.15);
+  --accent-line:rgba(10,127,114,.45); --accent-soft:rgba(10,127,114,.14);
   --danger-line:rgba(255,74,94,.6); --danger-soft:rgba(255,74,94,.16); --warn-line:rgba(201,106,0,.55);
-  --pad1:#ffffff; --pad2:#dbe5ff; --shadow-c:rgba(40,52,110,.2); --knob-shade:rgba(20,10,80,.2); --scrim:rgba(28,37,80,.5); --log-bg:#f5f8ff;
+  --pad1:#ffffff; --pad2:#d6e7e2; --shadow-c:rgba(18,60,54,.18); --knob-shade:rgba(5,45,40,.2); --scrim:rgba(14,40,37,.5); --log-bg:#f4f8f7;
   --ease:cubic-bezier(.2,.8,.2,1); --gap:16px; --padsize:min(240px,60vw,30vh);
   --font:"Nunito","Trebuchet MS","Segoe UI",sans-serif; --head:"Fredoka","Trebuchet MS","Segoe UI",sans-serif;
   --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
@@ -483,14 +483,14 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border:3px solid #fff
 .funbtns{display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:8px}
 .funbtns.moods{grid-template-columns:repeat(auto-fill,minmax(86px,1fr))}
 .btn.fun{flex-direction:column;gap:4px;padding:12px 8px;font-size:14px;line-height:1.2;white-space:normal;text-align:center;touch-action:manipulation}
-.btn.fun .emo{font-size:24px;line-height:1}
+.btn.fun .face{padding:3px;border-radius:6px;background:#14161c}
 .btn.fun.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .speakrow{display:flex;gap:8px}
 .speakrow input{flex:1}
 .phrases{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
 .phrases .btn{white-space:normal;text-align:left}
 .piano{position:relative;display:flex;gap:4px;height:128px;margin:2px 0 14px;touch-action:none;-webkit-user-select:none;user-select:none}
-.wkey{flex:1;min-width:0;border:2px solid var(--line);border-radius:0 0 12px 12px;background:#fdfdff;box-shadow:0 4px 0 var(--line);cursor:pointer;
+.wkey{flex:1;min-width:0;border:2px solid var(--line);border-radius:0 0 12px 12px;background:#fcfefd;box-shadow:0 4px 0 var(--line);cursor:pointer;
   display:flex;align-items:flex-end;justify-content:center;padding-bottom:8px;font:600 12px var(--head);color:#7a8294;transition:background .08s linear,transform .08s linear}
 .bkey{position:absolute;top:0;width:calc((100% - 28px) / 8 * .62);height:60%;border-radius:0 0 9px 9px;background:#262b36;border:2px solid #262b36;
   transform:translateX(-50%);z-index:1;cursor:pointer;transition:background .08s linear}
@@ -564,7 +564,7 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border:3px solid #fff
 .codekind button{font:600 14px var(--head);padding:6px 18px;border:0;border-radius:999px;background:none;color:var(--muted);cursor:pointer;transition:background .2s var(--ease),color .2s var(--ease)}
 .codekind button.on{background:var(--accent);color:var(--accent-ink)}
 .pybox{display:flex;flex-direction:column;gap:10px;height:420px;min-height:0}
-.pyedit{--py-bg:#fbfcff;--py-k:#7b30d0;--py-s:#0f8a4a;--py-c:#7d8799;--py-n:#c2410c;--py-b:#1565c0;--py-f:#0e7490;
+.pyedit{--py-bg:#fcfefd;--py-k:#7b30d0;--py-s:#0f8a4a;--py-c:#7d8799;--py-n:#c2410c;--py-b:#1565c0;--py-f:#0e7490;
   position:relative;flex:1 1 auto;min-height:150px;display:flex;border-radius:18px;overflow:hidden;border:2px solid var(--line);background:var(--py-bg)}
 html[data-theme="dark"] .pyedit{--py-bg:#11151b;--py-k:#c792ea;--py-s:#9ece6a;--py-c:#6b778a;--py-n:#ff9e64;--py-b:#7aa2f7;--py-f:#7dcfff}
 .pyedit pre,.pyedit textarea{margin:0;font:14px/1.5 var(--mono);tab-size:4;white-space:pre;letter-spacing:0}
@@ -5274,7 +5274,6 @@ const Cards = (() => {
   const COLORS = [-1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
   const NOTES = ['C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', 'C5', 'D5', 'E5', 'F5', 'G5', 'A5', 'B5', 'C6'];
   const CATS = ['event', 'move', 'motor', 'light', 'sound', 'control', 'sensor', 'var'];
-  const ICONS = { event: '\u{1F6A9}', move: '\u{1F697}', motor: '⚙️', light: '\u{1F4A1}', sound: '\u{1F3B5}', control: '\u{1F501}', sensor: '\u{1F441}️', var: '\u{1F4E6}' };
 
   // Parameters: num = getal of andere bron (variabele, toeval, sensor), choice = vaste keuzes.
   const num = (k, v, extra) => Object.assign({ k, type: 'num', def: v }, extra || {});
@@ -6045,7 +6044,7 @@ const Cards = (() => {
     return { blocks: { languageVersion: 0, blocks: tops }, variables };
   }
 
-  return { PORTS, COLORS, NOTES, CATS, ICONS, TYPES: T, COND, SENSORS, IMAGES, FONT, REP, newCard, cleanCard, cleanCond, cleanProgram, depths, compile, steer, textColumns, Runner,
+  return { PORTS, COLORS, NOTES, CATS, TYPES: T, COND, SENSORS, IMAGES, FONT, REP, newCard, cleanCard, cleanCond, cleanProgram, depths, compile, steer, textColumns, Runner,
     blockDefs, toolbox, varBlocks, fromBlocks, toBlocks };
 })();
 if (typeof module !== 'undefined') module.exports = Cards;
@@ -7120,15 +7119,15 @@ if (typeof module !== 'undefined') module.exports = LDraw;
   const faster = (src, f) => src.replace(/:(\d+(?:\.\d+)?)/g, (_, n) => ':' + Math.round(+n * f * 100) / 100);
   const MOUNTAIN = 'B4:1 C#5:1 D5:1 E5:1 F#5:1 D5:1 F#5:2 F5:1 C#5:1 F5:2 E5:1 C5:1 E5:2 B4:1 C#5:1 D5:1 E5:1 F#5:1 D5:1 F#5:1 B5:1 A5:1 F#5:1 D5:1 F#5:1 A5:4';
   const SONGS = [
-    ['birthday', '\u{1F382}', 180, 'G4:1.5 G4:0.5 A4:2 G4:2 C5:2 B4:4 G4:1.5 G4:0.5 A4:2 G4:2 D5:2 C5:4 G4:1.5 G4:0.5 G5:2 E5:2 C5:2 B4:2 A4:4 F5:1.5 F5:0.5 E5:2 C5:2 D5:2 C5:4'],
-    ['jingle', '\u{1F514}', 150, 'E5:1 E5:1 E5:2 E5:1 E5:1 E5:2 E5:1 G5:1 C5:1.5 D5:0.5 E5:4 F5:1 F5:1 F5:1.5 F5:0.5 F5:1 E5:1 E5:1 E5:0.5 E5:0.5 E5:1 D5:1 D5:1 E5:1 D5:2 G5:2 ' +
+    ['birthday', 'note', 180, 'G4:1.5 G4:0.5 A4:2 G4:2 C5:2 B4:4 G4:1.5 G4:0.5 A4:2 G4:2 D5:2 C5:4 G4:1.5 G4:0.5 G5:2 E5:2 C5:2 B4:2 A4:4 F5:1.5 F5:0.5 E5:2 C5:2 D5:2 C5:4'],
+    ['jingle', 'note', 150, 'E5:1 E5:1 E5:2 E5:1 E5:1 E5:2 E5:1 G5:1 C5:1.5 D5:0.5 E5:4 F5:1 F5:1 F5:1.5 F5:0.5 F5:1 E5:1 E5:1 E5:0.5 E5:0.5 E5:1 D5:1 D5:1 E5:1 D5:2 G5:2 ' +
       'E5:1 E5:1 E5:2 E5:1 E5:1 E5:2 E5:1 G5:1 C5:1.5 D5:0.5 E5:4 F5:1 F5:1 F5:1.5 F5:0.5 F5:1 E5:1 E5:1 E5:0.5 E5:0.5 G5:1 G5:1 F5:1 D5:1 C5:4'],
-    ['entertainer', '\u{1F3A9}', 120, 'D4:1 D#4:1 E4:1 C5:2 E4:1 C5:2 E4:1 C5:6 C5:1 D5:1 D#5:1 E5:1 C5:1 D5:1 E5:2 B4:1 D5:2 C5:6'],
-    ['mountain', '\u{1F9CC}', 110, faster(MOUNTAIN, 1.6) + ' R:2 ' + MOUNTAIN],
-    ['mozart', '\u{1F3BB}', 140, 'G4:2 R:1 D4:1 G4:2 R:1 D4:1 G4:1 D4:1 G4:1 B4:1 D5:4 C5:2 R:1 A4:1 C5:2 R:1 A4:1 C5:1 A4:1 F#4:1 A4:1 D4:4'],
-    ['ode', '\u{1F3BA}', 220, 'E4:2 E4:2 F4:2 G4:2 G4:2 F4:2 E4:2 D4:2 C4:2 C4:2 D4:2 E4:2 E4:3 D4:1 D4:4 E4:2 E4:2 F4:2 G4:2 G4:2 F4:2 E4:2 D4:2 C4:2 C4:2 D4:2 E4:2 D4:3 C4:1 C4:4'],
-    ['elise', '\u{1F3B9}', 150, 'E5:1 D#5:1 E5:1 D#5:1 E5:1 B4:1 D5:1 C5:1 A4:2 R:1 C4:1 E4:1 A4:1 B4:2 R:1 E4:1 G#4:1 B4:1 C5:2 R:1 E4:1 E5:1 D#5:1 E5:1 D#5:1 E5:1 B4:1 D5:1 C5:1 A4:2 R:1 C4:1 E4:1 A4:1 B4:2 R:1 E4:1 C5:1 B4:1 A4:4'],
-    ['fanfare', '\u{1F389}', 120, 'G4:1 C5:1 E5:1 G5:3 E5:1 G5:6'],
+    ['entertainer', 'note', 120, 'D4:1 D#4:1 E4:1 C5:2 E4:1 C5:2 E4:1 C5:6 C5:1 D5:1 D#5:1 E5:1 C5:1 D5:1 E5:2 B4:1 D5:2 C5:6'],
+    ['mountain', 'note', 110, faster(MOUNTAIN, 1.6) + ' R:2 ' + MOUNTAIN],
+    ['mozart', 'note', 140, 'G4:2 R:1 D4:1 G4:2 R:1 D4:1 G4:1 D4:1 G4:1 B4:1 D5:4 C5:2 R:1 A4:1 C5:2 R:1 A4:1 C5:1 A4:1 F#4:1 A4:1 D4:4'],
+    ['ode', 'note', 220, 'E4:2 E4:2 F4:2 G4:2 G4:2 F4:2 E4:2 D4:2 C4:2 C4:2 D4:2 E4:2 E4:3 D4:1 D4:4 E4:2 E4:2 F4:2 G4:2 G4:2 F4:2 E4:2 D4:2 C4:2 C4:2 D4:2 E4:2 D4:3 C4:1 C4:4'],
+    ['elise', 'note', 150, 'E5:1 D#5:1 E5:1 D#5:1 E5:1 B4:1 D5:1 C5:1 A4:2 R:1 C4:1 E4:1 A4:1 B4:2 R:1 E4:1 G#4:1 B4:1 C5:2 R:1 E4:1 E5:1 D#5:1 E5:1 D#5:1 E5:1 B4:1 D5:1 C5:1 A4:2 R:1 C4:1 E4:1 A4:1 B4:2 R:1 E4:1 C5:1 B4:1 A4:4'],
+    ['fanfare', 'note', 120, 'G4:1 C5:1 E5:1 G5:3 E5:1 G5:6'],
   ];
   // Gezichten voor het 5x5-lichtscherm: 25 helderheden 0-9, rij voor rij van boven naar beneden.
   const FACES = {
@@ -7153,14 +7152,14 @@ if (typeof module !== 'undefined') module.exports = LDraw;
   }
   // Robotgeluidjes per stemming: piepjes en glijtonen, elke keer een beetje anders.
   const MOODS = [
-    ['hello', '\u{1F44B}', 'wink', () => glide(500, 1100, 160, 5).concat([[0, 60], [1300, 70], [0, 40], [1500, 90]])],
-    ['happy', '\u{1F600}', 'smile', () => { const o = []; for (let i = 0; i < 7; i++) o.push([Math.round(rnd(900, 1700)), Math.round(rnd(50, 90))], [0, 25]); return o.concat(glide(1000, 1900, 150, 5)); }],
-    ['sad', '\u{1F622}', 'sad', () => glide(700, 520, 300, 6).concat([[0, 80]], glide(560, 260, 700, 10))],
-    ['wow', '\u{1F62E}', 'wow', () => glide(350, 1900, 380, 10).concat([[0, 60], [1900, 120]])],
-    ['oops', '\u{1F62C}', 'oops', () => [[740, 180], [0, 60], [494, 320]]],
-    ['angry', '\u{1F620}', 'angry', () => { const o = []; for (let i = 0; i < 8; i++) o.push([i % 2 ? 180 : 240, 70]); return o; }],
-    ['sleep', '\u{1F634}', 'sleep', () => glide(220, 160, 700, 8).concat([[0, 300]], glide(160, 220, 600, 6), [[0, 200]], glide(220, 150, 800, 8))],
-    ['love', '❤️', 'love', () => melody('G4:1 C5:1 E5:2 R:1 C5:1 E5:1 G5:4', 120)],
+    ['hello', null, 'wink', () => glide(500, 1100, 160, 5).concat([[0, 60], [1300, 70], [0, 40], [1500, 90]])],
+    ['happy', null, 'smile', () => { const o = []; for (let i = 0; i < 7; i++) o.push([Math.round(rnd(900, 1700)), Math.round(rnd(50, 90))], [0, 25]); return o.concat(glide(1000, 1900, 150, 5)); }],
+    ['sad', null, 'sad', () => glide(700, 520, 300, 6).concat([[0, 80]], glide(560, 260, 700, 10))],
+    ['wow', null, 'wow', () => glide(350, 1900, 380, 10).concat([[0, 60], [1900, 120]])],
+    ['oops', null, 'oops', () => [[740, 180], [0, 60], [494, 320]]],
+    ['angry', null, 'angry', () => { const o = []; for (let i = 0; i < 8; i++) o.push([i % 2 ? 180 : 240, 70]); return o; }],
+    ['sleep', null, 'sleep', () => glide(220, 160, 700, 8).concat([[0, 300]], glide(160, 220, 600, 6), [[0, 200]], glide(220, 150, 800, 8))],
+    ['love', null, 'love', () => melody('G4:1 C5:1 E5:2 R:1 C5:1 E5:1 G5:4', 120)],
   ];
   const linked = () => st.phase === 'ready';
   // Grote hub (6 poorten, lichtscherm, luidspreker) of kleine hub (2 poorten, geen van beide).
@@ -7226,16 +7225,17 @@ if (typeof module !== 'undefined') module.exports = LDraw;
   // Vanzelf reageren (verbinden, obstakel, batterij), alleen op de hub.
   function react(id) { if (G.react && linked()) setTimeout(() => { if (linked()) mood(id); }, 250); }
 
-  function funBtn(box, id, emo, key, onClick) {
-    const b = el('button', 'btn fun'), e = el('span', 'emo'), l = el('span');
-    b.id = id; e.textContent = emo; e.setAttribute('aria-hidden', 'true'); l.dataset.i18n = key;
+  // Knop met een plaatje zoals op het 5x5-lichtscherm van de hub (geen emoji).
+  function funBtn(box, id, face, key, onClick) {
+    const b = el('button', 'btn fun'), e = miniImg(FACES[face] || FACES.smile), l = el('span');
+    b.id = id; e.classList.add('face'); e.setAttribute('aria-hidden', 'true'); l.dataset.i18n = key;
     b.append(e, l); box.appendChild(b);
     b.addEventListener('click', () => { buzz(10); onClick(b); });
     return b;
   }
-  SONGS.forEach(([id, emo, eighth, src]) => funBtn($('songBtns'), 'song-' + id, emo, 'song.' + id, () => play(melody(src, eighth), 'note')));
-  funBtn($('songBtns'), 'song-quiet', '\u{1F92B}', 'music.stop', () => { quiet(); sfx.tick(); });
-  MOODS.forEach(([id, emo]) => funBtn($('moodBtns'), 'mood-' + id, emo, 'mood.' + id, () => mood(id)));
+  SONGS.forEach(([id, pic, eighth, src]) => funBtn($('songBtns'), 'song-' + id, pic, 'song.' + id, () => play(melody(src, eighth), 'note')));
+  funBtn($('songBtns'), 'song-quiet', 'mShut', 'music.stop', () => { quiet(); sfx.tick(); });
+  MOODS.forEach(([id, , face]) => funBtn($('moodBtns'), 'mood-' + id, face, 'mood.' + id, () => mood(id)));
 
   /* robottaal: de hub zegt je zin zelf in piepjes, één piepje per lettergreep, met bewegende mond */
   const VOWEL_PITCH = { i: 1.35, y: 1.25, e: 1.18, a: 1, o: 0.84, u: 0.74 };
@@ -7429,7 +7429,7 @@ if (typeof module !== 'undefined') module.exports = LDraw;
     }
     const comp = dark
       ? { workspaceBackgroundColour: '#11151b', toolboxBackgroundColour: '#191e26', toolboxForegroundColour: '#e8ecf3', flyoutBackgroundColour: '#202631', flyoutForegroundColour: '#e8ecf3', flyoutOpacity: 0.97, scrollbarColour: '#465063', insertionMarkerColour: '#ffffff', cursorColour: '#ffffff' }
-      : { workspaceBackgroundColour: '#f6f8ff', toolboxBackgroundColour: '#ffffff', toolboxForegroundColour: '#1d2433', flyoutBackgroundColour: '#eef1fb', flyoutForegroundColour: '#1d2433', flyoutOpacity: 0.97, scrollbarColour: '#c3cbe0' };
+      : { workspaceBackgroundColour: '#f3f8f6', toolboxBackgroundColour: '#ffffff', toolboxForegroundColour: '#17302c', flyoutBackgroundColour: '#eaf2ef', flyoutForegroundColour: '#1d2433', flyoutOpacity: 0.97, scrollbarColour: '#bfd2cc' };
     code.themes[name] = Blockly.Theme.defineTheme(name, { base: Blockly.Themes.Classic, blockStyles, categoryStyles, componentStyles: comp,
       fontStyle: { family: 'Fredoka, Nunito, sans-serif', weight: '600', size: 12 }, startHats: true });
     return code.themes[name];

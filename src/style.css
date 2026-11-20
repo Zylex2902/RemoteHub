@@ -1,12 +1,12 @@
 @font-face{font-family:"Fredoka";font-style:normal;font-display:swap;font-weight:300 700;src:url(fonts/fredoka-latin-wght-normal.woff2) format("woff2")}
 @font-face{font-family:"Nunito";font-style:normal;font-display:swap;font-weight:200 1000;src:url(fonts/nunito-latin-wght-normal.woff2) format("woff2")}
 :root{
-  --bg:#e9f0ff; --panel:#ffffff; --panel2:#f0f4ff; --line:#d2dbf4; --edge:#bcc8ea;
-  --text:#1c2550; --muted:#636e94; --accent:#6a4cf5; --accent-ink:#ffffff; --accent-deep:#4a30c9; --accent-hi:#a594ff;
+  --bg:#eaf1ef; --panel:#ffffff; --panel2:#f2f7f5; --line:#d0dfda; --edge:#b9cdc7;
+  --text:#17302c; --muted:#587470; --accent:#0a7f72; --accent-ink:#ffffff; --accent-deep:#075a51; --accent-hi:#59cdbd;
   --ok:#0ea968; --warn:#c96a00; --danger:#ff4a5e; --danger-ink:#ffffff; --danger-deep:#cf2c45;
-  --accent-line:rgba(106,76,245,.45); --accent-soft:rgba(106,76,245,.15);
+  --accent-line:rgba(10,127,114,.45); --accent-soft:rgba(10,127,114,.14);
   --danger-line:rgba(255,74,94,.6); --danger-soft:rgba(255,74,94,.16); --warn-line:rgba(201,106,0,.55);
-  --pad1:#ffffff; --pad2:#dbe5ff; --shadow-c:rgba(40,52,110,.2); --knob-shade:rgba(20,10,80,.2); --scrim:rgba(28,37,80,.5); --log-bg:#f5f8ff;
+  --pad1:#ffffff; --pad2:#d6e7e2; --shadow-c:rgba(18,60,54,.18); --knob-shade:rgba(5,45,40,.2); --scrim:rgba(14,40,37,.5); --log-bg:#f4f8f7;
   --ease:cubic-bezier(.2,.8,.2,1); --gap:16px; --padsize:min(240px,60vw,30vh);
   --font:"Nunito","Trebuchet MS","Segoe UI",sans-serif; --head:"Fredoka","Trebuchet MS","Segoe UI",sans-serif;
   --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
@@ -460,14 +460,14 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border:3px solid #fff
 .funbtns{display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:8px}
 .funbtns.moods{grid-template-columns:repeat(auto-fill,minmax(86px,1fr))}
 .btn.fun{flex-direction:column;gap:4px;padding:12px 8px;font-size:14px;line-height:1.2;white-space:normal;text-align:center;touch-action:manipulation}
-.btn.fun .emo{font-size:24px;line-height:1}
+.btn.fun .face{padding:3px;border-radius:6px;background:#14161c}
 .btn.fun.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .speakrow{display:flex;gap:8px}
 .speakrow input{flex:1}
 .phrases{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
 .phrases .btn{white-space:normal;text-align:left}
 .piano{position:relative;display:flex;gap:4px;height:128px;margin:2px 0 14px;touch-action:none;-webkit-user-select:none;user-select:none}
-.wkey{flex:1;min-width:0;border:2px solid var(--line);border-radius:0 0 12px 12px;background:#fdfdff;box-shadow:0 4px 0 var(--line);cursor:pointer;
+.wkey{flex:1;min-width:0;border:2px solid var(--line);border-radius:0 0 12px 12px;background:#fcfefd;box-shadow:0 4px 0 var(--line);cursor:pointer;
   display:flex;align-items:flex-end;justify-content:center;padding-bottom:8px;font:600 12px var(--head);color:#7a8294;transition:background .08s linear,transform .08s linear}
 .bkey{position:absolute;top:0;width:calc((100% - 28px) / 8 * .62);height:60%;border-radius:0 0 9px 9px;background:#262b36;border:2px solid #262b36;
   transform:translateX(-50%);z-index:1;cursor:pointer;transition:background .08s linear}
@@ -541,7 +541,7 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border:3px solid #fff
 .codekind button{font:600 14px var(--head);padding:6px 18px;border:0;border-radius:999px;background:none;color:var(--muted);cursor:pointer;transition:background .2s var(--ease),color .2s var(--ease)}
 .codekind button.on{background:var(--accent);color:var(--accent-ink)}
 .pybox{display:flex;flex-direction:column;gap:10px;height:420px;min-height:0}
-.pyedit{--py-bg:#fbfcff;--py-k:#7b30d0;--py-s:#0f8a4a;--py-c:#7d8799;--py-n:#c2410c;--py-b:#1565c0;--py-f:#0e7490;
+.pyedit{--py-bg:#fcfefd;--py-k:#7b30d0;--py-s:#0f8a4a;--py-c:#7d8799;--py-n:#c2410c;--py-b:#1565c0;--py-f:#0e7490;
   position:relative;flex:1 1 auto;min-height:150px;display:flex;border-radius:18px;overflow:hidden;border:2px solid var(--line);background:var(--py-bg)}
 html[data-theme="dark"] .pyedit{--py-bg:#11151b;--py-k:#c792ea;--py-s:#9ece6a;--py-c:#6b778a;--py-n:#ff9e64;--py-b:#7aa2f7;--py-f:#7dcfff}
 .pyedit pre,.pyedit textarea{margin:0;font:14px/1.5 var(--mono);tab-size:4;white-space:pre;letter-spacing:0}

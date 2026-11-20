@@ -148,5 +148,10 @@ that could touch a patent, copyright or trademark.
 
 Light and child-friendly by default (round shapes, large controls), with a dark theme as an option.
 Fonts are Fredoka and Nunito, hosted with the app.
+Accent: teal `#0a7f72` in the light theme, green `#3ddc97` in the dark theme (also the icon). Avoid
+the stock "generated" look on the site and in the app: no emoji as icons (pictures on buttons use the
+hub's own 5x5 images), no gradients or glows on surfaces, no pill "kickers", no grids of identical
+icon cards, no slogans or rhetorical questions ("Ready for the next step?"), no "in three easy steps".
+Write plain, specific sentences that say what the app does and what is not tested yet.
 
 The owner's personal working and design rules are in `CLAUDE.local.md`, which is not committed.

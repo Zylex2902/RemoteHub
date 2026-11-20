@@ -965,15 +965,15 @@
   const faster = (src, f) => src.replace(/:(\d+(?:\.\d+)?)/g, (_, n) => ':' + Math.round(+n * f * 100) / 100);
   const MOUNTAIN = 'B4:1 C#5:1 D5:1 E5:1 F#5:1 D5:1 F#5:2 F5:1 C#5:1 F5:2 E5:1 C5:1 E5:2 B4:1 C#5:1 D5:1 E5:1 F#5:1 D5:1 F#5:1 B5:1 A5:1 F#5:1 D5:1 F#5:1 A5:4';
   const SONGS = [
-    ['birthday', '\u{1F382}', 180, 'G4:1.5 G4:0.5 A4:2 G4:2 C5:2 B4:4 G4:1.5 G4:0.5 A4:2 G4:2 D5:2 C5:4 G4:1.5 G4:0.5 G5:2 E5:2 C5:2 B4:2 A4:4 F5:1.5 F5:0.5 E5:2 C5:2 D5:2 C5:4'],
-    ['jingle', '\u{1F514}', 150, 'E5:1 E5:1 E5:2 E5:1 E5:1 E5:2 E5:1 G5:1 C5:1.5 D5:0.5 E5:4 F5:1 F5:1 F5:1.5 F5:0.5 F5:1 E5:1 E5:1 E5:0.5 E5:0.5 E5:1 D5:1 D5:1 E5:1 D5:2 G5:2 ' +
+    ['birthday', 'note', 180, 'G4:1.5 G4:0.5 A4:2 G4:2 C5:2 B4:4 G4:1.5 G4:0.5 A4:2 G4:2 D5:2 C5:4 G4:1.5 G4:0.5 G5:2 E5:2 C5:2 B4:2 A4:4 F5:1.5 F5:0.5 E5:2 C5:2 D5:2 C5:4'],
+    ['jingle', 'note', 150, 'E5:1 E5:1 E5:2 E5:1 E5:1 E5:2 E5:1 G5:1 C5:1.5 D5:0.5 E5:4 F5:1 F5:1 F5:1.5 F5:0.5 F5:1 E5:1 E5:1 E5:0.5 E5:0.5 E5:1 D5:1 D5:1 E5:1 D5:2 G5:2 ' +
       'E5:1 E5:1 E5:2 E5:1 E5:1 E5:2 E5:1 G5:1 C5:1.5 D5:0.5 E5:4 F5:1 F5:1 F5:1.5 F5:0.5 F5:1 E5:1 E5:1 E5:0.5 E5:0.5 G5:1 G5:1 F5:1 D5:1 C5:4'],
-    ['entertainer', '\u{1F3A9}', 120, 'D4:1 D#4:1 E4:1 C5:2 E4:1 C5:2 E4:1 C5:6 C5:1 D5:1 D#5:1 E5:1 C5:1 D5:1 E5:2 B4:1 D5:2 C5:6'],
-    ['mountain', '\u{1F9CC}', 110, faster(MOUNTAIN, 1.6) + ' R:2 ' + MOUNTAIN],
-    ['mozart', '\u{1F3BB}', 140, 'G4:2 R:1 D4:1 G4:2 R:1 D4:1 G4:1 D4:1 G4:1 B4:1 D5:4 C5:2 R:1 A4:1 C5:2 R:1 A4:1 C5:1 A4:1 F#4:1 A4:1 D4:4'],
-    ['ode', '\u{1F3BA}', 220, 'E4:2 E4:2 F4:2 G4:2 G4:2 F4:2 E4:2 D4:2 C4:2 C4:2 D4:2 E4:2 E4:3 D4:1 D4:4 E4:2 E4:2 F4:2 G4:2 G4:2 F4:2 E4:2 D4:2 C4:2 C4:2 D4:2 E4:2 D4:3 C4:1 C4:4'],
-    ['elise', '\u{1F3B9}', 150, 'E5:1 D#5:1 E5:1 D#5:1 E5:1 B4:1 D5:1 C5:1 A4:2 R:1 C4:1 E4:1 A4:1 B4:2 R:1 E4:1 G#4:1 B4:1 C5:2 R:1 E4:1 E5:1 D#5:1 E5:1 D#5:1 E5:1 B4:1 D5:1 C5:1 A4:2 R:1 C4:1 E4:1 A4:1 B4:2 R:1 E4:1 C5:1 B4:1 A4:4'],
-    ['fanfare', '\u{1F389}', 120, 'G4:1 C5:1 E5:1 G5:3 E5:1 G5:6'],
+    ['entertainer', 'note', 120, 'D4:1 D#4:1 E4:1 C5:2 E4:1 C5:2 E4:1 C5:6 C5:1 D5:1 D#5:1 E5:1 C5:1 D5:1 E5:2 B4:1 D5:2 C5:6'],
+    ['mountain', 'note', 110, faster(MOUNTAIN, 1.6) + ' R:2 ' + MOUNTAIN],
+    ['mozart', 'note', 140, 'G4:2 R:1 D4:1 G4:2 R:1 D4:1 G4:1 D4:1 G4:1 B4:1 D5:4 C5:2 R:1 A4:1 C5:2 R:1 A4:1 C5:1 A4:1 F#4:1 A4:1 D4:4'],
+    ['ode', 'note', 220, 'E4:2 E4:2 F4:2 G4:2 G4:2 F4:2 E4:2 D4:2 C4:2 C4:2 D4:2 E4:2 E4:3 D4:1 D4:4 E4:2 E4:2 F4:2 G4:2 G4:2 F4:2 E4:2 D4:2 C4:2 C4:2 D4:2 E4:2 D4:3 C4:1 C4:4'],
+    ['elise', 'note', 150, 'E5:1 D#5:1 E5:1 D#5:1 E5:1 B4:1 D5:1 C5:1 A4:2 R:1 C4:1 E4:1 A4:1 B4:2 R:1 E4:1 G#4:1 B4:1 C5:2 R:1 E4:1 E5:1 D#5:1 E5:1 D#5:1 E5:1 B4:1 D5:1 C5:1 A4:2 R:1 C4:1 E4:1 A4:1 B4:2 R:1 E4:1 C5:1 B4:1 A4:4'],
+    ['fanfare', 'note', 120, 'G4:1 C5:1 E5:1 G5:3 E5:1 G5:6'],
   ];
   // Gezichten voor het 5x5-lichtscherm: 25 helderheden 0-9, rij voor rij van boven naar beneden.
   const FACES = {
@@ -998,14 +998,14 @@
   }
   // Robotgeluidjes per stemming: piepjes en glijtonen, elke keer een beetje anders.
   const MOODS = [
-    ['hello', '\u{1F44B}', 'wink', () => glide(500, 1100, 160, 5).concat([[0, 60], [1300, 70], [0, 40], [1500, 90]])],
-    ['happy', '\u{1F600}', 'smile', () => { const o = []; for (let i = 0; i < 7; i++) o.push([Math.round(rnd(900, 1700)), Math.round(rnd(50, 90))], [0, 25]); return o.concat(glide(1000, 1900, 150, 5)); }],
-    ['sad', '\u{1F622}', 'sad', () => glide(700, 520, 300, 6).concat([[0, 80]], glide(560, 260, 700, 10))],
-    ['wow', '\u{1F62E}', 'wow', () => glide(350, 1900, 380, 10).concat([[0, 60], [1900, 120]])],
-    ['oops', '\u{1F62C}', 'oops', () => [[740, 180], [0, 60], [494, 320]]],
-    ['angry', '\u{1F620}', 'angry', () => { const o = []; for (let i = 0; i < 8; i++) o.push([i % 2 ? 180 : 240, 70]); return o; }],
-    ['sleep', '\u{1F634}', 'sleep', () => glide(220, 160, 700, 8).concat([[0, 300]], glide(160, 220, 600, 6), [[0, 200]], glide(220, 150, 800, 8))],
-    ['love', '❤️', 'love', () => melody('G4:1 C5:1 E5:2 R:1 C5:1 E5:1 G5:4', 120)],
+    ['hello', null, 'wink', () => glide(500, 1100, 160, 5).concat([[0, 60], [1300, 70], [0, 40], [1500, 90]])],
+    ['happy', null, 'smile', () => { const o = []; for (let i = 0; i < 7; i++) o.push([Math.round(rnd(900, 1700)), Math.round(rnd(50, 90))], [0, 25]); return o.concat(glide(1000, 1900, 150, 5)); }],
+    ['sad', null, 'sad', () => glide(700, 520, 300, 6).concat([[0, 80]], glide(560, 260, 700, 10))],
+    ['wow', null, 'wow', () => glide(350, 1900, 380, 10).concat([[0, 60], [1900, 120]])],
+    ['oops', null, 'oops', () => [[740, 180], [0, 60], [494, 320]]],
+    ['angry', null, 'angry', () => { const o = []; for (let i = 0; i < 8; i++) o.push([i % 2 ? 180 : 240, 70]); return o; }],
+    ['sleep', null, 'sleep', () => glide(220, 160, 700, 8).concat([[0, 300]], glide(160, 220, 600, 6), [[0, 200]], glide(220, 150, 800, 8))],
+    ['love', null, 'love', () => melody('G4:1 C5:1 E5:2 R:1 C5:1 E5:1 G5:4', 120)],
   ];
   const linked = () => st.phase === 'ready';
   // Grote hub (6 poorten, lichtscherm, luidspreker) of kleine hub (2 poorten, geen van beide).
@@ -1071,16 +1071,17 @@
   // Vanzelf reageren (verbinden, obstakel, batterij), alleen op de hub.
   function react(id) { if (G.react && linked()) setTimeout(() => { if (linked()) mood(id); }, 250); }
 
-  function funBtn(box, id, emo, key, onClick) {
-    const b = el('button', 'btn fun'), e = el('span', 'emo'), l = el('span');
-    b.id = id; e.textContent = emo; e.setAttribute('aria-hidden', 'true'); l.dataset.i18n = key;
+  // Knop met een plaatje zoals op het 5x5-lichtscherm van de hub (geen emoji).
+  function funBtn(box, id, face, key, onClick) {
+    const b = el('button', 'btn fun'), e = miniImg(FACES[face] || FACES.smile), l = el('span');
+    b.id = id; e.classList.add('face'); e.setAttribute('aria-hidden', 'true'); l.dataset.i18n = key;
     b.append(e, l); box.appendChild(b);
     b.addEventListener('click', () => { buzz(10); onClick(b); });
     return b;
   }
-  SONGS.forEach(([id, emo, eighth, src]) => funBtn($('songBtns'), 'song-' + id, emo, 'song.' + id, () => play(melody(src, eighth), 'note')));
-  funBtn($('songBtns'), 'song-quiet', '\u{1F92B}', 'music.stop', () => { quiet(); sfx.tick(); });
-  MOODS.forEach(([id, emo]) => funBtn($('moodBtns'), 'mood-' + id, emo, 'mood.' + id, () => mood(id)));
+  SONGS.forEach(([id, pic, eighth, src]) => funBtn($('songBtns'), 'song-' + id, pic, 'song.' + id, () => play(melody(src, eighth), 'note')));
+  funBtn($('songBtns'), 'song-quiet', 'mShut', 'music.stop', () => { quiet(); sfx.tick(); });
+  MOODS.forEach(([id, , face]) => funBtn($('moodBtns'), 'mood-' + id, face, 'mood.' + id, () => mood(id)));
 
   /* robottaal: de hub zegt je zin zelf in piepjes, één piepje per lettergreep, met bewegende mond */
   const VOWEL_PITCH = { i: 1.35, y: 1.25, e: 1.18, a: 1, o: 0.84, u: 0.74 };
@@ -1274,7 +1275,7 @@
     }
     const comp = dark
       ? { workspaceBackgroundColour: '#11151b', toolboxBackgroundColour: '#191e26', toolboxForegroundColour: '#e8ecf3', flyoutBackgroundColour: '#202631', flyoutForegroundColour: '#e8ecf3', flyoutOpacity: 0.97, scrollbarColour: '#465063', insertionMarkerColour: '#ffffff', cursorColour: '#ffffff' }
-      : { workspaceBackgroundColour: '#f6f8ff', toolboxBackgroundColour: '#ffffff', toolboxForegroundColour: '#1d2433', flyoutBackgroundColour: '#eef1fb', flyoutForegroundColour: '#1d2433', flyoutOpacity: 0.97, scrollbarColour: '#c3cbe0' };
+      : { workspaceBackgroundColour: '#f3f8f6', toolboxBackgroundColour: '#ffffff', toolboxForegroundColour: '#17302c', flyoutBackgroundColour: '#eaf2ef', flyoutForegroundColour: '#1d2433', flyoutOpacity: 0.97, scrollbarColour: '#bfd2cc' };
     code.themes[name] = Blockly.Theme.defineTheme(name, { base: Blockly.Themes.Classic, blockStyles, categoryStyles, componentStyles: comp,
       fontStyle: { family: 'Fredoka, Nunito, sans-serif', weight: '600', size: 12 }, startHats: true });
     return code.themes[name];

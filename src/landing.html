@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Hub Remote: rijden en programmeren met je robothub</title>
-<meta name="description" content="Gratis web-app om je LEGO® Education SPIKE™ Prime- of SPIKE™ Essential-hub te besturen en te programmeren met blokken of Python, vanaf je telefoon, tablet of laptop. Onafhankelijk project.">
-<meta name="theme-color" content="#6a4cf5">
+<title>Hub Remote</title>
+<meta name="description" content="Gratis web-app om een LEGO® Education SPIKE™ Prime- of SPIKE™ Essential-hub te besturen en te programmeren met blokken of Python, vanaf telefoon, tablet of laptop. Onafhankelijk project.">
+<meta name="theme-color" content="#0a7f72">
 <link rel="icon" href="app/icon-192.png">
 <link rel="preload" href="app/fonts/fredoka-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
 <script>
@@ -26,13 +26,13 @@
 
 <header class="nav">
   <a class="brand" href="#top" aria-label="Hub Remote">
-    <img src="app/icon.svg" alt="" width="34" height="34">
+    <img src="app/icon.svg" alt="" width="32" height="32">
     <b>Hub Remote</b>
   </a>
   <nav class="links">
-    <a href="#opties"><span lang="nl">Gebruiken</span><span lang="en">Get it</span></a>
-    <a href="#functies"><span lang="nl">Functies</span><span lang="en">Features</span></a>
-    <a href="#vragen"><span lang="nl">Vragen</span><span lang="en">FAQ</span></a>
+    <a href="#apparaten"><span lang="nl">Apparaten</span><span lang="en">Devices</span></a>
+    <a href="#functies"><span lang="nl">Wat het kan</span><span lang="en">What it does</span></a>
+    <a href="#vragen"><span lang="nl">Vragen</span><span lang="en">Questions</span></a>
   </nav>
   <button class="langbtn" id="langBtn" type="button" aria-label="Taal / language"><span lang="nl">EN</span><span lang="en">NL</span></button>
   <a class="btn primary small" href="app/"><span lang="nl">Open de app</span><span lang="en">Open the app</span></a>
@@ -41,119 +41,120 @@
 <main id="top">
   <section class="hero">
     <div class="herotext">
-      <p class="kicker"><span lang="nl">Gratis · zonder account · werkt offline</span><span lang="en">Free · no account · works offline</span></p>
       <h1>
-        <span lang="nl">Rijd en programmeer je LEGO® Education SPIKE™-hub met je telefoon</span>
+        <span lang="nl">Bestuur en programmeer je LEGO® Education SPIKE™-hub vanaf je telefoon</span>
         <span lang="en">Drive and program your LEGO® Education SPIKE™ hub from your phone</span>
       </h1>
       <p class="lead">
-        <span lang="nl">Hub Remote is een web-app voor de SPIKE™ Prime- en SPIKE™ Essential-hub. Stuur met een joystick of door je telefoon te kantelen, programmeer met blokken die je in elkaar klikt of met echte Python, en laat de robot liedjes spelen en praten. De firmware van je hub blijft zoals hij is.</span>
-        <span lang="en">Hub Remote is a web app for the SPIKE™ Prime and SPIKE™ Essential hubs. Steer with a joystick or by tilting your phone, program with blocks that snap together or with real Python, and let the robot play songs and talk. Your hub keeps its own firmware.</span>
+        <span lang="nl">Hub Remote is een gratis web-app voor de SPIKE™ Prime- en de SPIKE™ Essential-hub. Je hub houdt zijn eigen firmware: de app zet er alleen een klein programma op en praat daar via Bluetooth mee. Je hebt geen account nodig en er gaat niets naar een server.</span>
+        <span lang="en">Hub Remote is a free web app for the SPIKE™ Prime and SPIKE™ Essential hubs. Your hub keeps its own firmware: the app only puts a small program on it and talks to that over Bluetooth. You don't need an account and nothing goes to a server.</span>
       </p>
       <div class="ctas">
-        <a class="btn primary" href="app/"><span lang="nl">Open de web-app</span><span lang="en">Open the web app</span></a>
-        <a class="btn" href="#opties"><span lang="nl">iPhone, iPad of Android?</span><span lang="en">iPhone, iPad or Android?</span></a>
+        <a class="btn primary" href="app/"><span lang="nl">Open de app</span><span lang="en">Open the app</span></a>
+        <a class="textlink" href="#apparaten"><span lang="nl">Op iPhone of iPad? Lees eerst dit.</span><span lang="en">On iPhone or iPad? Read this first.</span></a>
       </div>
     </div>
-    <div class="herofig">
+    <figure class="herofig">
       <div class="phone"><img src="img/phone-drive.png" width="390" height="844" alt="Hub Remote op een telefoon: joystick, snelheid en STOP"></div>
-      <div class="phone back"><img src="img/phone-code.png" width="390" height="844" alt="Programmeren met blokken op een telefoon" loading="lazy"></div>
-    </div>
+    </figure>
   </section>
 
-  <section id="opties" class="section">
-    <h2><span lang="nl">Kies hoe je hem gebruikt</span><span lang="en">Choose how you use it</span></h2>
-    <div class="options">
-      <article class="opt">
-        <div class="opticon" aria-hidden="true">💻</div>
-        <h3><span lang="nl">Web-app</span><span lang="en">Web app</span></h3>
-        <p class="tag ok"><span lang="nl">Werkt nu</span><span lang="en">Available now</span></p>
-        <p><span lang="nl">In Chrome of Edge op Windows, macOS, ChromeOS en Android. Niets installeren: openen, verbinden, rijden.</span><span lang="en">In Chrome or Edge on Windows, macOS, ChromeOS and Android. Nothing to install: open, connect, drive.</span></p>
-        <a class="btn primary" href="app/"><span lang="nl">Open de web-app</span><span lang="en">Open the web app</span></a>
-      </article>
-      <article class="opt">
-        <div class="opticon" aria-hidden="true">🤖</div>
-        <h3>Android</h3>
-        <p class="tag ok"><span lang="nl">Werkt nu als app</span><span lang="en">Works now as an app</span></p>
-        <p><span lang="nl">Open de web-app in Chrome en kies in het menu <b>App installeren</b>. Hub Remote staat dan op je beginscherm en werkt ook zonder internet.</span><span lang="en">Open the web app in Chrome and choose <b>Install app</b> in the menu. Hub Remote then sits on your home screen and works without internet too.</span></p>
-        <p class="soon"><span lang="nl">In Google Play: binnenkort.</span><span lang="en">On Google Play: coming soon.</span></p>
-        <a class="btn" href="app/"><span lang="nl">Openen in Chrome</span><span lang="en">Open in Chrome</span></a>
-      </article>
-      <article class="opt">
-        <div class="opticon" aria-hidden="true">📱</div>
-        <h3>iPhone &amp; iPad</h3>
-        <p class="tag mid"><span lang="nl">Werkt nu via Bluefy</span><span lang="en">Works now via Bluefy</span></p>
-        <p><span lang="nl">Safari kan geen Bluetooth-apparaten aansturen. Installeer de gratis browser <b>Bluefy</b> uit de App Store en open daarin <b class="url">remotehubje.netlify.app/app</b>.</span><span lang="en">Safari cannot talk to Bluetooth devices. Install the free <b>Bluefy</b> browser from the App Store and open <b class="url">remotehubje.netlify.app/app</b> in it.</span></p>
-        <p class="soon"><span lang="nl">Een eigen app in de App Store: gepland.</span><span lang="en">Our own App Store app: planned.</span></p>
-      </article>
-    </div>
+  <section id="apparaten" class="section">
+    <h2><span lang="nl">Op welk apparaat werkt het?</span><span lang="en">Which devices does it work on?</span></h2>
+    <p class="intro"><span lang="nl">De app gebruikt Web Bluetooth. Niet elke browser heeft dat.</span><span lang="en">The app uses Web Bluetooth. Not every browser has it.</span></p>
+    <dl class="devices">
+      <div>
+        <dt><span lang="nl">Chrome of Edge op Windows, macOS, ChromeOS of Android</span><span lang="en">Chrome or Edge on Windows, macOS, ChromeOS or Android</span></dt>
+        <dd><span class="tag ok"><span lang="nl">werkt</span><span lang="en">works</span></span>
+          <span lang="nl">Open de app en tik op Verbind met hub. Er hoeft niets geïnstalleerd te worden.</span><span lang="en">Open the app and tap Connect to hub. Nothing needs installing.</span></dd>
+      </div>
+      <div>
+        <dt><span lang="nl">Android, als app op je beginscherm</span><span lang="en">Android, as an app on your home screen</span></dt>
+        <dd><span class="tag ok"><span lang="nl">werkt</span><span lang="en">works</span></span>
+          <span lang="nl">Open de app in Chrome en kies in het menu <b>App installeren</b>. Daarna werkt hij ook zonder internet.</span><span lang="en">Open the app in Chrome and choose <b>Install app</b> in the menu. After that it also works without internet.</span></dd>
+      </div>
+      <div>
+        <dt>iPhone &amp; iPad</dt>
+        <dd><span class="tag mid"><span lang="nl">via Bluefy</span><span lang="en">via Bluefy</span></span>
+          <span lang="nl">Safari kan niet met Bluetooth-apparaten praten. Installeer de gratis browser <b>Bluefy</b> uit de App Store en open daarin <b class="url">remotehubje.netlify.app/app</b>.</span><span lang="en">Safari cannot talk to Bluetooth devices. Install the free <b>Bluefy</b> browser from the App Store and open <b class="url">remotehubje.netlify.app/app</b> in it.</span></dd>
+      </div>
+      <div>
+        <dt><span lang="nl">Google Play en App Store</span><span lang="en">Google Play and App Store</span></dt>
+        <dd><span class="tag"><span lang="nl">nog niet</span><span lang="en">not yet</span></span>
+          <span lang="nl">Een app in Google Play komt eraan; een eigen iPhone-app is gepland.</span><span lang="en">A Google Play app is coming; our own iPhone app is planned.</span></dd>
+      </div>
+    </dl>
   </section>
 
   <section id="functies" class="section">
-    <h2><span lang="nl">Alles wat je robot nodig heeft</span><span lang="en">Everything your robot needs</span></h2>
-    <div class="features">
-      <div class="feat"><span class="fico" aria-hidden="true">🕹️</span><h3><span lang="nl">Rijden</span><span lang="en">Drive</span></h3>
-        <p><span lang="nl">Joystick, tankbesturing met twee schuiven, of je telefoon kantelen. Op een laptop met WASD of de pijltjes.</span><span lang="en">Joystick, tank steering with two sliders, or tilt your phone. On a laptop with WASD or the arrow keys.</span></p></div>
-      <div class="feat"><span class="fico" aria-hidden="true">🧩</span><h3><span lang="nl">Programmeren met blokken</span><span lang="en">Programming with blocks</span></h3>
-        <p><span lang="nl">74 blokken in negen groepen: rijden, motoren, licht, geluid, besturing, sensoren, rekenen en variabelen. Het blok dat bezig is licht op.</span><span lang="en">74 blocks in nine groups: movement, motors, light, sound, control, sensors, operators and variables. The running block lights up.</span></p></div>
-      <div class="feat"><span class="fico" aria-hidden="true">🐍</span><h3><span lang="nl">Echte Python op de hub</span><span lang="en">Real Python on the hub</span></h3>
-        <p><span lang="nl">Klaar voor de volgende stap? Schrijf MicroPython met dezelfde opdrachten als in de officiële app. Kleuren, regelnummers, voorbeelden en de uitvoer van de hub op je scherm.</span><span lang="en">Ready for the next step? Write MicroPython with the same commands as in the official app. Colours, line numbers, examples and the hub's output on your screen.</span></p></div>
-      <div class="feat"><span class="fico" aria-hidden="true">🎵</span><h3><span lang="nl">Spelen</span><span lang="en">Play</span></h3>
-        <p><span lang="nl">Liedjes, robotgeluidjes met gezichtjes op het lichtscherm, robottaal, een piano en dansjes.</span><span lang="en">Songs, robot sounds with faces on the light matrix, robot language, a piano and dances.</span></p></div>
-      <div class="feat"><span class="fico" aria-hidden="true">📡</span><h3><span lang="nl">Sensoren</span><span lang="en">Sensors</span></h3>
-        <p><span lang="nl">Afstand, kleur, kracht en kantelen live in beeld, en stoppen voor obstakels als je wilt.</span><span lang="en">Distance, colour, force and tilt live on screen, and stopping for obstacles if you like.</span></p></div>
-      <div class="feat"><span class="fico" aria-hidden="true">⚙️</span><h3><span lang="nl">Extra motoren</span><span lang="en">Extra motors</span></h3>
-        <p><span lang="nl">Twee extra motoren voor armen en grijpers: vasthouden, aan/uit of een grijper met open en dicht.</span><span lang="en">Two extra motors for arms and grippers: hold, on/off, or a gripper with open and closed positions.</span></p></div>
-      <div class="feat"><span class="fico" aria-hidden="true">🛑</span><h3><span lang="nl">Veilig</span><span lang="en">Safe</span></h3>
-        <p><span lang="nl">STOP altijd in beeld. Valt de verbinding weg, dan stopt de robot binnen een seconde vanzelf.</span><span lang="en">STOP is always on screen. If the connection drops, the robot stops by itself within a second.</span></p></div>
-      <div class="feat"><span class="fico" aria-hidden="true">🔧</span><h3><span lang="nl">Bouwen en delen</span><span lang="en">Build and share</span></h3>
-        <p><span lang="nl">Kies een officiële rijbasis, bouw hem met de gratis instructies van LEGO® Education en de app zet de poorten goed. Een schema laat zien wat waar hoort; deel je robot met een link of QR-code.</span><span lang="en">Pick an official driving base, build it with LEGO® Education's free instructions and the app sets the ports. A diagram shows what goes where; share your robot with a link or QR code.</span></p></div>
-      <div class="feat"><span class="fico" aria-hidden="true">🌙</span><h3><span lang="nl">Licht en donker</span><span lang="en">Light and dark</span></h3>
-        <p><span lang="nl">Nederlands en Engels, licht en donker thema, telefoons, tablets en vouwtelefoons.</span><span lang="en">Dutch and English, light and dark theme, phones, tablets and foldables.</span></p></div>
-    </div>
-  </section>
+    <h2><span lang="nl">Wat het kan</span><span lang="en">What it does</span></h2>
 
-  <section class="section shots">
-    <h2><span lang="nl">Zo ziet het eruit</span><span lang="en">What it looks like</span></h2>
+    <div class="row solo">
+      <div class="rowtext">
+        <h3><span lang="nl">Rijden</span><span lang="en">Drive</span></h3>
+        <p><span lang="nl">Met een joystick, met twee schuiven (één per wiel), of door je telefoon te kantelen. Op een laptop gaat het met WASD of de pijltjes. Twee extra motoren kun je vasthouden, aan- en uitzetten of als grijper gebruiken. Heb je een afstandssensor, dan kan de robot zelf stoppen voor een muur.</span><span lang="en">With a joystick, with two sliders (one per wheel), or by tilting your phone. On a laptop you use WASD or the arrow keys. Two extra motors can be held, switched on and off, or used as a gripper. With a distance sensor, the robot can stop in front of a wall by itself.</span></p>
+        <p class="small"><span lang="nl">STOP staat altijd in beeld. Valt de verbinding weg, dan stopt de robot binnen een seconde.</span><span lang="en">STOP is always on screen. If the connection drops, the robot stops within a second.</span></p>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="rowtext">
+        <h3><span lang="nl">Programmeren</span><span lang="en">Program</span></h3>
+        <p><span lang="nl">Met blokken die je in elkaar schuift: rijden, motoren, het lichtscherm, geluid, herhalen, als-dan, sensoren en variabelen. Tijdens het uitvoeren licht het blok op waar de robot is. Wie verder wil, schrijft MicroPython dat op de hub zelf draait; foutmeldingen van de hub verschijnen bij de regel waar het misging.</span><span lang="en">With blocks you slot together: driving, motors, the light matrix, sound, loops, if-then, sensors and variables. While a program runs, the block the robot is on lights up. If you want more, write MicroPython that runs on the hub itself; error messages from the hub show up at the line where it went wrong.</span></p>
+      </div>
+      <figure class="phone small"><img src="img/phone-code.png" width="390" height="844" loading="lazy" alt="Programmeren met blokken op een telefoon"></figure>
+    </div>
+
+    <div class="row flip">
+      <div class="rowtext">
+        <h3><span lang="nl">Spelen</span><span lang="en">Play</span></h3>
+        <p><span lang="nl">Liedjes en geluidjes uit de luidspreker van de hub, met een gezichtje op het lichtscherm. Typ een zin en de hub zegt hem in robotpiepjes. Er is ook een piano, een dansje en je kunt een route opnemen en laten naspelen.</span><span lang="en">Songs and sounds from the hub's speaker, with a face on the light matrix. Type a sentence and the hub says it in robot beeps. There is also a piano, a dance, and you can record a route and play it back.</span></p>
+      </div>
+      <figure class="phone small"><img src="img/phone-play.png" width="390" height="844" loading="lazy" alt="Liedjes en robotgeluiden"></figure>
+    </div>
+
+    <h3 class="more"><span lang="nl">En verder</span><span lang="en">Also</span></h3>
+    <ul class="list">
+      <li><span lang="nl">Voor de rijbases uit de bouwinstructies van LEGO® Education zet de app de poorten goed, met voorbeeldprogramma's. Een schema laat zien welke kabel waar hoort.</span><span lang="en">For the driving bases from LEGO® Education's building instructions, the app sets the ports and adds example programs. A diagram shows which cable goes where.</span></li>
+      <li><span lang="nl">Zelf een robot ontworpen? Open het ontwerp als LDraw™-bestand en bekijk het stap voor stap in 3D.</span><span lang="en">Designed a robot yourself? Open the design as an LDraw™ file and go through it step by step in 3D.</span></li>
+      <li><span lang="nl">Elke robot krijgt een eigen profiel, dat je met een link of QR-code doorgeeft.</span><span lang="en">Every robot gets its own profile, which you can pass on with a link or a QR code.</span></li>
+      <li><span lang="nl">Nederlands en Engels, een licht en een donker thema, en het past op telefoons, tablets en vouwtelefoons.</span><span lang="en">Dutch and English, a light and a dark theme, and it fits phones, tablets and foldables.</span></li>
+    </ul>
+
     <figure class="laptop"><img src="img/laptop-code.png" width="1366" height="768" loading="lazy" alt="Blokken programmeren op een laptop">
-      <figcaption><span lang="nl">Programmeren op een laptop of tablet: de editor krijgt het hele scherm, de ronde knop start en stopt.</span><span lang="en">Programming on a laptop or tablet: the editor gets the whole screen, the round button starts and stops.</span></figcaption></figure>
-    <div class="phones">
-      <figure><div class="phone"><img src="img/phone-play.png" width="390" height="844" loading="lazy" alt="Liedjes en robotgeluiden"></div>
-        <figcaption><span lang="nl">Spelen</span><span lang="en">Play</span></figcaption></figure>
-      <figure><div class="phone"><img src="img/phone-drive.png" width="390" height="844" loading="lazy" alt="Rijden met de joystick"></div>
-        <figcaption><span lang="nl">Rijden</span><span lang="en">Drive</span></figcaption></figure>
-      <figure><div class="phone"><img src="img/phone-code.png" width="390" height="844" loading="lazy" alt="Code met blokken"></div>
-        <figcaption>Code</figcaption></figure>
-    </div>
+      <figcaption><span lang="nl">Op een laptop of tablet krijgt het programmeren het hele scherm.</span><span lang="en">On a laptop or tablet, programming gets the whole screen.</span></figcaption></figure>
   </section>
 
-  <section class="section steps">
-    <h2><span lang="nl">In drie stappen aan de slag</span><span lang="en">Get going in three steps</span></h2>
-    <ol>
-      <li><b>1</b><p><span lang="nl">Zet de hub aan en sluit andere apps die ermee verbonden zijn.</span><span lang="en">Turn the hub on and close other apps connected to it.</span></p></li>
-      <li><b>2</b><p><span lang="nl">Open Hub Remote en tik op <i>Verbind met hub</i>. De app zet zelf een klein besturingsprogramma op de hub.</span><span lang="en">Open Hub Remote and tap <i>Connect to hub</i>. The app puts a small control program on the hub by itself.</span></p></li>
-      <li><b>3</b><p><span lang="nl">Rijden maar. Onder Instellingen kies je welke motor links en rechts is.</span><span lang="en">Drive away. Under Settings you choose which motor is left and right.</span></p></li>
-    </ol>
-  </section>
-
-  <section class="section school">
+  <section class="section split">
     <div>
-      <h2><span lang="nl">Voor thuis en op school</span><span lang="en">For home and school</span></h2>
-      <p><span lang="nl">Gratis en zonder account. Er gaat niets naar een server: instellingen en programma's blijven op het toestel. Werkt op schoolchromebooks en, eenmaal geopend, ook zonder internet. De broncode is open (MIT-licentie).</span><span lang="en">Free and without an account. Nothing goes to a server: settings and programs stay on the device. Works on school Chromebooks and, once opened, without internet. The source code is open (MIT licence).</span></p>
+      <h2><span lang="nl">Beginnen</span><span lang="en">Getting started</span></h2>
+      <ol class="start">
+        <li><span lang="nl">Zet de hub aan en sluit andere apps die ermee verbonden zijn.</span><span lang="en">Turn the hub on and close other apps that are connected to it.</span></li>
+        <li><span lang="nl">Open Hub Remote en tik op <i>Verbind met hub</i>. De eerste keer zet de app een klein besturingsprogramma op de hub; dat duurt een paar seconden.</span><span lang="en">Open Hub Remote and tap <i>Connect to hub</i>. The first time, the app puts a small control program on the hub; that takes a few seconds.</span></li>
+        <li><span lang="nl">Rijdt de robot de verkeerde kant op, kies dan onder Instellingen welke motor links en rechts zit.</span><span lang="en">If the robot drives the wrong way, choose under Settings which motor is left and which is right.</span></li>
+      </ol>
     </div>
-    <a class="btn primary" href="app/"><span lang="nl">Probeer het nu</span><span lang="en">Try it now</span></a>
+    <div>
+      <h2><span lang="nl">Op school</span><span lang="en">At school</span></h2>
+      <p><span lang="nl">Er is geen account en geen server: instellingen en programma's blijven op het toestel van de leerling. De app werkt op Chromebooks en, als hij één keer geopend is, ook zonder internet. De broncode staat op GitHub onder de MIT-licentie.</span><span lang="en">There is no account and no server: settings and programs stay on the pupil's device. The app works on Chromebooks and, once it has been opened, without internet. The source code is on GitHub under the MIT licence.</span></p>
+    </div>
+  </section>
+
+  <section class="section status">
+    <h2><span lang="nl">Hoe ver is het?</span><span lang="en">How far along is it?</span></h2>
+    <p><span lang="nl">Verbinden en rijden zijn getest met een echte SPIKE™ Prime-hub. Veel van wat later is gekomen (muziek, sensoren, Python, de Essential-hub) is tot nu toe alleen getest met een nagebootste hub. Werkt iets niet zoals hier staat, meld het dan op <a href="https://github.com/Zylex2902/RemoteHub/issues">GitHub</a>.</span><span lang="en">Connecting and driving have been tested with a real SPIKE™ Prime hub. Much of what came later (music, sensors, Python, the Essential hub) has so far only been tested against a simulated hub. If something doesn't work as described here, please report it on <a href="https://github.com/Zylex2902/RemoteHub/issues">GitHub</a>.</span></p>
   </section>
 
   <section id="vragen" class="section faq">
     <h2><span lang="nl">Vragen</span><span lang="en">Questions</span></h2>
     <details><summary><span lang="nl">Welke hubs werken?</span><span lang="en">Which hubs work?</span></summary>
-      <p><span lang="nl">De LEGO® Education SPIKE™ Prime-hub (6 poorten) en de SPIKE™ Essential-hub (2 poorten), met de standaardfirmware van de SPIKE™-app 3. De Essential-hub heeft geen luidspreker en geen lichtscherm: geluid klinkt dan op je telefoon.</span><span lang="en">The LEGO® Education SPIKE™ Prime hub (6 ports) and the SPIKE™ Essential hub (2 ports), with the standard firmware of the SPIKE™ app 3. The Essential hub has no speaker or light matrix: sound then plays on your phone.</span></p></details>
+      <p><span lang="nl">De LEGO® Education SPIKE™ Prime-hub (6 poorten) en de SPIKE™ Essential-hub (2 poorten), met de gewone firmware van de SPIKE™-app 3. De Essential-hub heeft geen luidspreker en geen lichtscherm; geluid komt dan uit je telefoon.</span><span lang="en">The LEGO® Education SPIKE™ Prime hub (6 ports) and the SPIKE™ Essential hub (2 ports), with the regular firmware of the SPIKE™ app 3. The Essential hub has no speaker and no light matrix; sound then comes from your phone.</span></p></details>
     <details><summary><span lang="nl">Verandert dit de firmware van mijn hub?</span><span lang="en">Does this change my hub's firmware?</span></summary>
-      <p><span lang="nl">Nee. Hub Remote zet alleen een klein programma in een programmaslot (standaard slot 19, te kiezen). Wat daar stond wordt overschreven; de rest van de hub blijft zoals hij was.</span><span lang="en">No. Hub Remote only puts a small program in a program slot (slot 19 by default, you can choose). Whatever was in that slot is replaced; the rest of the hub stays as it was.</span></p></details>
+      <p><span lang="nl">Nee. Hub Remote zet alleen een klein programma in een programmaslot (standaard slot 19, dat kun je veranderen). Wat in dat slot stond, wordt overschreven. De rest van de hub blijft zoals hij was.</span><span lang="en">No. Hub Remote only puts a small program in a program slot (slot 19 unless you change it). Whatever was in that slot is overwritten. The rest of the hub stays as it was.</span></p></details>
     <details><summary><span lang="nl">Waarom werkt het niet in Safari?</span><span lang="en">Why doesn't it work in Safari?</span></summary>
-      <p><span lang="nl">Safari en andere browsers op iPhone en iPad ondersteunen geen Web Bluetooth. De gratis browser Bluefy wel. Een eigen App Store-app staat op de planning.</span><span lang="en">Safari and the other browsers on iPhone and iPad do not support Web Bluetooth. The free Bluefy browser does. Our own App Store app is planned.</span></p></details>
+      <p><span lang="nl">Safari, en elke andere browser op iPhone en iPad, heeft geen Web Bluetooth. De browser Bluefy heeft het wel en is gratis.</span><span lang="en">Safari, and every other browser on iPhone and iPad, lacks Web Bluetooth. The Bluefy browser has it and is free.</span></p></details>
     <details><summary><span lang="nl">Kost het iets?</span><span lang="en">Does it cost anything?</span></summary>
-      <p><span lang="nl">Nee. Hub Remote is gratis, zonder reclame en zonder account.</span><span lang="en">No. Hub Remote is free, without ads and without an account.</span></p></details>
+      <p><span lang="nl">Nee. Er is geen reclame en geen account.</span><span lang="en">No. There are no ads and no account.</span></p></details>
     <details><summary><span lang="nl">Is Hub Remote van de LEGO Group?</span><span lang="en">Is Hub Remote made by the LEGO Group?</span></summary>
       <p><span lang="nl">Nee. Het is een onafhankelijk project dat met hun hubs werkt. De LEGO Group sponsort of steunt het niet.</span><span lang="en">No. It is an independent project that works with their hubs. The LEGO Group does not sponsor or endorse it.</span></p></details>
   </section>
@@ -163,6 +164,7 @@
   <p><b>Hub Remote</b> · <span lang="nl">een onafhankelijk project</span><span lang="en">an independent project</span> ·
     <a href="https://github.com/Zylex2902/RemoteHub">GitHub</a> · <a href="app/LICENSE-NOTICES.txt"><span lang="nl">Licenties</span><span lang="en">Licences</span></a></p>
   <p class="disclaimer"><span lang="nl">LEGO® en SPIKE™ zijn handelsmerken van de LEGO Group, die deze website en app niet sponsort, autoriseert of onderschrijft.</span><span lang="en">LEGO® and SPIKE™ are trademarks of the LEGO Group, which does not sponsor, authorize or endorse this site or app.</span></p>
+  <p class="disclaimer"><span lang="nl">LDraw™ is een handelsmerk van de Estate of James Jessiman.</span><span lang="en">LDraw™ is a trademark of the Estate of James Jessiman.</span></p>
 </footer>
 
 <script>

@@ -26,7 +26,7 @@ const { serve, launchOptions } = require('./helpers');
     assert.strictEqual(r.lang, locale.startsWith('nl') ? 'nl' : 'en', w + ' language from the browser');
     assert.ok(r.scrollX <= 0, w + ': page scrolls sideways by ' + r.scrollX);
     assert.deepStrictEqual(r.broken, [], w + ' broken images');
-    assert.ok(r.app >= 4, 'links to the app'); assert.ok(r.disclaimer, 'trademark disclaimer');
+    assert.ok(r.app >= 2, 'links to the app'); assert.ok(r.disclaimer, 'trademark disclaimer');
     assert.ok(/LEGO® Education SPIKE™/.test(r.h1), 'compatibility named in the heading, with the symbols');
     if (w === 390) {
       // language switch, remembered

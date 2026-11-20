@@ -552,10 +552,10 @@ let HTTP = '';
   assert.strictEqual(await page.evaluate(() => Blockly.getMainWorkspace().getTopBlocks()[0].getNextBlock().getInputTargetBlock('DO').type), 'changeVar');
   const migrated = await page.evaluate(() => JSON.parse(localStorage.getItem('hubremote3')).programs[0]);
   assert.ok(migrated.ws && migrated.ws.blocks && !migrated.stacks, 'stored as blocks');
-  await page.selectOption('#selProg', 'old1');
-  // let pending (debounced) saves finish first: storage must stay the same for 600 ms
-  await page.waitForFunction(() => new Promise((ok) => { const a = localStorage.getItem('hubremote3'); setTimeout(() => ok(a === localStorage.getItem('hubremote3')), 600); }), null, { timeout: 10000 });
-  await page.evaluate(() => { localStorage.setItem('hubremote3', JSON.stringify({ profiles: [] })); }); await page.reload(); await page.waitForTimeout(300);   // fresh start: the example program
+  // fresh start in a new context (empty storage), so no late save from the old page can interfere: the example program
+  await page.context().close();
+  page = await open({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+  page.on('dialog', (d) => d.accept(d.message().includes('variabele') ? 'teller' : 'Robotdans'));
   await page.click('#btnConnect'); await waitPhase(page, 'ready');
   await page.click('.tab[data-view="viewCode"]'); await page.waitForTimeout(800);
   // the example program in blocks: smile, forward 10 cm, a happy sound, back 10 cm, write Hi!

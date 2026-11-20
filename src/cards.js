@@ -6,7 +6,6 @@ const Cards = (() => {
   const COLORS = [-1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
   const NOTES = ['C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', 'C5', 'D5', 'E5', 'F5', 'G5', 'A5', 'B5', 'C6'];
   const CATS = ['event', 'move', 'motor', 'light', 'sound', 'control', 'sensor', 'var'];
-  const ICONS = { event: '\u{1F6A9}', move: '\u{1F697}', motor: '⚙️', light: '\u{1F4A1}', sound: '\u{1F3B5}', control: '\u{1F501}', sensor: '\u{1F441}️', var: '\u{1F4E6}' };
 
   // Parameters: num = getal of andere bron (variabele, toeval, sensor), choice = vaste keuzes.
   const num = (k, v, extra) => Object.assign({ k, type: 'num', def: v }, extra || {});
@@ -777,7 +776,7 @@ const Cards = (() => {
     return { blocks: { languageVersion: 0, blocks: tops }, variables };
   }
 
-  return { PORTS, COLORS, NOTES, CATS, ICONS, TYPES: T, COND, SENSORS, IMAGES, FONT, REP, newCard, cleanCard, cleanCond, cleanProgram, depths, compile, steer, textColumns, Runner,
+  return { PORTS, COLORS, NOTES, CATS, TYPES: T, COND, SENSORS, IMAGES, FONT, REP, newCard, cleanCard, cleanCond, cleanProgram, depths, compile, steer, textColumns, Runner,
     blockDefs, toolbox, varBlocks, fromBlocks, toBlocks };
 })();
 if (typeof module !== 'undefined') module.exports = Cards;
