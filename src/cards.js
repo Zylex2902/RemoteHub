@@ -787,7 +787,53 @@ const Cards = (() => {
     return { blocks: { languageVersion: 0, blocks: tops }, variables };
   }
 
+  /* Een getekende route: punten (x naar rechts, y naar beneden, in cm) -> draaien en rechtuit rijden.
+     De robot staat op het eerste punt en kijkt naar boven. Een lijn vol kleine wiebels wordt eerst
+     vereenvoudigd (Ramer-Douglas-Peucker), zodat er alleen echte bochten overblijven. */
+  function simplify(pts, eps) {
+    if (pts.length < 3) return pts.slice();
+    const [a, b] = [pts[0], pts[pts.length - 1]], dx = b[0] - a[0], dy = b[1] - a[1], len = Math.hypot(dx, dy);
+    let far = 0, at = 0;
+    for (let i = 1; i < pts.length - 1; i++) {
+      const p = pts[i], d = len ? Math.abs(dy * p[0] - dx * p[1] + b[0] * a[1] - b[1] * a[0]) / len : Math.hypot(p[0] - a[0], p[1] - a[1]);
+      if (d > far) { far = d; at = i; }
+    }
+    if (far <= eps) return [a, b];
+    return simplify(pts.slice(0, at + 1), eps).slice(0, -1).concat(simplify(pts.slice(at), eps));
+  }
+  function fromPath(points, opts) {
+    const o = Object.assign({ eps: 3, min: 3, max: 40 }, opts || {});
+    let pts = simplify(points.filter((p, i) => !i || Math.hypot(p[0] - points[i - 1][0], p[1] - points[i - 1][1]) > 0.01), o.eps);
+    // Te korte stukjes samenvoegen met het volgende punt.
+    const keep = [pts[0]];
+    for (let i = 1; i < pts.length; i++) {
+      const q = keep[keep.length - 1];
+      if (Math.hypot(pts[i][0] - q[0], pts[i][1] - q[1]) >= o.min || i === pts.length - 1) keep.push(pts[i]);
+    }
+    if (keep.length > 1 && Math.hypot(keep[keep.length - 1][0] - keep[keep.length - 2][0], keep[keep.length - 1][1] - keep[keep.length - 2][1]) < o.min) keep.splice(keep.length - 2, 1);
+    pts = keep;
+    const steps = [];
+    let head = 90, total = 0;
+    for (let i = 1; i < pts.length && steps.length < o.max; i++) {
+      const dx = pts[i][0] - pts[i - 1][0], dy = pts[i - 1][1] - pts[i][1], cm = Math.round(Math.hypot(dx, dy));
+      if (cm < 1) continue;
+      const h = (Math.atan2(dy, dx) * 180) / Math.PI;
+      let turn = Math.round((((h - head) % 360) + 540) % 360 - 180);
+      turn = Math.round(turn / 5) * 5;
+      if (turn === -180) turn = 180;
+      head += turn;
+      steps.push({ turn, cm });
+      total += cm;
+    }
+    const n = (v) => ({ k: 'n', v }), stack = [newCard('start')];
+    for (const s of steps) {
+      if (s.turn) { const c = newCard('turn'); c.p.side = s.turn > 0 ? 'left' : 'right'; c.p.n = n(Math.abs(s.turn)); stack.push(c); }
+      const m = newCard('moveFor'); m.p.n = n(s.cm); m.p.unit = 'cm'; stack.push(m);
+    }
+    return { points: pts, steps, total, program: cleanProgram({ stacks: [stack] }) };
+  }
+
   return { PORTS, COLORS, NOTES, CATS, TYPES: T, COND, SENSORS, IMAGES, FONT, REP, newCard, cleanCard, cleanCond, cleanProgram, depths, compile, steer, textColumns, Runner,
-    blockDefs, toolbox, varBlocks, fromBlocks, toBlocks };
+    blockDefs, toolbox, varBlocks, fromBlocks, toBlocks, simplify, fromPath };
 })();
 if (typeof module !== 'undefined') module.exports = Cards;

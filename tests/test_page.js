@@ -1,5 +1,5 @@
 // End-to-end test: runs the built page in headless Chrome against a simulated hub.
-// ONLY=AB node tests/test_page.js runs just those sections (A-M).
+// ONLY=AB node tests/test_page.js runs just those sections (A-N).
 const { chromium } = require('playwright');
 const jsQR = require('jsqr');
 const assert = require('assert');
@@ -1016,6 +1016,84 @@ let HTTP = '';
   await page.click('#btnBuildClose');
   await page.context().close();
   console.log('M ok: building guides: example, steps and parts, own file with made-up steps and a grey block, kept with the profile, keys, offline message');
+  }
+  // ---------- N. animations, blocks as Python, a drawn route, a game controller ----------
+  if (RUN('N')) {
+  page = await open({ viewport: { width: 1280, height: 860 } }, {}, FILE, () => {
+    // A stand-in game controller: the test sets window.__pad.axes/buttons.
+    window.__pad = { connected: true, index: 0, id: 'Test pad', mapping: 'standard', axes: [0, 0, 0, 0], buttons: Array.from({ length: 17 }, () => ({ pressed: false, value: 0 })) };
+    navigator.getGamepads = () => [window.__pad];
+  });
+  await page.click('#btnConnect'); await waitPhase(page, 'ready');
+  const pad = (axes, btns) => page.evaluate(([axes, btns]) => { if (axes) window.__pad.axes = axes; window.__pad.buttons.forEach((b, i) => { b.pressed = !!(btns || []).includes(i); b.value = b.pressed ? 1 : 0; }); }, [axes, btns]);
+  // 1. animation: frames go to the hub one after another, a view switch stops it
+  await page.evaluate(() => document.getElementById('animCard').scrollIntoView());
+  let n0 = (await cmds(page)).length;
+  await page.click('#btnAnimPlay'); await page.waitForTimeout(800);
+  let imgs = (await cmds(page)).slice(n0).filter((x) => /^img \d{25}$/.test(x));
+  assert.ok(imgs.length >= 2 && imgs[0] !== imgs[1], 'frames sent in turn: ' + imgs.slice(0, 3).join(' | '));
+  await page.click('#btnAnimAdd'); await page.waitForTimeout(100);
+  assert.strictEqual(await page.$$eval('#animFrames .framebtn', (b) => b.length), 3, 'frame added');
+  // (wide screen: one overview, so the switch to Code is the view switch)
+  await page.click('#modeSwitch .tab2[data-view="viewCode"]'); await page.waitForTimeout(600);
+  n0 = (await cmds(page)).length; await page.waitForTimeout(700);
+  assert.ok(!(await cmds(page)).slice(n0).some((x) => /^img /.test(x)), 'animation stopped by the view switch');
+  // 2. blocks as Python: the default program (a square) becomes MicroPython; open it in the Python editor
+  await page.click('#btnAsPy'); await page.waitForTimeout(200);
+  let py = await page.$eval('#pyView', (e) => e.textContent);
+  assert.ok(/import motor/.test(py) && /async def stack1\(\):/.test(py) && /runloop\.run\(stack1\(\)\)/.test(py) && /await drive\(/.test(py), py.slice(0, 300));
+  assert.ok(await page.$eval('#pyView', (e) => e.querySelectorAll('.tk').length > 5), 'coloured');
+  const nPy = await page.evaluate(() => JSON.parse(localStorage.getItem('hubremote3')).py.length);
+  await page.click('#btnPyOpen'); await page.waitForTimeout(300);
+  r = await page.evaluate(() => ({ mode: JSON.parse(localStorage.getItem('hubremote3')).codeMode, n: JSON.parse(localStorage.getItem('hubremote3')).py.length,
+    src: document.getElementById('pyText').value, asPy: document.getElementById('btnAsPy').classList.contains('hide2') }));
+  assert.ok(r.mode === 'python' && r.n === nPy + 1 && r.src.trim() === py.trim() && r.asPy, JSON.stringify(r).slice(0, 200));
+  await page.click('#codeKind button[data-kind="blocks"]'); await page.waitForTimeout(300);
+  // 3. a drawn route: up, then right; drives on the hub as exact moves
+  await page.click('#modeSwitch .tab2[data-view="viewDrive"]'); await page.waitForTimeout(500);
+  await page.evaluate(() => document.getElementById('btnDraw').scrollIntoView());
+  await page.click('#btnDraw'); await page.waitForTimeout(200);
+  assert.ok(await page.$eval('#btnDrawGo', (e) => e.disabled), 'nothing to drive yet');
+  const cv = await rect(page, '#drawCanvas');
+  const at = (fx, fy) => [cv.x + cv.w * fx, cv.y + cv.h * fy];
+  let [px, py0] = at(0.5, 0.9);
+  await ptr(page, '#drawCanvas', 'pointerdown', px, py0, 1);
+  for (let i = 1; i <= 20; i++) { const [x, y] = at(0.5 + (i % 2 ? 0.003 : -0.003), 0.9 - i * 0.02); await ptr(page, '#drawCanvas', 'pointermove', x, y, 1); }
+  for (let i = 1; i <= 10; i++) { const [x, y] = at(0.5 + i * 0.03, 0.5); await ptr(page, '#drawCanvas', 'pointermove', x, y, 1); }
+  await ptr(page, '#drawCanvas', 'pointerup', ...at(0.8, 0.5), 1); await page.waitForTimeout(100);
+  assert.strictEqual(await page.$eval('#drawInfo', (e) => e.textContent), '2 stukken, samen 70 cm');
+  n0 = (await cmds(page)).length;
+  await page.click('#btnDrawGo'); await page.waitForTimeout(1200);
+  const moves = (await cmds(page)).slice(n0).filter((x) => /^deg /.test(x));
+  assert.ok(moves.length >= 1 && /^deg C:-?\d+:\d+ D:-?\d+:\d+$/.test(moves[0]), 'first stretch as an exact move: ' + moves.join(' | '));
+  assert.ok(await page.evaluate(() => document.getElementById('viewDrive').classList.contains('active')), 'runs in the Drive view');
+  await page.click('#btnStop'); await page.waitForTimeout(200);
+  await page.click('#btnDraw'); await page.click('#btnDrawSave'); await page.waitForTimeout(200);
+  r = await page.evaluate(() => { const g = JSON.parse(localStorage.getItem('hubremote3')); const p = g.programs.find((x) => x.id === g.progActive); return { name: p.name, types: JSON.stringify(p.ws).match(/"type":"\w+"/g) }; });
+  assert.strictEqual(r.name, 'Getekende route'); assert.ok(r.types.includes('"type":"turn"') && r.types.includes('"type":"moveFor"'), r.types.join());
+  // 4. game controller: left stick drives, centre first after STOP (B), A is the horn, no driving in Code
+  await page.evaluate(() => window.dispatchEvent(new Event('gamepadconnected'))); await page.waitForTimeout(100);
+  assert.ok(/Gamecontroller gevonden/.test(await page.$eval('#toasts', (e) => e.textContent)));
+  await pad([0, 0, 0, 0]); await page.waitForTimeout(150);
+  await pad([0, -1, 0, 0]); await page.waitForTimeout(700);
+  let d = await last(page);
+  assert.ok(/^C:-\d+ D:\d+$/.test(d) && +d.split(' ')[1].slice(2) > 30, 'stick forward drives: ' + d);
+  await pad([0, -1, 0, 0], [1]); await page.waitForTimeout(400);
+  assert.strictEqual(await last(page), 'C:0 D:0', 'B is STOP');
+  assert.ok((await cmds(page)).slice(-6).includes('halt'));
+  await pad([0, -1, 0, 0], []); await page.waitForTimeout(500);
+  assert.strictEqual(await last(page), 'C:0 D:0', 'still held after STOP: stays stopped until the stick is let go');
+  await pad([0, 0, 0, 0]); await page.waitForTimeout(150); await pad([0.9, 0, 0, 0]); await page.waitForTimeout(600);
+  d = await last(page); assert.ok(/^C:-\d+ D:-\d+$/.test(d), 'stick right turns right: ' + d);
+  await pad([0, 0, 0, 0]); await page.waitForTimeout(500);
+  n0 = (await cmds(page)).length; await pad([0, 0, 0, 0], [0]); await page.waitForTimeout(200); await pad([0, 0, 0, 0], []);
+  assert.ok((await cmds(page)).slice(n0).includes('beep'), 'A is the horn');
+  await page.click('#modeSwitch .tab2[data-view="viewCode"]'); await page.waitForTimeout(500);
+  await pad([0, -1, 0, 0]); await page.waitForTimeout(500);
+  assert.strictEqual(await last(page), 'C:0 D:0', 'no driving in the Code view');
+  await pad([0, 0, 0, 0]);
+  await page.context().close();
+  console.log('N ok: light animation, blocks as Python into the editor, drawn route driven and saved, game controller with STOP and centre lock');
   }
   await browser.close(); server.close();
   assert.deepStrictEqual(errors, [], 'page errors: ' + errors.join('\n'));

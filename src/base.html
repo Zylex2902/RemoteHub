@@ -130,7 +130,7 @@
         <button class="btn sm" id="btnProgNew" data-i18n="code.new">Nieuw</button>
         <button class="btn sm" id="btnProgRename" data-i18n="code.rename">Naam</button>
         <button class="btn sm danger" id="btnProgDel" data-i18n="code.delete">Weg</button>
-        <button class="btn sm" id="btnAsPy" data-i18n="code.asPy">Python</button>
+        <button class="btn sm" id="btnAsPy" data-i18n="code.asPy">Als Python</button>
       </div>
       </div>
       <div class="small codestatus" id="codeStatus" aria-live="polite"></div>
@@ -177,6 +177,7 @@
         <button class="btn fun" id="btnDance2" data-face="spin"><span data-i18n="move.dance2">Rondjesdans</span></button>
         <button class="btn fun" id="btnRec" data-face="rec"><span data-i18n="move.rec">Route opnemen</span></button>
         <button class="btn fun" id="btnRoute" data-face="play"><span data-i18n="move.play">Route afspelen</span></button>
+        <button class="btn fun" id="btnDraw" data-face="draw"><span data-i18n="draw.btn">Route tekenen</span></button>
       </div>
       <p class="small" style="margin:12px 0 0" data-i18n="move.help"></p>
     </div>
@@ -427,6 +428,25 @@
       <button class="btn sm primary" id="btnPyOpen" data-i18n="pyv.open">Open in de Python-editor</button>
       <button class="btn sm" id="btnPyCopy" data-i18n="pyv.copy">Kopieer</button>
       <button class="btn sm" id="btnPyClose" data-i18n="share.close">Sluiten</button>
+    </div>
+  </div>
+</div>
+
+<div class="sheet" id="drawSheet" aria-hidden="true">
+  <div class="card box">
+    <h2 data-i18n="draw.title">Teken een route</h2>
+    <p class="small" style="margin:0" data-i18n="draw.help"></p>
+    <div class="drawwrap"><canvas id="drawCanvas" width="600" height="600" aria-describedby="drawInfo"></canvas></div>
+    <div class="drawbar">
+      <label for="selField" data-i18n="draw.field">Veld</label>
+      <select id="selField"><option value="100">1 × 1 m</option><option value="200">2 × 2 m</option><option value="400">4 × 4 m</option></select>
+      <span class="small" id="drawInfo" aria-live="polite"></span>
+    </div>
+    <div class="rowbtns">
+      <button class="btn sm primary" id="btnDrawGo" data-i18n="draw.go">Rijden</button>
+      <button class="btn sm" id="btnDrawSave" data-i18n="draw.save">Bewaar als programma</button>
+      <button class="btn sm" id="btnDrawClear" data-i18n="draw.clear">Wissen</button>
+      <button class="btn sm" id="btnDrawClose" data-i18n="share.close">Sluiten</button>
     </div>
   </div>
 </div>

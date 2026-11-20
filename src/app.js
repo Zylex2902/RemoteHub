@@ -278,6 +278,7 @@
   const stick = () => ({ v: 0, on: false, id: null });
   const st = {
     phase: 'idle', view: 'viewDrive', session: 0, keys: new Set(), codes: new Set(), joy: { x: 0, y: 0, on: false, id: null },
+    pad: { on: false, x: 0, y: 0, l: 0, r: 0, lock: false, btn: {} },
     tank: { l: stick(), r: stick() }, tilt: { on: false, have: false, beta: 0, gamma: 0, p0: 0, r0: 0, reach: 60 },
     aux: [0, 0], jog: [0, 0], cur: { l: 0, r: 0 }, turbo: false, test: null,
     lastSent: {}, lastText: '', lastAt: 0, sending: false, motors: [], gotMotors: false, readyWait: null, closing: false,
@@ -619,7 +620,9 @@
   function setTurbo(on) { st.turbo = on; $('turbo').classList.toggle('on', on); }
   function halt() {
     st.keys.clear(); st.codes.clear(); st.joy.x = 0; st.joy.y = 0; st.joy.on = false; st.joy.id = null;
-    st.tank.l = stick(); st.tank.r = stick(); st.tilt.on = false; st.aux = [0, 0]; st.jog = [0, 0]; st.cur.l = 0; st.cur.r = 0; st.test = null;
+    st.tank.l = stick(); st.tank.r = stick(); st.tilt.on = false;
+    // Een gamecontroller moet eerst terug naar het midden voordat hij weer mag sturen.
+    st.pad.on = false; st.pad.x = st.pad.y = st.pad.l = st.pad.r = 0; st.pad.lock = true; st.aux = [0, 0]; st.jog = [0, 0]; st.cur.l = 0; st.cur.r = 0; st.test = null;
     if (st.macro) endMacro(false);
     if (st.run) st.run.stop();
     if (st.py) stopPython();
@@ -714,7 +717,7 @@
     const speed = st.turbo ? 100 : S.speed, hit = guardHit();
     // Dans of opgenomen route: vaste snelheden per tik, tot je zelf stuurt.
     if (st.macro) {
-      const m = st.macro, own = st.joy.on || st.tilt.on || st.keys.size || st.tank.l.on || st.tank.r.on;
+      const m = st.macro, own = st.joy.on || st.tilt.on || st.keys.size || st.tank.l.on || st.tank.r.on || st.pad.on;
       if (own || st.phase !== 'ready' || m.i >= m.steps.length) endMacro(!own && st.phase === 'ready');
       else {
         let [ml, mr] = m.steps[m.i++];
@@ -724,14 +727,14 @@
     }
     // Programma van kaartjes: zijn eigen rijsnelheden, tot je zelf stuurt.
     if (st.run) {
-      if (st.joy.on || st.tilt.on || st.keys.size || st.tank.l.on || st.tank.r.on) st.run.stop();
+      if (st.joy.on || st.tilt.on || st.keys.size || st.tank.l.on || st.tank.r.on || st.pad.on) st.run.stop();
       else return [st.prog.l, st.prog.r];
     }
     // Rechtuit-correctie: negatief remt de linkermotor iets af, positief de rechter.
     const tl = S.trim < 0 ? 1 + S.trim / 100 : 1, tr = S.trim > 0 ? 1 - S.trim / 100 : 1;
     let l, r;
-    if (G.mode === 'tank' && (st.tank.l.on || st.tank.r.on)) {
-      l = st.tank.l.v; r = st.tank.r.v;
+    if (G.mode === 'tank' && (st.tank.l.on || st.tank.r.on || st.pad.on)) {
+      l = st.tank.l.on ? st.tank.l.v : st.pad.on ? st.pad.l : 0; r = st.tank.r.on ? st.tank.r.v : st.pad.on ? st.pad.r : 0;
       if (hit && l + r > 0.05) { l = 0; r = 0; st.blocked = true; }
     } else {
       let x = 0, y = 0;
@@ -740,6 +743,7 @@
         y = dead(clamp(-(p - st.tilt.p0) / TILT_FULL, -1, 1), 0.12); x = dead(clamp((q - st.tilt.r0) / TILT_FULL, -1, 1), 0.12);
         $('knob').style.transform = 'translate(' + x * st.tilt.reach + 'px,' + -y * st.tilt.reach + 'px)';
       } else if (st.joy.on) { x = st.joy.x; y = st.joy.y; }
+      else if (st.pad.on) { x = st.pad.x; y = st.pad.y; }
       else {
         if (st.keys.has('up')) y += 1;
         if (st.keys.has('down')) y -= 1;
@@ -754,7 +758,38 @@
     return [l * speed * tl, r * speed * tr];
   }
 
+  /* Gamecontroller (Gamepad API, standaardindeling): linkerstick rijdt (in tankstand elke stick een kant),
+     de pijltjes werken als de pijltoetsen, A toetert, B en Start zijn STOP, RB/RT is turbo. */
+  const PAD_DEAD = 0.18;
+  function pollPad() {
+    const pads = navigator.getGamepads ? [...navigator.getGamepads()].filter((p) => p && p.connected) : [];
+    const gp = pads[0], P = st.pad;
+    if (!gp) { if (P.on) halt(); P.btn = {}; return; }
+    const b = (i) => !!(gp.buttons[i] && (gp.buttons[i].pressed || gp.buttons[i].value > 0.5));
+    const edge = (i) => { const now = b(i), was = !!P.btn[i]; P.btn[i] = now; return now && !was ? 1 : !now && was ? -1 : 0; };
+    if (edge(1) === 1 || edge(9) === 1) { emergencyStop(); return; }
+    if (bv.open || st.view === 'viewCode') { if (P.on) halt(); return; }
+    const ax = (i) => { const v = gp.axes[i] || 0; return Math.abs(v) < PAD_DEAD ? 0 : (v - Math.sign(v) * PAD_DEAD) / (1 - PAD_DEAD); };
+    const x = ax(0), y = -ax(1), r = -ax(3);
+    const moved = !!(x || y || (G.mode === 'tank' && r));
+    if (P.lock) { if (moved) return; P.lock = false; }
+    if (moved && !P.on && (st.macro || st.run)) sfx.tick();
+    P.on = moved; P.x = x; P.y = y; P.l = y; P.r = G.mode === 'tank' ? r : y;
+    const h = edge(0);
+    if (h === 1) { $('btnHorn').classList.add('on'); beep(); } else if (h === -1) $('btnHorn').classList.remove('on');
+    const tb = b(5) || b(7);
+    if (tb !== !!P.btn.turbo) { P.btn.turbo = tb; setTurbo(tb); }
+    [[12, 'up'], [13, 'down'], [14, 'left'], [15, 'right']].forEach(([i, k]) => {
+      const e = edge(i);
+      if (e === 1) { st.keys.add(k); qsa('.key[data-k="' + k + '"]').forEach((n) => n.classList.add('on')); }
+      else if (e === -1) { st.keys.delete(k); qsa('.key[data-k="' + k + '"]').forEach((n) => n.classList.remove('on')); }
+    });
+  }
+  window.addEventListener('gamepadconnected', () => { st.pad.lock = true; toast(t('pad.on'), 'ok'); log(t('pad.on'), 'ok'); sfx.open(); });
+  window.addEventListener('gamepaddisconnected', () => { halt(); toast(t('pad.off'), 'warn'); log(t('pad.off'), 'warn'); });
+
   function tick() {
+    pollPad();
     if (st.run) st.run.tick();
     const [tl, tr] = targets();
     if (st.rec && st.phase === 'ready') {
@@ -1004,6 +1039,7 @@
     spin: '09990' + '90009' + '90009' + '90009' + '09990',
     rec: '00000' + '09990' + '09990' + '09990' + '00000',
     play: '09000' + '09900' + '09990' + '09900' + '09000',
+    draw: '00099' + '00990' + '09900' + '99000' + '90000',
     mOpen: '09090' + '00000' + '09990' + '90009' + '09990',
     mHalf: '09090' + '00000' + '00000' + '99999' + '00000',
     mShut: '09090' + '00000' + '00000' + '09990' + '00000',
@@ -1285,6 +1321,99 @@
     if (!G.path.length) { toast(t('move.empty'), 'warn'); return; }
     startMacro(t('move.route'), G.path.map((x) => x.slice()), null);
   });
+  /* Route tekenen: met je vinger op een veld; de lijn wordt draaien + rechtuit (Cards.fromPath). */
+  const dr = { pts: [], field: 100, res: null, drawing: false };
+  const drawCv = $('drawCanvas');
+  function drawPaint() {
+    const g = drawCv.getContext('2d'), W = drawCv.width, k = W / dr.field, css = getComputedStyle(document.body);
+    const col = (v, d) => (css.getPropertyValue(v) || d).trim();
+    g.clearRect(0, 0, W, W);
+    g.fillStyle = col('--panel', '#fff'); g.fillRect(0, 0, W, W);
+    const stepCm = dr.field <= 100 ? 10 : dr.field <= 200 ? 25 : 50;
+    g.strokeStyle = col('--line', '#d5e1de'); g.lineWidth = 1;
+    for (let c = stepCm; c < dr.field; c += stepCm) {
+      g.beginPath(); g.moveTo(c * k + 0.5, 0); g.lineTo(c * k + 0.5, W); g.moveTo(0, c * k + 0.5); g.lineTo(W, c * k + 0.5); g.stroke();
+    }
+    // Schaalstreep: één ruit is stepCm.
+    g.fillStyle = col('--muted', '#56706b'); g.font = '600 ' + Math.round(W / 30) + 'px Nunito, sans-serif';
+    g.fillText(stepCm + ' cm', 8, W - 10);
+    if (dr.pts.length > 1) {
+      g.strokeStyle = col('--muted', '#56706b'); g.globalAlpha = 0.35; g.lineWidth = W / 120; g.lineJoin = g.lineCap = 'round';
+      g.beginPath(); dr.pts.forEach((p, i) => (i ? g.lineTo(p[0] * k, p[1] * k) : g.moveTo(p[0] * k, p[1] * k))); g.stroke();
+      g.globalAlpha = 1;
+    }
+    const acc = col('--accent', '#0a7f72');
+    if (dr.res && dr.res.points.length > 1) {
+      const q = dr.res.points;
+      g.strokeStyle = acc; g.lineWidth = W / 90;
+      g.beginPath(); q.forEach((p, i) => (i ? g.lineTo(p[0] * k, p[1] * k) : g.moveTo(p[0] * k, p[1] * k))); g.stroke();
+      g.fillStyle = acc;
+      q.forEach((p) => { g.beginPath(); g.arc(p[0] * k, p[1] * k, W / 70, 0, Math.PI * 2); g.fill(); });
+    }
+    // De robot: op het beginpunt, kijkt naar boven.
+    const s = dr.pts[0] || [dr.field / 2, dr.field * 0.85], R = W / 26;
+    g.fillStyle = col('--text', '#17302c');
+    g.beginPath(); g.moveTo(s[0] * k, s[1] * k - R * 1.3); g.lineTo(s[0] * k + R, s[1] * k + R); g.lineTo(s[0] * k - R, s[1] * k + R); g.closePath(); g.fill();
+    const r = dr.res;
+    $('drawInfo').textContent = r && r.steps.length ? t('draw.info', r.steps.length, r.total) : t('draw.empty');
+    $('btnDrawGo').disabled = $('btnDrawSave').disabled = !(r && r.steps.length);
+  }
+  const drawAt = (e) => {
+    const b = drawCv.getBoundingClientRect();
+    return [clamp(((e.clientX - b.left) / b.width) * dr.field, 0, dr.field), clamp(((e.clientY - b.top) / b.height) * dr.field, 0, dr.field)];
+  };
+  drawCv.addEventListener('pointerdown', (e) => {
+    e.preventDefault(); drawCv.setPointerCapture(e.pointerId);
+    dr.drawing = true; dr.pts = [drawAt(e)]; dr.res = null; drawPaint();
+  });
+  drawCv.addEventListener('pointermove', (e) => {
+    if (!dr.drawing || dr.pts.length > 2000) return;
+    const p = drawAt(e), q = dr.pts[dr.pts.length - 1];
+    if (Math.hypot(p[0] - q[0], p[1] - q[1]) < dr.field / 300) return;
+    dr.pts.push(p); drawPaint();
+  });
+  const drawEnd = () => {
+    if (!dr.drawing) return;
+    dr.drawing = false;
+    dr.res = Cards.fromPath(dr.pts, { eps: dr.field / 40, min: Math.max(3, dr.field / 40) });
+    drawPaint(); if (dr.res.steps.length) sfx.tick();
+  };
+  drawCv.addEventListener('pointerup', drawEnd);
+  drawCv.addEventListener('pointercancel', drawEnd);
+  $('selField').addEventListener('change', () => {
+    const f = +$('selField').value, old = dr.field;
+    dr.field = [100, 200, 400].includes(f) ? f : 100;
+    dr.pts = dr.pts.map(([x, y]) => [(x * dr.field) / old, (y * dr.field) / old]);
+    dr.res = dr.pts.length > 1 ? Cards.fromPath(dr.pts, { eps: dr.field / 40, min: Math.max(3, dr.field / 40) }) : null;
+    drawPaint();
+  });
+  const closeDraw = () => { $('drawSheet').classList.remove('on'); $('drawSheet').setAttribute('aria-hidden', 'true'); };
+  $('btnDraw').addEventListener('click', () => {
+    buzz(10);
+    $('selField').value = String(dr.field);
+    $('drawSheet').classList.add('on'); $('drawSheet').setAttribute('aria-hidden', 'false'); sfx.open();
+    drawPaint();
+  });
+  $('btnDrawClose').addEventListener('click', closeDraw);
+  $('drawSheet').addEventListener('click', (e) => { if (e.target === $('drawSheet')) closeDraw(); });
+  $('btnDrawClear').addEventListener('click', () => { dr.pts = []; dr.res = null; drawPaint(); sfx.tick(); });
+  $('btnDrawGo').addEventListener('click', () => {
+    if (!dr.res || !dr.res.steps.length || !needReady()) return;
+    closeDraw(); showView('viewDrive');
+    runCards(Cards.cleanProgram(JSON.parse(JSON.stringify(dr.res.program)), t('draw.name')));
+    toast(t('draw.going'), 'ok');
+  });
+  $('btnDrawSave').addEventListener('click', () => {
+    if (!dr.res || !dr.res.steps.length) return;
+    if (G.programs.length >= 30) { toast(t('draw.full'), 'warn'); return; }
+    const name = uniqueProgName(t('draw.name'));
+    const p = { id: uid(), name, ws: Cards.toBlocks(Cards.cleanProgram(JSON.parse(JSON.stringify(dr.res.program)), name)) };
+    G.programs.push(p); G.progActive = p.id; save(); renderProgs();
+    if (code.ws && G.codeMode !== 'python') loadWorkspace();
+    closeDraw(); toast(t('draw.saved', name), 'ok'); sfx.ready();
+  });
+  const uniqueProgName = (base) => { let n = base, i = 2; while (G.programs.some((x) => x.name === n)) n = base + ' ' + i++; return n.slice(0, 30); };
+
   $('btnRec').addEventListener('click', () => {
     buzz(10);
     if (!needReady()) return;
@@ -1621,6 +1750,9 @@
     if (st.run || !needReady()) return;
     const p = Cards.fromBlocks(code.ws ? Blockly.serialization.workspaces.save(code.ws) : prog().ws, prog().name);
     if (p.empty) { toast(t('code.noHat'), 'warn'); sfx.err(); return; }
+    runCards(p);
+  }
+  function runCards(p) {
     halt();
     st.runProg = p;
     st.prog = { l: 0, r: 0, ports: {}, lp: null, rp: null };

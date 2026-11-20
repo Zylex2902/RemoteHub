@@ -229,5 +229,17 @@ const n = (v) => ({ k: 'n', v }), V = (v) => ({ k: 'v', v });
     { t: 'setVar', p: { v: 'd', n: { k: 'fn', f: 'floor', a: n(-2.5) } } }]], ['a', 'b', 'c', 'd']);
   h.run.start(); await h.advance(300);
   assert.deepStrictEqual({ ...h.run.vars }, { a: 8, b: 8, c: 1, d: -3 });
+  // a drawn route: 50 cm up (with a wobble), a right angle to the right, 30 cm; then a U-turn
+  const wob = [];
+  for (let i = 0; i <= 50; i++) wob.push([100 + (i % 50 ? (i % 2 ? 0.6 : -0.6) : 0), 200 - i]);
+  for (let i = 1; i <= 30; i++) wob.push([100 + i, 150]);
+  let fp = C.fromPath(wob);
+  assert.deepStrictEqual(JSON.parse(JSON.stringify(fp.steps)), [{ turn: 0, cm: 50 }, { turn: -90, cm: 30 }], 'wobble removed, right turn of 90');
+  assert.strictEqual(fp.program.stacks[0].map((c) => c.t).join(), 'start,moveFor,turn,moveFor');
+  assert.strictEqual(fp.program.stacks[0][2].p.side, 'right'); assert.strictEqual(fp.total, 80);
+  fp = C.fromPath([[0, 0], [0, -20], [0.1, 0]]);
+  assert.deepStrictEqual(JSON.parse(JSON.stringify(fp.steps.map((s) => Math.abs(s.turn)))), [0, 180], 'a U-turn is a half turn');
+  assert.strictEqual(C.fromPath([[5, 5]]).steps.length, 0, 'a dot is no route');
+  assert.strictEqual(C.fromPath([[0, 0], [1, 0], [1.5, 0]]).steps.length, 0, 'tiny scribbles are ignored');
   console.log('OK cards:', Object.keys(C.TYPES).length, 'card types,', defs.length, 'blocks, runner, conversions and expressions checked');
 })().catch((e) => { console.error('FAIL', e.message); process.exit(1); });
