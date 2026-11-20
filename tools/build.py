@@ -76,11 +76,21 @@ def lang_files():
     print("built site/app/lang/ (" + ", ".join(sorted(n[:-3] for n in want)) + ")")
 
 
+def check_keys():
+    # Elke tekstsleutel in de pagina (data-i18n...) en elke t('...') in de app moet in en.json staan.
+    en = texts("en")
+    html, app = rd(SRC / "base.html"), rd(SRC / "app.js")
+    used = set(re.findall(r'data-i18n(?:-title|-aria|-ph)?="([^"]+)"', html)) | set(re.findall(r"\bt\('([\w.\-]+)'", app))
+    missing = sorted(k for k in used if k not in en and not k.endswith("."))   # "song." + id: built at runtime
+    assert not missing, "texts missing in src/i18n/en.json: " + ", ".join(missing)
+
+
 def build(everything=False):
+    check_keys()
     html = rd(SRC / "base.html")
     parts = {"CSS": rd(SRC / "style.css"), "HUB": rd(SRC / "hub_program.py"), "PROTO": rd(SRC / "proto.js"),
              "QR": rd(ROOT / "vendor" / "qrcode.min.js").strip(), "I18N": i18n(everything), "BLOCKLY": blockly(everything),
-             "LANGLOAD": rd(SRC / "langload.js"), "CARDS": rd(SRC / "cards.js"), "LDRAW": rd(SRC / "ldraw.js"), "TOPY": rd(SRC / "topython.js"),
+             "LANGLOAD": rd(SRC / "langload.js"), "VERSION": json.loads(rd(ROOT / "package.json"))["version"], "CARDS": rd(SRC / "cards.js"), "LDRAW": rd(SRC / "ldraw.js"), "TOPY": rd(SRC / "topython.js"),
              "APP": rd(SRC / "app.js")}
     for key, text in parts.items():
         assert "</script>" not in text and "</style>" not in text, key

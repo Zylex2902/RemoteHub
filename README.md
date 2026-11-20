@@ -73,6 +73,11 @@ no light matrix) sounds play on the phone and pictures are skipped.
   joystick takes over at once
 - Without a hub, songs, moods and the piano play on the phone itself
 - Reconnects by itself; the robot stops within about a second if the link drops
+- Feedback: Settings > Feedback, or "Report a problem" in the Log. The message goes to the developer as a
+  Netlify Forms submission (form `feedback`, no own server); technical details (version, browser, screen,
+  hub state, the last 40 log lines with the hub's name replaced) only when the box is ticked, and shown
+  before sending. One message a minute. Offline or in a local copy: copy the text, or open a prefilled
+  GitHub issue (without the email address)
 - Ten languages: Dutch and English, and German, French, Italian, Spanish, Brazilian Portuguese,
   Polish, Simplified Chinese and Japanese (made with a translation program, being reviewed by language
   experts; the app says how far, see `docs/localization.md`). Light and dark theme

@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#ffffff" id="themeColor">
 <meta name="mobile-web-app-capable" content="yes">
+<meta name="app-version" content="{{VERSION}}">
 <title>BrickHubRemote</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
@@ -359,16 +360,22 @@
     </div>
 
     <div class="card">
+      <h2 data-i18n="fb.cardTitle">Feedback</h2>
+      <p class="small" style="margin:0 0 12px" data-i18n="fb.cardHelp"></p>
+      <button class="btn sm" id="btnFeedback" data-i18n="fb.open">Laat iets weten</button>
+    </div>
+
+    <div class="card">
       <h2 data-i18n="about.title">Over</h2>
       <p class="small" style="margin:0" data-i18n="about.text"></p>
-      <p class="small" style="margin:8px 0 0">BrickHubRemote 5.7</p>
+      <p class="small" style="margin:8px 0 0" id="appVersion">BrickHubRemote</p>
     </div>
   </section>
   </div>
 
   <section class="view" id="viewLog">
     <div class="card logcard">
-      <div class="loghead"><h2 data-i18n="log.title">Logboek</h2><button class="linkbtn" id="btnClear" data-i18n="log.clear">Wissen</button></div>
+      <div class="loghead"><h2 data-i18n="log.title">Logboek</h2><span><button class="linkbtn" id="btnLogReport" data-i18n="fb.report">Probleem melden</button><button class="linkbtn" id="btnClear" data-i18n="log.clear">Wissen</button></span></div>
       <div id="log" aria-live="polite"></div>
     </div>
   </section>
@@ -458,6 +465,30 @@
     </div>
   </div>
 </div>
+
+<div class="sheet" id="fbSheet" aria-hidden="true">
+  <div class="card box fbbox">
+    <h2 data-i18n="fb.title">Laat iets weten</h2>
+    <p class="small" style="margin:0" data-i18n="fb.help"></p>
+    <label class="f"><span data-i18n="fb.kind">Waarover gaat het?</span><select id="fbKind"></select></label>
+    <label class="f"><span data-i18n="fb.msg">Je bericht</span><textarea id="fbMsg" rows="5" maxlength="2000" data-i18n-ph="fb.msgPh"></textarea></label>
+    <label class="f"><span data-i18n="fb.contact">E-mail (niet verplicht)</span><input id="fbContact" type="text" maxlength="100" autocomplete="off" inputmode="email"></label>
+    <p class="small" style="margin:0" data-i18n="fb.contactNote"></p>
+    <label class="check"><input type="checkbox" id="fbDiag" checked><span></span><em data-i18n="fb.diag" style="font-style:normal">Technische gegevens meesturen</em></label>
+    <details class="fbdetails"><summary data-i18n="fb.show">Wat wordt er meegestuurd?</summary><pre id="fbDiagText"></pre></details>
+    <p class="small fbstatus" id="fbStatus" aria-live="polite"></p>
+    <div class="rowbtns">
+      <button class="btn sm primary" id="btnFbSend" data-i18n="fb.send">Versturen</button>
+      <button class="btn sm" id="btnFbCopy" data-i18n="fb.copy">Kopieer</button>
+      <button class="btn sm" id="btnFbClose" data-i18n="share.close">Sluiten</button>
+    </div>
+    <p class="small" style="margin:0"><a id="fbGithub" href="https://github.com/Zylex2902/RemoteHub/issues" target="_blank" rel="noopener noreferrer" data-i18n="fb.github">Op GitHub melden</a></p>
+  </div>
+</div>
+<!-- Leeg formulier zodat Netlify Forms het bij het publiceren herkent; de app verstuurt het met fetch(). -->
+<form name="feedback" data-netlify="true" netlify-honeypot="bot-field" hidden>
+  <input name="bot-field"><input name="kind"><textarea name="message"></textarea><input name="contact"><textarea name="details"></textarea><input name="lang"><input name="version">
+</form>
 
 <div class="sheet" id="imgSheet" aria-hidden="true">
   <div class="card box">

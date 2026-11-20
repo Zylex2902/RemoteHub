@@ -657,3 +657,10 @@ html[data-theme="dark"] #pyCheat code{color:var(--accent-hi)}
 .kbtn{min-width:76px}
 .kbtn.wait{border-color:var(--accent);color:var(--accent)}
 @media (hover:none) and (pointer:coarse){.keycard{display:none}}
+/* Feedback */
+.fbbox{width:min(520px,100%)}
+.fbbox textarea{width:100%;resize:vertical;min-height:110px;font:inherit}
+.fbdetails summary{cursor:pointer;color:var(--muted);font-size:13px}
+.fbdetails pre{max-height:180px;overflow:auto;font-size:11.5px;white-space:pre-wrap;word-break:break-word;background:var(--soft,rgba(0,0,0,.04));padding:8px;border-radius:8px;margin:6px 0 0}
+.fbstatus:empty{display:none}
+.fbstatus{margin:0}.fbstatus.warn{color:var(--warn,#c96a00);font-weight:600}

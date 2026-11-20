@@ -73,7 +73,9 @@
     "wire.": "Labels in a wiring diagram (which motor or sensor goes into which port). Very short.",
     "lang.": "Settings, language picker and the note about how far a translation is reviewed.",
     "keys.": "Settings, 'Keyboard' card: choosing which key does what (shown only on devices with a keyboard).",
-    "key.": "Names of keys on a keyboard."
+    "key.": "Names of keys on a keyboard.",
+    "fb.": "Feedback form (Settings card, and a 'Report a problem' link in the Log screen). Children may use it: keep it friendly and plain; the privacy sentences (no names or addresses, email optional, under 16 ask a parent) must keep their full meaning.",
+    "fb.k.": "Choices in the feedback form's 'What is it about?' menu."
   },
   "keys": {
     "code.stop": "Label of the stop button. In capitals in English on purpose: it must stand out.",

@@ -133,6 +133,11 @@ no App Store or Google Play badges before then.
 - Game controller: `pollPad()` in the 50 ms tick, standard mapping only. Ignored in Code and the building
   guide; B/Start = STOP; after any `halt()` the stick must return to centre (`st.pad.lock`) before it
   drives again; disconnect calls `halt()`.
+- Feedback (`openFeedback()` in `src/app.js`): posts form `feedback` to `/` as Netlify Forms (the hidden
+  `<form data-netlify>` in `base.html` must stay so Netlify detects it at deploy). The owner must turn on form
+  detection and email notifications in Netlify (Site configuration > Forms). Children use the app: keep
+  contact optional, never send the hub's name, show the details before sending, no contact info in the
+  GitHub link. The landing FAQ promises no cookies, statistics or accounts: keep it true.
 - Service worker (`site/app/sw.js`): network first; offline it serves the cache, and only a page load may fall
   back to `index.html` (a script such as `lang/xx.js` must fail, not get HTML). Bump `CACHE` on changes.
 - Light animation (`G.anim`, Play tab, and the `anim` block): frames go out as `img`; `halt()` stops it.

@@ -910,7 +910,7 @@
       else if ((e.code === 'ArrowRight' || e.code === 'ArrowLeft') && !typing(e)) { e.preventDefault(); buildGo(e.code === 'ArrowRight' ? 1 : -1); }
       return;
     }
-    if (e.code === 'Escape') { closeShare(); return; }
+    if (e.code === 'Escape') { closeShare(); closeFeedback(); return; }
     if (e.ctrlKey || e.metaKey || e.altKey || typing(e)) return;
     if (keyOf[e.code] === 'stop') { e.preventDefault(); if (!e.repeat) emergencyStop(); return; }
     // Tijdens het programmeren sturen toetsen de robot niet (pijltjes en letters zijn voor de editor).
@@ -2725,6 +2725,76 @@
     toast(t('msg.testing', side === 'l' ? S.left : S.right), 'ok'); sfx.tick(); buzz(15);
   }));
   $('btnClear').addEventListener('click', () => { logEl.textContent = ''; sfx.tick(); });
+
+  /* ---------- feedback ----------
+     Geen eigen server: het bericht gaat als Netlify Forms-formulier ("feedback", zie base.html) naar de
+     beheerder. Lukt dat niet (offline, eigen kopie van de app), dan kun je het kopiëren of op GitHub melden.
+     Technische gegevens gaan alleen mee als het vinkje aan staat, en je ziet precies wat er meegaat;
+     de naam van de hub wordt eruit gehaald. */
+  const APP_VERSION = (document.querySelector('meta[name="app-version"]') || {}).content || '';
+  $('appVersion').textContent = 'BrickHubRemote ' + APP_VERSION;
+  const FB_REPO = 'https://github.com/Zylex2902/RemoteHub/issues/new';
+  const FB_KINDS = ['bug', 'idea', 'lang', 'other'];
+  let fbLast = 0;
+  function fbDetails() {
+    const name = hub.device && hub.device.name, scrub = (s) => (name ? s.split(name).join('[hub]') : s);
+    const lines = [...logEl.children].slice(-40).map((r) => scrub(r.textContent));
+    return ['BrickHubRemote ' + APP_VERSION,
+      'App language: ' + curLang() + ' (setting: ' + G.lang + '), browser languages: ' + (navigator.languages || [navigator.language]).join(', '),
+      'Browser: ' + navigator.userAgent,
+      'Screen: ' + innerWidth + 'x' + innerHeight + ', installed: ' + (matchMedia('(display-mode: standalone)').matches ? 'yes' : 'no') + ', Web Bluetooth: ' + (navigator.bluetooth ? 'yes' : 'no'),
+      'Hub: ' + st.phase + ', kind ' + $('infoKind').textContent + ', firmware ' + $('infoFw').textContent + ', control slot ' + G.slot,
+      'Robot: ' + (S.model || 'own') + ', drive ' + S.left + '+' + S.right + ', steering ' + G.mode,
+      'Log:', ...lines].join('\n');
+  }
+  const fbText = () => {
+    const kind = $('fbKind').value, msg = $('fbMsg').value.trim();
+    return '[' + kind + '] ' + msg + ($('fbContact').value.trim() ? '\n\nContact: ' + $('fbContact').value.trim() : '') + ($('fbDiag').checked ? '\n\n' + fbDetails() : '');
+  };
+  function fbGithubLink() {
+    const kind = $('fbKind').value, msg = $('fbMsg').value.trim();
+    const title = '[' + kind + '] ' + (msg.split('\n')[0] || 'Feedback').slice(0, 80);
+    // Geen contactgegevens in een openbaar issue.
+    const body = (msg + ($('fbDiag').checked ? '\n\n```\n' + fbDetails() + '\n```' : '')).slice(0, 6000);
+    $('fbGithub').href = FB_REPO + '?title=' + encodeURIComponent(title) + '&body=' + encodeURIComponent(body);
+  }
+  function fbStatus(text, cls) { const n = $('fbStatus'); n.textContent = text || ''; n.className = 'small fbstatus' + (cls ? ' ' + cls : ''); }
+  function openFeedback(kind) {
+    fill($('fbKind'), FB_KINDS.map((k) => [k, t('fb.k.' + k)]));
+    $('fbKind').value = kind || 'bug';
+    $('fbDiagText').textContent = fbDetails(); fbStatus(''); fbGithubLink();
+    $('fbSheet').classList.add('on'); $('fbSheet').setAttribute('aria-hidden', 'false'); sfx.open();
+    setTimeout(() => $('fbMsg').focus(), 50);
+  }
+  const closeFeedback = () => { $('fbSheet').classList.remove('on'); $('fbSheet').setAttribute('aria-hidden', 'true'); };
+  $('btnFeedback').addEventListener('click', () => openFeedback('bug'));
+  $('btnLogReport').addEventListener('click', () => openFeedback('bug'));
+  $('btnFbClose').addEventListener('click', closeFeedback);
+  $('fbSheet').addEventListener('click', (e) => { if (e.target === $('fbSheet')) closeFeedback(); });
+  ['fbKind', 'fbMsg', 'fbDiag'].forEach((id) => $(id).addEventListener('input', fbGithubLink));
+  $('fbDiag').addEventListener('change', () => { $('fbDiagText').textContent = $('fbDiag').checked ? fbDetails() : ''; fbGithubLink(); });
+  $('btnFbCopy').addEventListener('click', () => {
+    (navigator.clipboard ? navigator.clipboard.writeText(fbText()) : Promise.reject()).then(() => toast(t('pyv.copied'), 'ok'), () => toast(t('pyv.noCopy'), 'warn'));
+  });
+  $('btnFbSend').addEventListener('click', () => {
+    const msg = $('fbMsg').value.trim();
+    if (msg.length < 3) { fbStatus(t('fb.empty'), 'warn'); $('fbMsg').focus(); sfx.err(); return; }
+    if (Date.now() - fbLast < 60000) { fbStatus(t('fb.wait'), 'warn'); return; }
+    if (!/^https?:$/.test(location.protocol)) { fbStatus(t('fb.fail'), 'warn'); fbGithubLink(); return; }
+    const data = { 'form-name': 'feedback', 'bot-field': '', kind: $('fbKind').value, message: msg.slice(0, 2000),
+      contact: $('fbContact').value.trim().slice(0, 100), details: $('fbDiag').checked ? fbDetails() : '', lang: curLang(), version: APP_VERSION };
+    const btn = $('btnFbSend');
+    btn.disabled = true; fbStatus(t('fb.sending'));
+    fetch(new URL('/', location.href).href, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams(data).toString() })
+      .then((r) => {
+        if (!r.ok) throw new Error(r.status);
+        fbLast = Date.now();
+        $('fbMsg').value = ''; $('fbContact').value = '';
+        closeFeedback(); toast(t('fb.thanks'), 'ok'); log(t('fb.thanks'), 'ok'); sfx.ready();
+      })
+      .catch(() => { fbStatus(t('fb.fail'), 'warn'); fbGithubLink(); sfx.err(); })
+      .then(() => { btn.disabled = false; });
+  });
   $('btnConnect').addEventListener('click', () => { sfx.tick(); buzz(10); if (st.phase === 'stopped') restart(); else if (st.phase === 'idle') connect(); });
   $('btnDisconnect').addEventListener('click', () => { sfx.tick(); buzz(10); disconnect(); });
 

@@ -1,5 +1,5 @@
 // End-to-end test: runs the built page in headless Chrome against a simulated hub.
-// ONLY=AB node tests/test_page.js runs just those sections (A-P).
+// ONLY=AB node tests/test_page.js runs just those sections (A-Q).
 const { chromium } = require('playwright');
 const jsQR = require('jsqr');
 const assert = require('assert');
@@ -1192,6 +1192,61 @@ let HTTP = '';
   assert.strictEqual(await page.$eval('#stopKey', (e) => e.textContent), F['stop.space']);
   await page.context().close();
   console.log('P ok: AZERTY labels, keys by position, choosing a key, swap, refused keys, STOP on another key, kept after reload, reset');
+  }
+  // ---------- Q. feedback: sent as a Netlify form, details without the hub's name, wait a minute, fallback ----------
+  if (RUN('Q')) {
+  page = await open({ viewport: { width: 1280, height: 860 }, locale: 'en-GB' }, {}, HTTP);
+  const E = require('../src/i18n/en.json');
+  let posts = [], answer = 200;
+  await page.route('**/*', (rt) => {
+    const rq = rt.request();
+    if (rq.method() === 'POST') { posts.push({ url: rq.url(), type: rq.headers()['content-type'], body: rq.postData() }); return rt.fulfill({ status: answer, body: 'ok' }); }
+    return rt.continue();
+  });
+  await page.click('#btnConnect'); await waitPhase(page, 'ready');
+  const hubName = await page.evaluate(() => document.getElementById('infoName').textContent);
+  await page.click('#btnFeedback'); await page.waitForTimeout(200);
+  assert.ok(await page.$eval('#fbSheet', (e) => e.classList.contains('on')));
+  assert.deepStrictEqual(await page.$$eval('#fbKind option', (o) => o.map((x) => x.value)), ['bug', 'idea', 'lang', 'other']);
+  let det = await page.$eval('#fbDiagText', (e) => e.textContent);
+  assert.ok(/^BrickHubRemote \d+\.\d+\.\d+/.test(det) && /Hub: ready/.test(det) && /Log:/.test(det), det.slice(0, 200));
+  assert.ok(hubName.length > 1 && !det.includes(hubName) && det.includes('[hub]'), 'hub name replaced in the log lines');
+  await page.click('#btnFbSend'); await page.waitForTimeout(100);
+  assert.strictEqual(await page.$eval('#fbStatus', (e) => e.textContent), E['fb.empty']); assert.strictEqual(posts.length, 0);
+  await page.fill('#fbMsg', 'The horn is quiet'); await page.selectOption('#fbKind', 'idea'); await page.fill('#fbContact', 'a@b.c');
+  await page.click('#btnFbSend'); await page.waitForTimeout(400);
+  assert.strictEqual(posts.length, 1);
+  const f = new URLSearchParams(posts[0].body);
+  assert.ok(posts[0].url.endsWith('/') && /x-www-form-urlencoded/.test(posts[0].type), posts[0].url);
+  assert.deepStrictEqual([f.get('form-name'), f.get('kind'), f.get('message'), f.get('contact'), f.get('lang'), f.get('bot-field')], ['feedback', 'idea', 'The horn is quiet', 'a@b.c', 'en', '']);
+  assert.ok(/^\d+\.\d+\.\d+$/.test(f.get('version')) && f.get('details').includes('Browser:') && !f.get('details').includes(hubName));
+  assert.ok(!(await page.$eval('#fbSheet', (e) => e.classList.contains('on'))) && (await page.$eval('#toasts', (e) => e.textContent)).includes(E['fb.thanks']));
+  // again within a minute: refused
+  await page.click('#btnLogReport').catch(() => page.evaluate(() => document.getElementById('btnLogReport').click()));
+  await page.waitForTimeout(150);
+  await page.fill('#fbMsg', 'Second one'); await page.click('#btnFbSend'); await page.waitForTimeout(200);
+  assert.strictEqual(posts.length, 1); assert.strictEqual(await page.$eval('#fbStatus', (e) => e.textContent), E['fb.wait']);
+  // without details; no connection: a message, and a GitHub link without the email
+  await page.context().close();
+  page = await open({ viewport: { width: 1280, height: 860 }, locale: 'en-GB' }, {}, HTTP);
+  await page.route('**/*', (rt) => (rt.request().method() === 'POST' ? rt.abort('internetdisconnected') : rt.continue()));
+  await page.click('#btnFeedback'); await page.waitForTimeout(150);
+  await page.fill('#fbMsg', 'Tilt goes the wrong way\nin landscape'); await page.fill('#fbContact', 'secret@mail.x'); await page.click('label:has(#fbDiag)');
+  assert.strictEqual(await page.$eval('#fbDiagText', (e) => e.textContent), '');
+  await page.click('#btnFbSend'); await page.waitForTimeout(400);
+  assert.strictEqual(await page.$eval('#fbStatus', (e) => e.textContent), E['fb.fail']);
+  const gh = new URL(await page.$eval('#fbGithub', (a) => a.href));
+  assert.strictEqual(gh.origin + gh.pathname, 'https://github.com/Zylex2902/RemoteHub/issues/new');
+  assert.strictEqual(gh.searchParams.get('title'), '[bug] Tilt goes the wrong way');
+  assert.ok(gh.searchParams.get('body').startsWith('Tilt goes') && !gh.href.includes('secret') && !gh.searchParams.get('body').includes('Browser:'));
+  await page.keyboard.press('Escape'); await page.waitForTimeout(100);
+  assert.ok(!(await page.$eval('#fbSheet', (e) => e.classList.contains('on'))), 'Escape closes');
+  await page.context().close();
+  // the form Netlify needs to find at deploy time
+  const html = require('fs').readFileSync(path.join(APP, 'index.html'), 'utf8');
+  assert.ok(/<form name="feedback" data-netlify="true" netlify-honeypot="bot-field" hidden>/.test(html));
+  for (const n of ['bot-field', 'kind', 'message', 'contact', 'details', 'lang', 'version']) assert.ok(html.includes('name="' + n + '"'), n);
+  console.log('Q ok: feedback form, details shown and without the hub name, sent as a Netlify form, one per minute, failure falls back to copy and a GitHub link without the email');
   }
   await browser.close(); server.close();
   assert.deepStrictEqual(errors, [], 'page errors: ' + errors.join('\n'));
