@@ -727,6 +727,11 @@ let HTTP = '';
   const msgs = await since(n0);
   assert.ok(msgs.includes('deg A:-206:50 B:206:50'), msgs.join('|'));
   assert.deepStrictEqual(toHub(msgs), []);
+  // tapping Play on the animation without a light matrix: one message, not one per tap
+  await page.click('.tab[data-view="viewPlay"]'); await page.waitForTimeout(300);
+  await page.evaluate(() => document.getElementById('animCard').scrollIntoView());
+  for (let k = 0; k < 5; k++) { await page.click('#btnAnimPlay'); await page.waitForTimeout(60); }
+  assert.strictEqual(await page.$$eval('#toasts .toast', (n) => n.filter((x) => /lichtscherm/.test(x.textContent)).length), 1, 'one toast for five taps');
   // the setting overrides the detection: as a big hub, the horn goes to the hub again and all ports are offered
   await page.click('.tab[data-view="viewSettings"]'); await page.waitForTimeout(400);
   await page.selectOption('#selHubKind', 'big'); await page.waitForTimeout(200);
@@ -737,6 +742,21 @@ let HTTP = '';
   await page.keyboard.down('KeyH'); await page.keyboard.up('KeyH'); await page.waitForTimeout(200);
   assert.ok((await since(n0)).includes('beep'));
   await page.context().close();
+  // a real SPIKE Prime hub does not report product type 0: the hub program's own report (hw 1 1 6) decides
+  page = await open({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true }, { product: 0x0081 });
+  await page.click('#btnConnect'); await waitPhase(page, 'ready'); await page.waitForTimeout(300);
+  assert.strictEqual(await page.$eval('#infoKind', (e) => e.textContent), 'SPIKE™ Prime-hub (6 poorten)');
+  assert.ok(/type 129, hw 1 1 6/.test(await page.$eval('#log', (e) => e.textContent)), 'type and hw report logged');
+  const p0 = (await tunnelOf(page)).length;
+  await page.click('.tab[data-view="viewPlay"]'); await page.waitForTimeout(300);
+  await page.evaluate(() => document.getElementById('animCard').scrollIntoView());
+  await page.click('#btnAnimPlay'); await page.waitForTimeout(500); await page.click('#btnAnimPlay');
+  await page.evaluate(() => document.querySelector('#songBtns .btn, .songbtn, [data-song]') && document.querySelector('#songBtns .btn, .songbtn, [data-song]').click());
+  await page.waitForTimeout(300);
+  const sent = (await tunnelOf(page)).slice(p0);
+  assert.ok(sent.some((x) => /^img \d{25}$/.test(x)), 'pictures go to the hub: ' + sent.join(' | '));
+  assert.ok(sent.some((x) => /^tune /.test(x)), 'music plays on the hub');
+  assert.ok(!(await page.$eval('#toasts', (e) => e.textContent)).includes('lichtscherm'));
   console.log('I ok: small hub recognised, ports A and B, sounds on the phone, no pictures, blocks run, setting overrides');
   }
   // ---------- J. Python on the hub ----------

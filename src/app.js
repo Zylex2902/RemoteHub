@@ -174,6 +174,9 @@
     setTimeout(() => { node.textContent = text; node.classList.remove('out'); }, 120);
   }
   function toast(text, cls) {
+    // Hetzelfde bericht dat nog in beeld is niet nog eens tonen (bijv. vaak op een knop tikken).
+    const same = [...$('toasts').children].find((x) => x.textContent === text && x.classList.contains('on'));
+    if (same) { same.classList.remove('bump'); void same.offsetWidth; same.classList.add('bump'); return; }
     const n = el('div', 'toast ' + (cls || ''));
     n.textContent = text;
     $('toasts').appendChild(n);
@@ -1145,10 +1148,12 @@
   ];
   const linked = () => st.phase === 'ready';
   // Grote hub (6 poorten, lichtscherm, luidspreker) of kleine hub (2 poorten, geen van beide).
-  // Herkend aan het hubtype uit het eerste antwoord en aan wat het hubprogramma meldt; in te stellen.
+  // Het hubprogramma meldt zelf wat er is ('hw <scherm> <geluid> <poorten>'); dat beslist. Het producttype uit
+  // het eerste antwoord wordt alleen gelogd: een echte SPIKE Prime-hub gaf daar niet 0, zoals gedacht,
+  // waardoor hij als kleine hub werd gezien (geen plaatjes, geluid op de telefoon). In te stellen.
   function smallHub() {
     if (G.hubKind !== 'auto') return G.hubKind === 'small';
-    return (st.product !== null && st.product !== undefined && st.product !== 0) || !!(st.hw && (!st.hw.matrix || st.hw.ports <= 2));
+    return !!(st.hw && (!st.hw.matrix || st.hw.ports <= 2));
   }
   const hubSpeaker = () => linked() && !smallHub();
   const hubScreen = () => linked() && !smallHub();
@@ -1160,7 +1165,11 @@
     $('playWhere').textContent = whereText();
     fillStatic(); renderAuxSettings(); syncSettings();
     const key = small ? 'small' : 'big';
-    if (linked() && st.kindLogged !== key) { st.kindLogged = key; log(t('msg.hubKind', t('hub.' + key)) + (st.product !== null && st.product !== undefined ? ' (' + st.product + ')' : '')); }
+    if (linked() && st.kindLogged !== key) {
+      st.kindLogged = key;
+      log(t('msg.hubKind', t('hub.' + key)) + ' (' + [st.product !== null && st.product !== undefined ? 'type ' + st.product : '',
+        st.hw ? 'hw ' + (st.hw.matrix ? 1 : 0) + ' ' + (st.hw.sound ? 1 : 0) + ' ' + st.hw.ports : '', G.hubKind !== 'auto' ? G.hubKind : ''].filter(Boolean).join(', ') + ')');
+    }
   }
   const totalMs = (notes) => notes.reduce((a, n) => a + n[1], 0);
   function showFace(name) { if (hubScreen() && FACES[name]) hub.text('img ' + FACES[name]).catch(() => {}); }
@@ -2743,7 +2752,7 @@
       'App language: ' + curLang() + ' (setting: ' + G.lang + '), browser languages: ' + (navigator.languages || [navigator.language]).join(', '),
       'Browser: ' + navigator.userAgent,
       'Screen: ' + innerWidth + 'x' + innerHeight + ', installed: ' + (matchMedia('(display-mode: standalone)').matches ? 'yes' : 'no') + ', Web Bluetooth: ' + (navigator.bluetooth ? 'yes' : 'no'),
-      'Hub: ' + st.phase + ', kind ' + $('infoKind').textContent + ', firmware ' + $('infoFw').textContent + ', control slot ' + G.slot,
+      'Hub: ' + st.phase + ', kind ' + $('infoKind').textContent + ' (setting ' + G.hubKind + ', type ' + st.product + ', hw ' + (st.hw ? [st.hw.matrix ? 1 : 0, st.hw.sound ? 1 : 0, st.hw.ports].join(' ') : '-') + '), firmware ' + $('infoFw').textContent + ', control slot ' + G.slot,
       'Robot: ' + (S.model || 'own') + ', drive ' + S.left + '+' + S.right + ', steering ' + G.mode,
       'Log:', ...lines].join('\n');
   }

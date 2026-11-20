@@ -71,9 +71,10 @@ no App Store or Google Play badges before then.
   the app is hosted on Netlify (`netlify.toml`, publishes `site/` with no build step: landing at `/`, app at `/app/`).
 - Two hub kinds: SPIKE Prime (6 ports) and SPIKE Essential (2 ports), named in the UI with ™ as
   descriptions (rule 2 of `docs/trademarks.md`). The small hub (owner has one) has ports A-B, and, as far as known, no speaker
-  and no 5x5 light matrix: sounds then play on the phone, pictures are skipped. Detection: product
-  value in the info response (only 0 = Prime is documented), and the hub program's `hw <matrix>
-  <sound> <ports>` line; Settings can override. Hub program imports must never assume
+  and no 5x5 light matrix: sounds then play on the phone, pictures are skipped. Detection: only the hub
+  program's `hw <matrix> <sound> <ports>` line decides (Settings can override). The product value in the
+  info response is logged, never used: a real Prime hub did not send 0, and trusting it made the app treat
+  the Prime as the small hub (no pictures, music and robot language on the phone), seen by the owner. Hub program imports must never assume
   `light_matrix`, `sound`, `button` or ports C-F exist. Not yet tried on a real small hub.
 - Wide layouts (>= 900 px and both fold postures) have no tab bar: a header switch (`#modeSwitch`)
   toggles `body.codefull`. The overview never shows the editor; Code fills the screen. Programs

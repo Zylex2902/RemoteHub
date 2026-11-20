@@ -56,7 +56,7 @@ const fakeHub = (opts) => {
     const v = new DataView(m.buffer, m.byteOffset, m.byteLength);
     switch (m[0]) {
       case 0x00: { const r = new Uint8Array(17); const d = new DataView(r.buffer); r[0] = 1; r[1] = 1; r[2] = 4; d.setUint16(3, 9, true); r[5] = 3; r[6] = 4; d.setUint16(7, 2, true);
-        d.setUint16(9, opts.maxPacket, true); d.setUint16(11, 2048, true); d.setUint16(13, 102, true); d.setUint16(15, opts.small ? 1 : 0, true); notify(r);
+        d.setUint16(9, opts.maxPacket, true); d.setUint16(11, 2048, true); d.setUint16(13, 102, true); d.setUint16(15, opts.product !== undefined ? opts.product : opts.small ? 1 : 0, true); notify(r);
         if (opts.dropAfterInfo > 0) { opts.dropAfterInfo--; setTimeout(() => H.drop(), 20); }   // seen in Bluefy on iPhone
         break; }
       case 0x1e: if (m[1] === 1) { H.events.push('stop'); clearTimeout(H.pyTimer); status(0x1f, H.started); if (H.started) notify(Uint8Array.of(0x20, 1)); H.started = false; H.running = null; }
