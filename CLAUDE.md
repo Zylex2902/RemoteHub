@@ -165,6 +165,13 @@ no App Store or Google Play badges before then.
   Buy Me a Coffee address and rebuild; empty leaves the section and footer link out. The owner has
   not made the page yet, so it is off. Wording ties it to the developer, no LEGO marks, no perks.
 
+## Descriptions stay current
+
+After every feature added or changed, in the same change: update the README (intro, Features, Status),
+`docs/store-listing.md` (store texts in English and Dutch, and the GitHub About text, website and topics)
+and the landing page where it lists features. No tool here can edit GitHub's About box: when its text
+changes, give the owner the new text to paste. Keep marks out of the About text (as for store titles).
+
 ## Intellectual property guardrails
 
 Follow `docs/trademarks.md` for every change. In short: our name, icon, logo, domain and store

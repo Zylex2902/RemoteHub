@@ -1,7 +1,8 @@
 # BrickHubRemote
 
-Drive a programmable robot hub from your browser: phone, tablet or laptop, over Bluetooth, with no
-game controller and no custom firmware.
+Drive and program a robot hub from your browser: phone, tablet or laptop, over Bluetooth, with no
+custom firmware. Steer with a joystick, by tilting, with the keyboard or a game controller; program
+with blocks or with Python that runs on the hub; in ten languages.
 
 BrickHubRemote is a small web app (a PWA). It connects with Web Bluetooth, stores one short Python
 program in a program slot on the hub, and then sends live drive commands to it.
@@ -16,7 +17,8 @@ no light matrix) sounds play on the phone and pictures are skipped.
 ## Features
 
 - Three ways to drive: joystick, tank (one slider per motor), or tilting the phone
-- Keyboard on a laptop: WASD or arrows, Shift for turbo, Space to stop, H for the horn
+- Keyboard on a laptop: WASD or arrows, Shift for turbo, Space to stop, H for the horn (all keys can
+  be changed, see Keyboard below)
 - Speed, turn speed and straight-line trim
 - Motor test buttons to find the right ports and directions in seconds
 - Two extra motors with their own name and speed: hold-to-turn, on/off (tap to start, tap again to
@@ -24,7 +26,7 @@ no light matrix) sounds play on the phone and pictures are skipped.
 - Live sensors: distance, colour and force, plus an optional stop-for-obstacles guard
 - A profile per robot, shareable as a link or QR code
 - Hub battery level with low-battery warnings
-- Code tab: a drag-and-drop block editor (Blockly) with puzzle blocks that snap together, 74 blocks
+- Code tab: a drag-and-drop block editor (Blockly) with puzzle blocks that snap together, 82 blocks
   in nine groups (events, movement, motors, light, sound, control, sensors, operators, variables):
   loops and if/else, number and true/false blocks that fit in slots (sums, random numbers, sensor
   values, and/or/not), variables, pictures you draw, and several stacks that start on events; the
@@ -42,7 +44,7 @@ no light matrix) sounds play on the phone and pictures are skipped.
   colour and earlier steps lighter, a parts list per step. Files without steps get steps made from
   the bottom up. The guide is kept with the robot's profile. The viewer (three.js) and the brick
   shapes (a 5 MB pack from the LDraw parts library: Technic, the SPIKE electronics, wheels and
-  common bricks) load only when a guide opens; other parts show as a grey block. Two examples: a
+  common bricks) load only when a guide opens; other parts show as a grey block. Three examples: a
   little brick robot; the Rover, a driving robot built only from parts of the SPIKE™ Prime set
   (hub, two medium motors, two wheels, ball caster, distance sensor, two 7L beams and pins); and the
   Veegbot (sweeper robot), with all three motors of the set: the large motor turns a sweeper arm with
@@ -117,7 +119,9 @@ Good to know:
 
 Early. Version 1 was confirmed on a real hub. Everything since then (reconnect, battery, horn,
 gripper, sensors, tank and tilt steering, profiles, the version 4 songs, faces, robot language,
-dances and routes, and the version 5 programming cards) is covered by automated tests against a simulated hub, and still needs confirming on
+dances and routes, the block editor, Python on the hub, blocks as Python, light animations, drawn
+routes, keyboard layouts and key choice, game controllers, the ten languages and the feedback form) is
+covered by automated tests against a simulated hub, and still needs confirming on
 real hardware, on Android and in Bluefy. The sound features depend on `sound.beep` working on the
 hub; the horn is the quickest check.
 
@@ -132,7 +136,7 @@ Requirements: Node 20+, Python 3.9+, Chrome for the browser tests.
 ```
 npm install
 npm run build              # src/ -> site/app/index.html (the app) and site/index.html (landing page)
-npm run build:standalone   # also dist/brickhubremote.html, one file with the fonts embedded
+npm run build:standalone   # also dist/brickhubremote.html, one file with the fonts and all languages
 npm run test:unit          # protocol vectors + hub program logic
 npm run test:browser       # full flow in headless Chrome against a simulated hub
 npm run vendor:blockly     # after updating the blockly package: copy it into vendor/ and site/app/
