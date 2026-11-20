@@ -54,6 +54,14 @@ no light matrix) sounds play on the phone and pictures are skipped.
   `distance_sensor`, `runloop`, ...). A coloured editor with line numbers and auto-indent, examples
   that use your robot's ports, a cheat sheet, and the hub's `print()` output and error messages
   (the line with the error is marked)
+- Blocks as Python: shows a block program as MicroPython for the hub (the same moves, sounds, pictures
+  and sensor checks, one `async` function per stack), to read, copy, or open in the Python editor
+- Light animation: draw up to eight 5x5 pictures and play them on the hub's light matrix; also a block
+- Draw a route: draw a line with your finger on a 1, 2 or 4 m square; it becomes turns and straight
+  stretches (the turns use the hub's gyro sensor), to drive at once or save as a block program
+- Game controller (Gamepad API): left stick drives (tank mode: one stick per side), the D-pad works
+  like the arrow keys, A is the horn, B or Start is STOP, RB is turbo. After STOP the stick must go
+  back to the middle before it drives again; unplugging the controller stops the robot
 - Play tab: public-domain songs and a one-octave piano on the hub's speaker, robot moods with a face
   on the hub's light matrix, and robot language: the hub says a typed sentence in beeps (one per
   syllable, a question rises) while it moves its mouth
@@ -61,7 +69,9 @@ no light matrix) sounds play on the phone and pictures are skipped.
   joystick takes over at once
 - Without a hub, songs, moods and the piano play on the phone itself
 - Reconnects by itself; the robot stops within about a second if the link drops
-- Dutch and English, light and dark theme
+- Ten languages: Dutch and English, and German, French, Italian, Spanish, Brazilian Portuguese,
+  Polish, Simplified Chinese and Japanese (made with a translation program, being reviewed by language
+  experts; the app says how far, see `docs/localization.md`). Light and dark theme
 - Phones, tablets and foldables, portrait and landscape; installable and usable offline. On wide
   screens a Drive/Code switch in the header shows either the overview (driving, log, play,
   settings) or the block editor across the whole screen
@@ -130,17 +140,23 @@ src/base.html        page markup with placeholders for the parts below
 src/style.css        styles, light and dark theme, all screen layouts
 src/proto.js         protocol: framing, CRC, messages (no DOM)
 src/hub_program.py   the program that runs on the hub
-src/i18n.js          Dutch and English texts
+src/i18n/            texts per language (en.json is the source), context notes, review records
+src/i18n.js          loads the texts in Node (tests)
+src/langload.js      picks the language before the app starts; loads site/app/lang/<code>.js
 src/cards.js         programming blocks: block set, conversion and the program runner (no DOM)
+src/topython.js      turns a block program into MicroPython (no DOM)
 src/app.js           connection, controls, settings, profiles
 src/landing.html     the landing page (with src/landing.css)
 site/                the deployable site: landing page, screenshots in img/
-site/app/            the app: built page, manifest, service worker, icons, fonts, Blockly media
+site/app/            the app: built page, manifest, service worker, icons, fonts, Blockly media,
+                     lang/ (the languages other than Dutch and English, loaded when used)
 tests/               unit and browser tests, reference vectors
 tools/build.py       builds the app page and the landing page
 tools/screenshots.js makes the landing page screenshots from the app and a simulated hub
-vendor/              minified QR code library, Blockly (block editor) and its Dutch and English texts
-docs/                store listing text and trademark notes
+tools/lqa.py         translation checks, review page for language experts, applying reviews, report
+tools/lqa_shots.js   screenshots of every screen in a language, for the review page
+vendor/              minified QR code library, Blockly (block editor) and its texts per language
+docs/                store listing text, trademark notes, languages and translation review
 ```
 
 How the link works: the page speaks the hub's Bluetooth protocol as published in

@@ -3,12 +3,62 @@
     "code": "nl",
     "name": "Nederlands",
     "blockly": "nl",
-    "lego": "nl-nl"
+    "lego": "nl-nl",
+    "bundled": true
   },
   {
     "code": "en",
     "name": "English",
     "blockly": "en",
+    "lego": "en-us",
+    "bundled": true
+  },
+  {
+    "code": "de",
+    "name": "Deutsch",
+    "blockly": "de",
+    "lego": "en-us"
+  },
+  {
+    "code": "fr",
+    "name": "Français",
+    "blockly": "fr",
+    "lego": "fr-fr"
+  },
+  {
+    "code": "it",
+    "name": "Italiano",
+    "blockly": "it",
+    "lego": "it-it"
+  },
+  {
+    "code": "es",
+    "name": "Español",
+    "blockly": "es",
+    "lego": "es-es"
+  },
+  {
+    "code": "pt",
+    "name": "Português (Brasil)",
+    "blockly": "pt-br",
+    "lego": "pt-br"
+  },
+  {
+    "code": "pl",
+    "name": "Polski",
+    "blockly": "pl",
+    "lego": "pl-pl"
+  },
+  {
+    "code": "zh",
+    "name": "简体中文",
+    "blockly": "zh-hans",
+    "lego": "en-us"
+  },
+  {
+    "code": "ja",
+    "name": "日本語",
+    "blockly": "ja",
     "lego": "en-us"
   }
 ]

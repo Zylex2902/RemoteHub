@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Translation review: {{LANG}}</title>
+<style>
+:root{--bg:#f4f7f6;--panel:#fff;--line:#d5e1de;--text:#17302c;--muted:#56706b;--accent:#0a7f72;--accent-ink:#fff;
+  --ok:#0e8a55;--ok-soft:rgba(14,138,85,.12);--warn:#a86400;--warn-soft:rgba(201,122,0,.14);--err:#b42318;--err-soft:rgba(180,35,24,.1);--ph:#6d28d9;color-scheme:light}
+@media (prefers-color-scheme:dark){:root{--bg:#0f1417;--panel:#161d21;--line:#283338;--text:#e6eeec;--muted:#97aaa6;--accent:#3ddc97;--accent-ink:#06281a;
+  --ok:#3ddc97;--ok-soft:rgba(61,220,151,.14);--warn:#ffb547;--warn-soft:rgba(255,181,71,.14);--err:#ff8a80;--err-soft:rgba(255,138,128,.12);--ph:#c4b5fd;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+header{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line);padding:12px 16px}
+.top{max-width:1100px;margin:0 auto;display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center}
+h1{font-size:19px;margin:0;margin-right:auto}
+input,select,textarea,button{font:inherit;color:inherit}
+input,select,textarea{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px 9px}
+textarea{width:100%;min-height:64px;resize:vertical}
+button{cursor:pointer;border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:6px 12px;font-weight:600}
+button.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+button.on{outline:2px solid var(--accent);outline-offset:1px}
+.bar{height:6px;border-radius:3px;background:var(--line);overflow:hidden;width:160px}
+.bar i{display:block;height:100%;background:var(--accent);width:0}
+main{max-width:1100px;margin:0 auto;padding:16px}
+details.guide{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin-bottom:14px}
+details.guide summary{font-weight:700;cursor:pointer}
+.shots{display:flex;gap:10px;overflow-x:auto;padding:4px 0 12px}
+.shots figure{margin:0;flex:0 0 auto;text-align:center;font-size:13px;color:var(--muted)}
+.shots img{display:block;height:180px;border-radius:8px;border:1px solid var(--line);cursor:zoom-in}
+.row{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin:0 0 10px}
+.row.done{opacity:.72}
+.head{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;margin-bottom:6px}
+.key{font:12px ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--muted)}
+.badge{font-size:12px;font-weight:700;border-radius:6px;padding:1px 8px;background:var(--line)}
+.badge.ok{background:var(--ok-soft);color:var(--ok)}.badge.changed,.badge.comment{background:var(--warn-soft);color:var(--warn)}
+.chip{font-size:12px;border:1px solid var(--line);border-radius:6px;padding:0 7px;background:none;font-weight:500}
+.ctx{color:var(--muted);font-size:13.5px;margin:0 0 8px}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.lab{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.txt{white-space:pre-wrap;word-break:break-word;font-size:16px}
+.ph{color:var(--ph);font-weight:700}
+.nl{font-size:13px;color:var(--muted);margin-top:6px}
+.auto{margin:8px 0 0;padding:0;list-style:none;font-size:13.5px}
+.auto li{padding:3px 8px;border-radius:6px;margin-top:4px}
+.auto .error{background:var(--err-soft);color:var(--err)}.auto .warn{background:var(--warn-soft);color:var(--warn)}
+.acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;align-items:center}
+.edit{margin-top:8px}
+.edit .msg{font-size:13px;color:var(--err);margin-top:4px}
+dialog{border:0;border-radius:12px;padding:0;max-width:96vw;max-height:94vh;background:var(--panel)}
+dialog img{display:block;max-width:96vw;max-height:88vh}
+dialog p{margin:6px 10px}
+.empty{color:var(--muted);text-align:center;padding:30px}
+@media (max-width:720px){.cols{grid-template-columns:1fr}.bar{width:100px}}
+</style>
+</head>
+<body>
+<header><div class="top">
+  <h1>Translation review: <span id="lname"></span></h1>
+  <label>Your name <input id="who" size="16" autocomplete="name"></label>
+  <select id="filter" aria-label="Show">
+    <option value="todo">To review</option><option value="warn">With automatic warnings</option>
+    <option value="mine">Decided by you</option><option value="all">All texts</option>
+  </select>
+  <input id="q" type="search" placeholder="Search" aria-label="Search" size="12">
+  <span id="count"></span><span class="bar"><i id="bar"></i></span>
+  <button class="primary" id="export">Download review file</button>
+</div></header>
+<main>
+  <details class="guide" open>
+    <summary>How to review</summary>
+    <p>For each text you see the English source, the translation and where it appears in the app. Choose
+      <b>Correct</b> when the translation is right in this place, <b>Change</b> to write a better one, or
+      <b>Comment</b> when you are not sure. Your choices stay in this browser, so you can stop and come back.
+      When you are done, press <b>Download review file</b> and send that file back.</p>
+    <p>Rules for every language:</p>
+    <ul id="style"></ul>
+    <p id="langNote"></p>
+  </details>
+  <div class="shots" id="shots"></div>
+  <div id="rows"></div>
+</main>
+<dialog id="big"><img id="bigImg" alt=""><p id="bigCap"></p></dialog>
+<script>
+const D = {{DATA}};
+const $ = (id) => document.getElementById(id);
+const KEY = 'lqa-' + D.lang + '-' + D.made;
+let S = { who: '', items: {} };
+try { S = Object.assign(S, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) {}
+const keep = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} };
+const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const marked = (s) => esc(s).replace(/\{[A-Za-z0-9]+\}/g, (m) => '<span class="ph">' + m + '</span>');
+const phs = (s) => (s.match(/\{[A-Za-z0-9]+\}/g) || []).sort().join(' ');
+const STATE = { new: 'not reviewed', changed: 'changed since last review', ok: 'approved before', comment: 'open comment' };
+$('lname').textContent = D.name; document.title = 'Translation review: ' + D.name;
+D.style.forEach((s) => { const li = document.createElement('li'); li.textContent = s; $('style').append(li); });
+$('langNote').textContent = D.langNote ? D.name + ': ' + D.langNote : '';
+$('who').value = S.who; $('who').addEventListener('input', () => { S.who = $('who').value; keep(); });
+const shotTitle = {};
+D.shots.forEach((s) => {
+  shotTitle[s.id] = s.title;
+  const f = document.createElement('figure'), im = new Image();
+  im.src = s.img; im.alt = s.title; im.loading = 'lazy'; im.addEventListener('click', () => zoom(s.id));
+  const c = document.createElement('figcaption'); c.textContent = s.title;
+  f.append(im, c); $('shots').append(f);
+});
+if (!D.shots.length) $('shots').innerHTML = '<p class="ctx">No screenshots in this file (run <code>npm run lqa:shots -- ' + D.lang + '</code> before making the page).</p>';
+function zoom(id) { const s = D.shots.find((x) => x.id === id); if (!s) return; $('bigImg').src = s.img; $('bigCap').textContent = s.title; $('big').showModal(); }
+$('big').addEventListener('click', () => $('big').close());
+
+function decided(r) { return S.items[r.k] && S.items[r.k].src === r.src ? S.items[r.k] : null; }
+function render() {
+  const f = $('filter').value, q = $('q').value.trim().toLowerCase(), box = $('rows');
+  box.textContent = '';
+  let shown = 0;
+  for (const r of D.rows) {
+    const d = decided(r);
+    if (f === 'todo' && (d || r.state === 'ok')) continue;
+    if (f === 'warn' && !r.auto.length) continue;
+    if (f === 'mine' && !d) continue;
+    if (q && ![r.k, r.en, r.tr, r.ctx].some((x) => x.toLowerCase().includes(q))) continue;
+    if (++shown > 400) break;
+    box.append(rowEl(r, d));
+  }
+  if (!shown) box.innerHTML = '<p class="empty">' + (f === 'todo' ? 'Nothing left to review. Download the review file and send it back.' : 'No texts match.') + '</p>';
+  const n = D.rows.filter((r) => decided(r) || r.state === 'ok').length;
+  $('count').textContent = n + ' of ' + D.rows.length + ' done';
+  $('bar').style.width = (100 * n) / D.rows.length + '%';
+}
+function rowEl(r, d) {
+  const el = document.createElement('div'); el.className = 'row' + (d ? ' done' : '');
+  const seen = r.seen.map((id) => '<button class="chip" data-shot="' + id + '">' + esc(shotTitle[id] || id) + '</button>').join(' ');
+  el.innerHTML = '<div class="head"><span class="key">' + esc(r.k) + '</span><span class="badge ' + r.state + '">' + STATE[r.state] + '</span>'
+    + (d ? '<span class="badge ok">your choice: ' + (d.status === 'ok' ? 'correct' : d.status === 'fix' ? 'changed' : 'comment') + '</span>' : '')
+    + (seen ? '<span class="ctx" style="margin:0">seen on</span> ' + seen : '') + '</div>'
+    + '<p class="ctx">' + esc(r.ctx || '') + '</p>'
+    + '<div class="cols"><div><div class="lab">English</div><div class="txt">' + marked(r.en) + '</div>'
+    + (r.nl ? '<div class="nl">Dutch original: ' + marked(r.nl) + '</div>' : '') + '</div>'
+    + '<div><div class="lab">' + esc(D.name) + '</div><div class="txt">' + marked(d && d.status === 'fix' ? d.text : r.tr) + '</div></div></div>'
+    + (r.was ? '<ul class="auto"><li class="warn">Earlier comment: ' + esc(r.was) + '</li></ul>' : '')
+    + (r.auto.length ? '<ul class="auto">' + r.auto.map(([lv, m]) => '<li class="' + lv + '">' + esc(m) + '</li>').join('') + '</ul>' : '')
+    + '<div class="acts"><button data-a="ok">Correct</button><button data-a="fix">Change</button><button data-a="comment">Comment</button>'
+    + (d ? '<button data-a="undo">Undo</button>' : '') + '</div><div class="edit"></div>';
+  el.querySelectorAll('[data-shot]').forEach((b) => b.addEventListener('click', () => zoom(b.dataset.shot)));
+  if (d) el.querySelector('[data-a="' + d.status + '"]').classList.add('on');
+  el.querySelectorAll('[data-a]').forEach((b) => b.addEventListener('click', () => act(r, b.dataset.a, el)));
+  return el;
+}
+function act(r, a, el) {
+  const ed = el.querySelector('.edit');
+  if (a === 'ok') { S.items[r.k] = { status: 'ok', src: r.src }; keep(); render(); return; }
+  if (a === 'undo') { delete S.items[r.k]; keep(); render(); return; }
+  const d = decided(r);
+  ed.innerHTML = (a === 'fix' ? '<div class="lab">Better translation</div><textarea class="t"></textarea><div class="msg"></div>' : '')
+    + '<div class="lab">' + (a === 'fix' ? 'Why (optional)' : 'Your comment') + '</div><textarea class="n" style="min-height:44px"></textarea>'
+    + '<div class="acts"><button class="primary">Save</button><button class="cancel">Cancel</button></div>';
+  const t = ed.querySelector('.t'), n = ed.querySelector('.n'), msg = ed.querySelector('.msg');
+  if (t) { t.value = d && d.status === 'fix' ? d.text : r.tr; t.focus(); } else n.focus();
+  n.value = d && d.note ? d.note : '';
+  const okPh = () => !t || phs(t.value) === phs(r.en);
+  if (t) t.addEventListener('input', () => { msg.textContent = okPh() ? '' : 'Keep these placeholders exactly: ' + (phs(r.en) || '(none)'); });
+  ed.querySelector('.cancel').addEventListener('click', () => { ed.textContent = ''; });
+  ed.querySelector('.primary').addEventListener('click', () => {
+    if (a === 'fix' && (!t.value.trim() || !okPh())) { msg.textContent = !t.value.trim() ? 'The translation is empty.' : 'Keep these placeholders exactly: ' + (phs(r.en) || '(none)'); return; }
+    if (a === 'comment' && !n.value.trim()) { n.focus(); return; }
+    S.items[r.k] = a === 'fix' ? { status: 'fix', src: r.src, text: t.value, note: n.value.trim() } : { status: 'comment', src: r.src, note: n.value.trim() };
+    keep(); render();
+  });
+}
+$('filter').addEventListener('change', render);
+$('q').addEventListener('input', render);
+$('export').addEventListener('click', () => {
+  if (!S.who.trim()) { $('who').focus(); alert('Please fill in your name first.'); return; }
+  const items = {};
+  for (const r of D.rows) { const d = decided(r); if (d) items[r.k] = d; }
+  const out = { lang: D.lang, reviewer: S.who.trim(), date: new Date().toISOString().slice(0, 10), made: D.made, items };
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(out, null, 1)], { type: 'application/json' }));
+  a.download = 'review-' + D.lang + '-' + out.date + '.json'; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+});
+render();
+</script>
+</body>
+</html>

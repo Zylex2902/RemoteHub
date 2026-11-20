@@ -33,12 +33,7 @@
   const PY_MAX = 30000;   // tekens Python per programma
   // Talen uit src/i18n/languages.json (de build zet ze als LANGS in de pagina). 'auto' volgt de browser.
   const LANG_CODES = LANGS.map((l) => l.code);
-  const browserLang = () => {
-    const wanted = navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language || 'en'];
-    for (const w of wanted) { const c = String(w).toLowerCase().split('-')[0]; if (LANG_CODES.includes(c)) return c; }
-    return 'en';
-  };
-  const curLang = () => (LANG_CODES.includes(G.lang) ? G.lang : browserLang());
+  const curLang = () => pickLang(G.lang);   // src/langload.js
   const langInfo = () => LANGS.find((l) => l.code === curLang()) || LANGS[0];
   const t = (k, ...a) => {
     let s = (I18N[curLang()] || I18N.en)[k];
@@ -2624,7 +2619,17 @@
     if (code.ws) code.ws.setTheme(editorTheme());
   }
   $('selTheme').addEventListener('change', (e) => { G.theme = e.target.value === 'dark' ? 'dark' : 'light'; save(); sfx.tick(); applyTheme(); e.target.blur(); });
-  $('selLang').addEventListener('change', (e) => { G.lang = e.target.value; save(); sfx.tick(); applyLang(); e.target.blur(); });
+  $('selLang').addEventListener('change', (e) => {
+    G.lang = e.target.value; save(); sfx.tick(); e.target.blur();
+    const code = curLang();
+    if (I18N[code]) { applyLang(); return; }
+    // Taal nog niet geladen: het bestand ophalen en dan pas omschakelen.
+    const s = document.createElement('script');
+    s.src = langFile(code);
+    s.onload = () => applyLang();
+    s.onerror = () => { applyLang(); toast(t('lang.loadFail'), 'warn'); };
+    document.head.appendChild(s);
+  });
   // Motortest: laat één aandrijfmotor kort "vooruit" draaien om poort en draairichting te controleren.
   [['btnTestL', 'l'], ['btnTestR', 'r']].forEach(([id, side]) => $(id).addEventListener('click', (e) => {
     e.preventDefault();
@@ -2650,6 +2655,10 @@
     fillStatic(); fillProfiles(); renderAuxSettings(); syncSettings(); showChips(); rebuildEditor(); showCodeMode(); renderModels();
     showSensors(st.sensors);
     showBle();
+    // Vertalingen die een taalexpert nog niet (helemaal) heeft nagekeken: dat eerlijk zeggen (zie tools/lqa.py).
+    const info = langInfo(), note = $('langNote');
+    const msg = !I18N[curLang()] ? t('lang.loadFail') : info.reviewed < 1 ? t('lang.unreviewed', Math.floor((info.reviewed || 0) * 100)) : '';
+    note.textContent = msg; note.classList.toggle('hide2', !msg);
   }
   function showBle() {
     if (navigator.bluetooth) return;

@@ -19,29 +19,68 @@ def languages():
     return json.loads(rd(SRC / "i18n" / "languages.json"))
 
 
-def i18n():
-    # Alle talen uit src/i18n/<code>.json als I18N, plus de lijst LANGS (code, eigen naam, Blockly-taal, LEGO-site).
-    langs = languages()
-    texts = {l["code"]: json.loads(rd(SRC / "i18n" / (l["code"] + ".json"))) for l in langs}
-    return ("const I18N = " + json.dumps(texts, ensure_ascii=False, separators=(",", ":")) + ";\n"
+def texts(code):
+    return json.loads(rd(SRC / "i18n" / (code + ".json")))
+
+
+def review_coverage(code):
+    # Deel van de teksten dat een taalexpert heeft goedgekeurd en dat sindsdien niet is veranderd (zie tools/lqa.py).
+    if code in ("nl", "en"):
+        return 1
+    sys.path.insert(0, str(ROOT / "tools"))
+    import lqa
+    return lqa.coverage(code)["share"]
+
+
+def i18n(everything=False):
+    # Teksten van de meegebakken talen (of alle, voor het losse bestand) als I18N, plus de lijst LANGS
+    # (code, eigen naam, Blockly-taal, LEGO-site, meegebakken, deel nagekeken door een taalexpert).
+    langs = [dict(l, reviewed=review_coverage(l["code"])) for l in languages()]
+    inline = {l["code"]: texts(l["code"]) for l in langs if everything or l.get("bundled")}
+    return ("const I18N = " + json.dumps(inline, ensure_ascii=False, separators=(",", ":")) + ";\n"
             + "const LANGS = " + json.dumps(langs, ensure_ascii=False, separators=(",", ":")) + ";")
 
 
-def blockly():
-    # Blockly-kern plus de menuteksten van elke taal als objecten (BlocklyMsg.nl, .en, ...),
-    # zodat de pagina van taal kan wisselen zonder ze over elkaar heen te laden.
+def blockly_msg(lang):
     v = ROOT / "vendor" / "blockly"
-    out = [rd(v / "blockly_compressed.js"), "var BlocklyMsg = {};"]
-    for lang in sorted({l["blockly"] for l in languages()}):
-        out.append("(function () { var module = { exports: {} }, exports = module.exports;\n" + rd(v / ("msg-" + lang + ".js"))
-                   + "\nBlocklyMsg['" + lang + "'] = module.exports; })();")
+    return ("(function () { var module = { exports: {} }, exports = module.exports;\n" + rd(v / ("msg-" + lang + ".js"))
+            + "\nBlocklyMsg['" + lang + "'] = module.exports; })();")
+
+
+def blockly(everything=False):
+    # Blockly-kern plus de menuteksten van de meegebakken talen als objecten (BlocklyMsg.nl, .en, ...),
+    # zodat de pagina van taal kan wisselen zonder ze over elkaar heen te laden.
+    out = [rd(ROOT / "vendor" / "blockly" / "blockly_compressed.js"), "var BlocklyMsg = {};"]
+    for lang in sorted({l["blockly"] for l in languages() if everything or l.get("bundled")}):
+        out.append(blockly_msg(lang))
     return "\n".join(out)
 
 
-def build():
+def lang_files():
+    # Andere talen: site/app/lang/<code>.js, pas geladen als iemand die taal gebruikt.
+    d = SITE / "lang"
+    d.mkdir(exist_ok=True)
+    want = set()
+    for l in languages():
+        if l.get("bundled"):
+            continue
+        name = l["code"] + ".js"
+        want.add(name)
+        body = ("/* BrickHubRemote texts: " + l["name"] + ". Blockly menu texts: Blockly 13.4.0, Copyright Google LLC, Apache License 2.0. */\n"
+                + "I18N[" + json.dumps(l["code"]) + "] = " + json.dumps(texts(l["code"]), ensure_ascii=False, separators=(",", ":")) + ";\n"
+                + blockly_msg(l["blockly"]) + "\n")
+        (d / name).write_text(body, encoding="utf8")
+    for old in d.glob("*.js"):
+        if old.name not in want:
+            old.unlink()
+    print("built site/app/lang/ (" + ", ".join(sorted(n[:-3] for n in want)) + ")")
+
+
+def build(everything=False):
     html = rd(SRC / "base.html")
     parts = {"CSS": rd(SRC / "style.css"), "HUB": rd(SRC / "hub_program.py"), "PROTO": rd(SRC / "proto.js"),
-             "QR": rd(ROOT / "vendor" / "qrcode.min.js").strip(), "I18N": i18n(), "BLOCKLY": blockly(), "CARDS": rd(SRC / "cards.js"), "LDRAW": rd(SRC / "ldraw.js"), "TOPY": rd(SRC / "topython.js"),
+             "QR": rd(ROOT / "vendor" / "qrcode.min.js").strip(), "I18N": i18n(everything), "BLOCKLY": blockly(everything),
+             "LANGLOAD": rd(SRC / "langload.js"), "CARDS": rd(SRC / "cards.js"), "LDRAW": rd(SRC / "ldraw.js"), "TOPY": rd(SRC / "topython.js"),
              "APP": rd(SRC / "app.js")}
     for key, text in parts.items():
         assert "</script>" not in text and "</style>" not in text, key
@@ -91,6 +130,7 @@ if __name__ == "__main__":
     page = build()
     (SITE / "index.html").write_text(page, encoding="utf8")
     print("built site/app/index.html", len(page.encode()), "bytes")
+    lang_files()
     viewer()
     land = landing()
     LANDING.write_text(land, encoding="utf8")
@@ -98,5 +138,5 @@ if __name__ == "__main__":
     if "--standalone" in sys.argv:
         out = pathlib.Path(sys.argv[sys.argv.index("--standalone") + 1])
         out.parent.mkdir(parents=True, exist_ok=True)
-        out.write_text(embed_fonts(page), encoding="utf8")
+        out.write_text(embed_fonts(build(everything=True)), encoding="utf8")
         print("built", out, out.stat().st_size, "bytes")

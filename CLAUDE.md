@@ -11,7 +11,9 @@ npm run build              # src/ -> site/app/index.html (app) + site/index.html
 npm run screenshots        # landing page screenshots (site/img/) from the app; rerun after UI changes
 npm run test:unit          # protocol vectors + hub program logic (fast, no browser)
 npm run test:browser       # headless Chrome against a simulated hub (ONLY=AE limits sections)
-npm run build:standalone   # dist/brickhubremote.html, single file with fonts embedded
+npm run build:standalone   # dist/brickhubremote.html, single file with fonts and all languages
+npm run lqa:check          # translation checks (also in test:unit); tools/lqa.py page|apply|report
+npm run lqa:shots -- de    # screenshots per screen in a language, for the review page
 ```
 
 Browser tests: set `CHROME_PATH` or run `npx playwright install chromium`; `NO_SANDBOX=1` as root.
@@ -34,7 +36,14 @@ no App Store or Google Play badges before then.
   Wrap anything new in try/except so a missing API cannot stop the drive loop.
 - Upload packets start at min(hub limit, 180) bytes and fall back to 20 if the upload fails;
   phones often allow less than the hub reports.
-- Every user-facing string lives in `src/i18n.js` under both `nl` and `en`. Keep the key sets equal.
+- Every user-facing string lives in `src/i18n/<code>.json`, one file per language, all with the same keys in
+  the same order (`en.json` is the source, `nl.json` the owner's original). A new or changed text goes into
+  every language file; changing English expires earlier reviews of that key. `npm run lqa:check` fails on
+  missing keys, changed placeholders, lost ®/™ and translated product names. nl and en are inlined in the
+  page; other languages are built into `site/app/lang/<code>.js` and loaded by `src/langload.js` before the
+  app starts (or on a runtime switch); if that fails, t() falls back to English and Settings says so. The
+  translations were machine-made; Settings shows the share reviewed by a language expert (from
+  `src/i18n/review/`). Review flow, adding a language: `docs/localization.md`. The landing page stays nl/en.
 - Safety behaviour to preserve: hub-side stop after 800 ms without a message; page keepalive
   every 250 ms; STOP acts on pointer down; everything stops on blur, tab hidden and view switch.
   Dances and route replay run only in the Drive view and end on `halt()` or on any joystick,
@@ -113,6 +122,14 @@ no App Store or Google Play badges before then.
   Use cable-less motor/sensor parts (54696p01, 37316): the `c01` versions shift the part and draw a
   cable coil through the model. `veegbot.py` also checks that the turning arm's circle is clear. Design
   coordinates have the front at +Z and are written turned to face -Z. Not built physically yet.
+- Blocks as Python (`src/topython.js`, `tests/test_topython.js` runs the output in CPython against stub hub
+  modules): one `async def stackN()` per stack, helpers only for what is used; comments come from `pyg.*`.
+- Draw a route: `Cards.fromPath` simplifies the finger line (Ramer-Douglas-Peucker) into turn + moveFor
+  cards; it runs with `runCards()` in the Drive view (any steering input stops it) or is saved as a program.
+- Game controller: `pollPad()` in the 50 ms tick, standard mapping only. Ignored in Code and the building
+  guide; B/Start = STOP; after any `halt()` the stick must return to centre (`st.pad.lock`) before it
+  drives again; disconnect calls `halt()`.
+- Light animation (`G.anim`, Play tab, and the `anim` block): frames go out as `img`; `halt()` stops it.
 - Layout must keep STOP visible without scrolling on every size in `tests/test_page.js` section E
   and both fold postures in `tests/test_fold.js`.
 

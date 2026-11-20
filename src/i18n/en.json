@@ -217,6 +217,8 @@
   "app.title": "App",
   "app.lang": "Language",
   "lang.auto": "Automatic",
+  "lang.unreviewed": "This translation was made with a translation program. A language expert has checked {0}% of it so far, so it may still contain mistakes.",
+  "lang.loadFail": "This language could not be loaded (no internet?), so the app uses English.",
   "app.theme": "Theme",
   "theme.light": "Light",
   "theme.dark": "Dark",

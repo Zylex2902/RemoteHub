@@ -1,5 +1,5 @@
 // End-to-end test: runs the built page in headless Chrome against a simulated hub.
-// ONLY=AB node tests/test_page.js runs just those sections (A-N).
+// ONLY=AB node tests/test_page.js runs just those sections (A-O).
 const { chromium } = require('playwright');
 const jsQR = require('jsqr');
 const assert = require('assert');
@@ -1094,6 +1094,45 @@ let HTTP = '';
   await pad([0, 0, 0, 0]);
   await page.context().close();
   console.log('N ok: light animation, blocks as Python into the editor, drawn route driven and saved, game controller with STOP and centre lock');
+  }
+  // ---------- O. more languages: detected from the browser, loaded on demand, switched at runtime, offline fallback ----------
+  if (RUN('O')) {
+  const L = (c) => require('../src/i18n/' + c + '.json');
+  const tabText = (pg) => pg.$eval('.tab[data-view="viewDrive"]', (e) => e.textContent.trim());
+  const note = (pg) => pg.$eval('#langNote', (e) => (e.classList.contains('hide2') ? '' : e.textContent));
+  page = await open({ viewport: { width: 390, height: 844 }, locale: 'de-DE' }, {}, HTTP);
+  await page.waitForTimeout(500);
+  let r = await page.evaluate(() => ({ lang: document.documentElement.lang, loaded: Object.keys(I18N).sort().join(), scripts: [...document.scripts].map((s) => s.getAttribute('src')).filter(Boolean) }));
+  assert.deepStrictEqual([r.lang, r.loaded], ['de', 'de,en,nl'], JSON.stringify(r));
+  assert.ok(r.scripts.includes('lang/de.js'), 'German texts come from their own file');
+  assert.strictEqual(await tabText(page), L('de')['tab.drive']);
+  assert.ok((await note(page)).startsWith(L('de')['lang.unreviewed'].split('{0}')[0].trim().slice(0, 20)), 'note that the translation is not reviewed yet');
+  await page.click('.tab[data-view="viewCode"]'); await page.waitForTimeout(700);
+  const cats = await page.$$eval('.blocklyToolboxCategory, .blocklyTreeRow', (n) => n.map((x) => x.textContent.trim()));
+  assert.ok(cats.includes(L('de')['cat.move']), 'toolbox in German: ' + cats.join(', '));
+  // switch to French at runtime: the file loads, then the page changes
+  await page.click('.tab[data-view="viewSettings"]'); await page.waitForTimeout(400);
+  await page.selectOption('#selLang', 'fr'); await page.waitForTimeout(800);
+  r = await page.evaluate(() => ({ lang: document.documentElement.lang, has: !!I18N.fr }));
+  assert.deepStrictEqual(r, { lang: 'fr', has: true });
+  assert.strictEqual(await tabText(page), L('fr')['tab.drive']);
+  await page.selectOption('#selLang', 'nl'); await page.waitForTimeout(300);
+  assert.strictEqual(await note(page), '', 'no note for the owner\'s own language');
+  // a stored choice loads before the app starts (no flash of another language)
+  await page.selectOption('#selLang', 'ja'); await page.waitForTimeout(800);
+  await page.reload(); await page.waitForTimeout(500);
+  assert.strictEqual(await page.$eval('html', (e) => e.lang), 'ja');
+  assert.strictEqual(await tabText(page), L('ja')['tab.drive']);
+  await page.context().close();
+  // offline and not cached: English, with a note
+  page = await open({ viewport: { width: 390, height: 844 }, locale: 'pl-PL' }, {}, HTTP, null);
+  await page.context().route('**/lang/*.js', (rt) => rt.abort());
+  await page.reload(); await page.waitForTimeout(500);
+  assert.strictEqual(await tabText(page), L('en')['tab.drive']);
+  await page.click('.tab[data-view="viewSettings"]'); await page.waitForTimeout(300);
+  assert.strictEqual(await note(page), L('en')['lang.loadFail']);
+  await page.context().close();
+  console.log('O ok: German detected and loaded on demand, French at runtime, Japanese stored, offline falls back to English with a note');
   }
   await browser.close(); server.close();
   assert.deepStrictEqual(errors, [], 'page errors: ' + errors.join('\n'));

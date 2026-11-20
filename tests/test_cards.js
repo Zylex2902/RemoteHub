@@ -7,8 +7,8 @@ vm.runInNewContext(src, ctx);
 const C = ctx.module.exports;
 const I18N = require(path.join(__dirname, '..', 'src', 'i18n.js'));
 
-// every card type, option and condition has a text in both languages
-for (const lang of ['nl', 'en']) {
+// every card type, option and condition has a text in every language
+for (const lang of Object.keys(I18N)) {
   const L = I18N[lang];
   for (const t of Object.keys(C.TYPES)) {
     const tpl = L['card.' + t];
@@ -183,6 +183,14 @@ const n = (v) => ({ k: 'n', v }), V = (v) => ({ k: 'v', v });
   h.run.start(); await h.advance(500);
   assert.deepStrictEqual(h.kinds('active').map((x) => x[2]), [1, 2, -1, -1]);
   // ---- blocks ----
+  // every language gives valid block definitions: one slot per input
+  for (const lang of Object.keys(I18N)) {
+    const ds = C.blockDefs((k) => I18N[lang][k] || k, { song: [['x', 'birthday']], mood: [['x', 'happy']], swatch: () => 'data:image/svg+xml,x' });
+    for (const d of ds) for (let i = 0; d['message' + i] !== undefined; i++) {
+      const n = (d['message' + i].replace(/%%/g, '').match(/%\d/g) || []).length;
+      assert.strictEqual(n, (d['args' + i] || []).length, lang + ' ' + d.type + ' message' + i);
+    }
+  }
   const tr = (k) => I18N.nl[k] || k, lists = { song: [['Happy Birthday', 'birthday']], mood: [['Blij', 'happy']], swatch: () => 'data:image/svg+xml,x' };
   const defs = C.blockDefs(tr, lists), byType = {};
   defs.forEach((d) => { byType[d.type] = d; });

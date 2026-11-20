@@ -337,6 +337,7 @@
         <label class="check"><input type="checkbox" id="chkSound"><span></span><em data-i18n="app.sound" style="font-style:normal">Geluid</em></label>
         <label class="check"><input type="checkbox" id="chkHaptic"><span></span><em data-i18n="app.haptic" style="font-style:normal">Trillen</em></label>
       </div>
+      <p class="small langnote hide2" id="langNote"></p>
       <p class="small" style="margin:12px 0 0" data-i18n="app.slotHelp"></p>
     </div>
 
@@ -353,7 +354,7 @@
     <div class="card">
       <h2 data-i18n="about.title">Over</h2>
       <p class="small" style="margin:0" data-i18n="about.text"></p>
-      <p class="small" style="margin:8px 0 0">BrickHubRemote 5.6</p>
+      <p class="small" style="margin:8px 0 0">BrickHubRemote 5.7</p>
     </div>
   </section>
   </div>
@@ -488,6 +489,10 @@
 <script id="blockly">
 {{BLOCKLY}}
 </script>
+
+<!-- Taal kiezen; andere talen dan Nederlands en Engels komen uit lang/<code>.js. -->
+<script id="langload">
+{{LANGLOAD}}</script>
 
 <!-- Programmeerblokken: blokkenset, omzetting en uitvoerder (geen DOM). -->
 <script id="cards">

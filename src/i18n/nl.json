@@ -217,6 +217,8 @@
   "app.title": "App",
   "app.lang": "Taal",
   "lang.auto": "Automatisch",
+  "lang.unreviewed": "Deze vertaling is gemaakt met een vertaalprogramma. Een taalexpert heeft er nu {0}% van nagekeken; er kunnen dus nog fouten in staan.",
+  "lang.loadFail": "Deze taal kon niet worden geladen (geen internet?). De app gebruikt daarom Engels.",
   "app.theme": "Thema",
   "theme.light": "Licht",
   "theme.dark": "Donker",
