@@ -54,6 +54,10 @@ const Cards = (() => {
   // Lichtscherm en lampjes.
   def('imgFor', 'light', 'cmd', [P.img, num('n', 2)]);
   def('img', 'light', 'cmd', [P.img]);
+  // Animatie: tot vier plaatjes na elkaar; een leeg plaatje wordt overgeslagen.
+  const frame = (k, def) => ({ k, type: 'img', def });
+  def('anim', 'light', 'cmd', [frame('f1', '0000009090000009000909990'), frame('f2', '0000009099000009000909990'),
+    frame('f3', '0000009090000009000909990'), frame('f4', '0000000000000000000000000'), num('n', 0.3), num('times', 3)]);
   def('write', 'light', 'cmd', [P.text('t', 'Hi')]);
   def('writeVal', 'light', 'cmd', [num('n', 42)]);
   def('lightOff', 'light', 'cmd', []);
@@ -468,6 +472,13 @@ const Cards = (() => {
         case 'motorReset': { const m = io.data().motors[p.p]; this.posZero[p.p] = m ? m.pos : 0; return; }
         case 'imgFor': this.setImg(p.img); await this.sleep(th, v('n') * 1000); this.fb.fill(0); this.flush(); return;
         case 'img': this.setImg(p.img); return;
+        case 'anim': {
+          let frames = [p.f1, p.f2, p.f3, p.f4].filter((f) => /[1-9]/.test(f));
+          if (!frames.length) frames = [p.f1];
+          const times = Math.max(1, Math.round(v('times'))), ms = clamp(v('n'), 0.05, 10) * 1000;
+          for (let k = 0; k < times; k++) for (const f of frames) { this.setImg(f); await this.sleep(th, ms); }
+          return;
+        }
         case 'write': await this.scroll(p.t, th); return;
         case 'writeVal': { const x = v('n'); await this.scroll(String(Math.round(x * 10) / 10), th); return; }
         case 'lightOff': this.fb.fill(0); this.flush(); return;

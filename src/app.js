@@ -28,9 +28,18 @@
   const cleanSens = (o) => { const out = {}; if (o && typeof o === 'object') for (const [k, v] of Object.entries(o)) if (isPort(k) && SENS_KINDS.includes(v)) out[k] = v; return out; };
   const G = { lang: 'auto', theme: 'light', sound: true, haptic: true, slot: 19, mode: 'joy', active: '', profiles: [],
     hubVol: 60, voice: 'normal', react: true, song: [], path: [], programs: [], progActive: '', hubKind: 'auto',
-    codeMode: 'blocks', py: [], pyActive: '' };
+    codeMode: 'blocks', py: [], pyActive: '',
+    anim: { frames: ['0000009090000009000909990', '0000009099000009000909990'], ms: 300 } };
   const PY_MAX = 30000;   // tekens Python per programma
-  const curLang = () => (G.lang === 'nl' || G.lang === 'en') ? G.lang : ((navigator.language || 'en').toLowerCase().startsWith('nl') ? 'nl' : 'en');
+  // Talen uit src/i18n/languages.json (de build zet ze als LANGS in de pagina). 'auto' volgt de browser.
+  const LANG_CODES = LANGS.map((l) => l.code);
+  const browserLang = () => {
+    const wanted = navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language || 'en'];
+    for (const w of wanted) { const c = String(w).toLowerCase().split('-')[0]; if (LANG_CODES.includes(c)) return c; }
+    return 'en';
+  };
+  const curLang = () => (LANG_CODES.includes(G.lang) ? G.lang : browserLang());
+  const langInfo = () => LANGS.find((l) => l.code === curLang()) || LANGS[0];
   const t = (k, ...a) => {
     let s = (I18N[curLang()] || I18N.en)[k];
     if (s === undefined) s = I18N.en[k] !== undefined ? I18N.en[k] : k;
@@ -62,7 +71,7 @@
     let raw = null;
     try { raw = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) {}
     if (raw && typeof raw === 'object') {
-      if (raw.lang === 'nl' || raw.lang === 'en') G.lang = raw.lang;
+      if (LANG_CODES.includes(raw.lang)) G.lang = raw.lang;
       if (raw.theme === 'dark') G.theme = 'dark';
       G.sound = raw.sound !== false; G.haptic = raw.haptic !== false; G.slot = num(raw.slot, 0, 19, 19);
       G.mode = ['joy', 'tank', 'tilt'].includes(raw.mode) ? raw.mode : 'joy';
@@ -79,6 +88,10 @@
       G.py = (Array.isArray(raw.py) ? raw.py : []).slice(0, 30).filter((x) => x && typeof x === 'object' && typeof x.src === 'string').map((x) => ({
         id: typeof x.id === 'string' && x.id ? x.id.slice(0, 12) : uid(), name: String(x.name || 'Python').slice(0, 30), src: x.src.slice(0, PY_MAX) }));
       G.pyActive = typeof raw.pyActive === 'string' ? raw.pyActive : '';
+      if (raw.anim && Array.isArray(raw.anim.frames)) {
+        const fr = raw.anim.frames.filter((f) => typeof f === 'string' && /^[0-9]{25}$/.test(f)).slice(0, 8);
+        if (fr.length) G.anim = { frames: fr, ms: num(raw.anim.ms, 100, 1000, 300) };
+      }
       G.profiles = (Array.isArray(raw.profiles) ? raw.profiles : []).map(cleanProfile);
       G.active = raw.active;
     } else {
@@ -610,6 +623,7 @@
     if (st.macro) endMacro(false);
     if (st.run) st.run.stop();
     if (st.py) stopPython();
+    if (st.anim) stopAnim();
     setTurbo(false);
     $('knob').style.transform = ''; $('pad').classList.remove('grab');
     qsa('.vstick').forEach((v) => { v.classList.remove('grab'); v.querySelector('.vknob').style.transform = ''; });
@@ -986,6 +1000,10 @@
     sleep: '00000' + '99099' + '00000' + '00900' + '00000',
     love: '09090' + '99999' + '99999' + '09990' + '00900',
     note: '00990' + '00909' + '00900' + '99900' + '99900',
+    wiggle: '00000' + '90009' + '99999' + '90009' + '00000',
+    spin: '09990' + '90009' + '90009' + '90009' + '09990',
+    rec: '00000' + '09990' + '09990' + '09990' + '00000',
+    play: '09000' + '09900' + '09990' + '09900' + '09000',
     mOpen: '09090' + '00000' + '09990' + '90009' + '09990',
     mHalf: '09090' + '00000' + '00000' + '99999' + '00000',
     mShut: '09090' + '00000' + '00000' + '09990' + '00000',
@@ -1082,6 +1100,52 @@
   SONGS.forEach(([id, pic, eighth, src]) => funBtn($('songBtns'), 'song-' + id, pic, 'song.' + id, () => play(melody(src, eighth), 'note')));
   funBtn($('songBtns'), 'song-quiet', 'mShut', 'music.stop', () => { quiet(); sfx.tick(); });
   MOODS.forEach(([id, , face]) => funBtn($('moodBtns'), 'mood-' + id, face, 'mood.' + id, () => mood(id)));
+  qsa('#moveBtns .btn.fun[data-face]').forEach((b) => { const e = miniImg(FACES[b.dataset.face]); e.classList.add('face'); e.setAttribute('aria-hidden', 'true'); b.prepend(e); });
+
+  /* animatie: plaatjes na elkaar op het lichtscherm van de hub */
+  const ANIM_MAX = 8;
+  let animSel = 0;
+  function renderAnim() {
+    const box = $('animFrames'); box.textContent = '';
+    G.anim.frames.forEach((f, i) => {
+      const b = el('button', 'framebtn' + (i === animSel ? ' on' : '')); b.type = 'button';
+      b.appendChild(miniImg(f)); b.setAttribute('aria-label', t('anim.frame', i + 1));
+      b.addEventListener('click', () => {
+        animSel = i; renderAnim();
+        openImg(G.anim.frames[i], (img) => { G.anim.frames[i] = img; save(); renderAnim(); });
+      });
+      box.appendChild(b);
+    });
+    $('btnAnimAdd').disabled = G.anim.frames.length >= ANIM_MAX;
+    $('btnAnimDel').disabled = G.anim.frames.length <= 1;
+    $('rngAnim').value = G.anim.ms; $('outAnim').textContent = (G.anim.ms / 1000).toFixed(2) + ' s';
+  }
+  function stopAnim() {
+    if (!st.anim) return;
+    clearInterval(st.anim); st.anim = null;
+    setText($('btnAnimPlay'), t('anim.play'));
+  }
+  function startAnim() {
+    let i = 0;
+    const show = () => { if (linked()) hub.text('img ' + G.anim.frames[i % G.anim.frames.length]).catch(() => {}); i++; };
+    clearInterval(st.anim); show(); st.anim = setInterval(show, G.anim.ms);
+  }
+  $('btnAnimPlay').addEventListener('click', () => {
+    if (st.anim) { stopAnim(); sfx.tick(); return; }
+    if (!needReady()) return;
+    if (!hubScreen()) { toast(t('anim.noScreen'), 'warn'); sfx.err(); return; }
+    startAnim(); setText($('btnAnimPlay'), t('anim.stop')); buzz(10);
+  });
+  $('btnAnimAdd').addEventListener('click', () => {
+    if (G.anim.frames.length >= ANIM_MAX) return;
+    G.anim.frames.splice(animSel + 1, 0, G.anim.frames[animSel]); animSel++; save(); renderAnim(); sfx.tick();
+  });
+  $('btnAnimDel').addEventListener('click', () => {
+    if (G.anim.frames.length <= 1) return;
+    G.anim.frames.splice(animSel, 1); animSel = Math.max(0, animSel - 1); save(); renderAnim(); sfx.tick();
+  });
+  $('rngAnim').addEventListener('input', (e) => { G.anim.ms = +e.target.value; save(); renderAnim(); if (st.anim) startAnim(); });
+  renderAnim();
 
   /* robottaal: de hub zegt je zin zelf in piepjes, één piepje per lettergreep, met bewegende mond */
   const VOWEL_PITCH = { i: 1.35, y: 1.25, e: 1.18, a: 1, o: 0.84, u: 0.74 };
@@ -1303,7 +1367,7 @@
   }
   Blockly.fieldRegistry.register('field_picture', FieldPicture);
   function defineBlocks() {
-    Blockly.setLocale(BlocklyMsg[curLang()] || BlocklyMsg.en);
+    Blockly.setLocale(BlocklyMsg[langInfo().blockly] || BlocklyMsg.en);
     const defs = Cards.blockDefs(t, { song: SONGS.map((s) => [t('song.' + s[0]), s[0]]), mood: MOODS.map((m) => [t('mood.' + m[0]), m[0]]), swatch });
     defs.forEach((d) => { Blockly.Blocks[d.type] = { init() { this.jsonInit(d); } }; });
   }
@@ -1746,7 +1810,7 @@
   function pyCheat() {
     const box = $('pyCheat'); box.textContent = '';
     PY_CHEAT.forEach(([codeText, k]) => {
-      const cd = el('code'); cd.textContent = k === 'print' ? "print('" + (curLang() === 'nl' ? 'hoi' : 'hi') + "', 42)" : codeText;
+      const cd = el('code'); cd.textContent = k === 'print' ? "print('" + t('py.hi').replace(/'/g, '') + "', 42)" : codeText;
       const d = el('span'); d.textContent = t('py.c.' + k);
       box.append(cd, d);
     });
@@ -1842,12 +1906,50 @@
     const py = G.codeMode === 'python';
     qsa('#codeKind button').forEach((b) => { const on = (b.dataset.kind === 'python') === py; b.classList.toggle('on', on); b.setAttribute('aria-selected', String(on)); });
     $('blocklyDiv').classList.toggle('hide', py); $('pyBox').classList.toggle('hide', !py); $('pyHelp').classList.toggle('hide', !py);
+    $('btnAsPy').classList.toggle('hide2', py);
     $('codeHelp').textContent = py ? t('py.help', pySlot(), G.slot) : t('code.help');
     if (py) { $('pyEdit').appendChild(fab); fab.style.left = fab.style.top = fab.style.right = fab.style.bottom = ''; if (pyText.value !== pyProg().src || !pyHi.firstChild) loadPy(); pyExamples(); pyCheat(); }
     else if (fab.parentNode !== $('blocklyDiv')) { $('blocklyDiv').appendChild(fab); if (code.ws) code.ws.resize(); }
     renderProgs(); showPlay();
     if (st.view === 'viewCode') ensureEditor();
   }
+  /* blokken als Python: de omzetting staat in src/topython.js */
+  const sensorPortOf = (kind) => {
+    const live = (st.sensors || []).find((x) => x.type === kind);
+    if (live) return live.port;
+    const m = modelOf(S), all = Object.assign({}, m ? m.sens : {}, S.sens || {});
+    return Object.keys(all).find((k) => all[k] === kind) || null;
+  };
+  function blocksAsPython() {
+    const p = Cards.fromBlocks(code.ws ? Blockly.serialization.workspaces.save(code.ws) : prog().ws, prog().name);
+    const colors = [...new Set([].concat((st.sensors || []).filter((x) => x.type === 'color').map((x) => x.port), sensorPortOf('color') || []))];
+    return ToPython.convert(p, {
+      name: prog().name, left: S.left, right: S.right, invL: S.invL, invR: S.invR, tr: t, freq: freqOf,
+      sensors: { distance: sensorPortOf('distance'), force: sensorPortOf('force'), color: colors },
+      song: (id) => { const s = SONGS.find((x) => x[0] === id) || SONGS[0]; return melody(s[3], s[2]); },
+      mood: (id) => { const [notes, face] = moodNotes(id); return [notes, FACES[face] || null]; },
+    });
+  }
+  let pyViewCode = '';
+  $('btnAsPy').addEventListener('click', () => {
+    pyViewCode = blocksAsPython();
+    $('pyView').innerHTML = pyHighlight(pyViewCode);
+    $('pySheet').classList.add('on'); $('pySheet').setAttribute('aria-hidden', 'false'); sfx.open();
+  });
+  const closePySheet = () => { $('pySheet').classList.remove('on'); $('pySheet').setAttribute('aria-hidden', 'true'); };
+  $('btnPyClose').addEventListener('click', closePySheet);
+  $('pySheet').addEventListener('click', (e) => { if (e.target === $('pySheet')) closePySheet(); });
+  $('btnPyCopy').addEventListener('click', () => {
+    (navigator.clipboard ? navigator.clipboard.writeText(pyViewCode) : Promise.reject()).then(() => toast(t('pyv.copied'), 'ok'), () => toast(t('pyv.noCopy'), 'warn'));
+  });
+  $('btnPyOpen').addEventListener('click', () => {
+    if (G.py.length >= 30) { toast(t('pyv.full'), 'warn'); return; }
+    const np = { id: uid(), name: (prog().name + ' (Python)').slice(0, 30), src: pyViewCode.slice(0, PY_MAX) };
+    G.py.push(np); G.pyActive = np.id; G.codeMode = 'python'; save();
+    closePySheet(); showCodeMode(); loadPy(); sfx.ready();
+    toast(t('pyv.opened', np.name), 'ok');
+  });
+
   qsa('#codeKind button').forEach((b) => b.addEventListener('click', () => {
     const kind = b.dataset.kind;
     if (kind === G.codeMode) return;
@@ -2094,7 +2196,7 @@
     if ((m.hub === 'prime') === smallHub() && st.phase !== 'idle') toast(t('robots.wrongHub', t('model.' + m.hub)), 'warn');
   }
   const INSTR = { prime: 'spike-prime', essential: '45345-spike-essential-resource-page' };
-  const instrUrl = (m) => 'https://education.lego.com/' + (curLang() === 'nl' ? 'nl-nl' : 'en-us') + '/product-resources/' + INSTR[m.hub] + '/downloads/building-instructions/';
+  const instrUrl = (m) => 'https://education.lego.com/' + (langInfo().lego || 'en-us') + '/product-resources/' + INSTR[m.hub] + '/downloads/building-instructions/';
   function renderModels() {
     const box = $('models'); box.textContent = '';
     for (const m of MODELS) {
@@ -2303,7 +2405,7 @@
   function fillStatic() {
     fill($('selLeft'), portItems()); fill($('selRight'), portItems());
     fill($('selSlot'), Array.from({ length: 20 }, (_, i) => [String(i), t('slot', i)]));
-    fill($('selLang'), [['auto', t('lang.auto')], ['nl', 'Nederlands'], ['en', 'English']]);
+    fill($('selLang'), [['auto', t('lang.auto')]].concat(LANGS.map((l) => [l.code, l.name])));
     fill($('selTheme'), [['light', t('theme.light')], ['dark', t('theme.dark')]]);
     fill($('selVoice'), [['normal', t('voice.normal')], ['high', t('voice.high')], ['low', t('voice.low')]]);
     fill($('selHubKind'), [['auto', t('kind.auto')], ['big', t('hub.big')], ['small', t('hub.small')]]);
@@ -2359,7 +2461,7 @@
     $('rngTurn').value = S.turn; $('outTurn').textContent = S.turn + '%';
     $('rngTrim').value = S.trim; $('outTrim').textContent = S.trim === 0 ? '0' : (S.trim < 0 ? 'L ' : 'R ') + Math.abs(S.trim) + '%';
     $('chkGuard').checked = S.guard; $('rngGuard').value = S.guardCm; $('outGuard').textContent = S.guardCm + ' cm';
-    $('selSlot').value = String(G.slot); $('selLang').value = G.lang === 'nl' || G.lang === 'en' ? G.lang : 'auto';
+    $('selSlot').value = String(G.slot); $('selLang').value = LANG_CODES.includes(G.lang) ? G.lang : 'auto';
     $('chkSound').checked = G.sound; $('chkHaptic').checked = G.haptic; $('selTheme').value = G.theme;
     $('selHubKind').value = G.hubKind;
     $('rngVol').value = G.hubVol; $('outVol').textContent = G.hubVol + '%'; $('chkReact').checked = G.react; $('selVoice').value = G.voice;

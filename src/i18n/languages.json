@@ -1,0 +1,14 @@
+[
+  {
+    "code": "nl",
+    "name": "Nederlands",
+    "blockly": "nl",
+    "lego": "nl-nl"
+  },
+  {
+    "code": "en",
+    "name": "English",
+    "blockly": "en",
+    "lego": "en-us"
+  }
+]

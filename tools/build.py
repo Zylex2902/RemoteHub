@@ -15,21 +15,33 @@ LANDING = ROOT / "site" / "index.html"
 rd = lambda p: p.read_text(encoding="utf8")
 
 
+def languages():
+    return json.loads(rd(SRC / "i18n" / "languages.json"))
+
+
+def i18n():
+    # Alle talen uit src/i18n/<code>.json als I18N, plus de lijst LANGS (code, eigen naam, Blockly-taal, LEGO-site).
+    langs = languages()
+    texts = {l["code"]: json.loads(rd(SRC / "i18n" / (l["code"] + ".json"))) for l in langs}
+    return ("const I18N = " + json.dumps(texts, ensure_ascii=False, separators=(",", ":")) + ";\n"
+            + "const LANGS = " + json.dumps(langs, ensure_ascii=False, separators=(",", ":")) + ";")
+
+
 def blockly():
-    # Blockly-kern plus de Nederlandse en Engelse menuteksten als objecten (BlocklyMsg.nl / .en),
+    # Blockly-kern plus de menuteksten van elke taal als objecten (BlocklyMsg.nl, .en, ...),
     # zodat de pagina van taal kan wisselen zonder ze over elkaar heen te laden.
     v = ROOT / "vendor" / "blockly"
     out = [rd(v / "blockly_compressed.js"), "var BlocklyMsg = {};"]
-    for lang in ("nl", "en"):
+    for lang in sorted({l["blockly"] for l in languages()}):
         out.append("(function () { var module = { exports: {} }, exports = module.exports;\n" + rd(v / ("msg-" + lang + ".js"))
-                   + "\nBlocklyMsg." + lang + " = module.exports; })();")
+                   + "\nBlocklyMsg['" + lang + "'] = module.exports; })();")
     return "\n".join(out)
 
 
 def build():
     html = rd(SRC / "base.html")
     parts = {"CSS": rd(SRC / "style.css"), "HUB": rd(SRC / "hub_program.py"), "PROTO": rd(SRC / "proto.js"),
-             "QR": rd(ROOT / "vendor" / "qrcode.min.js").strip(), "I18N": rd(SRC / "i18n.js"), "BLOCKLY": blockly(), "CARDS": rd(SRC / "cards.js"), "LDRAW": rd(SRC / "ldraw.js"),
+             "QR": rd(ROOT / "vendor" / "qrcode.min.js").strip(), "I18N": i18n(), "BLOCKLY": blockly(), "CARDS": rd(SRC / "cards.js"), "LDRAW": rd(SRC / "ldraw.js"), "TOPY": rd(SRC / "topython.js"),
              "APP": rd(SRC / "app.js")}
     for key, text in parts.items():
         assert "</script>" not in text and "</style>" not in text, key

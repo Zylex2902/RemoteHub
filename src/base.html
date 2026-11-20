@@ -130,6 +130,7 @@
         <button class="btn sm" id="btnProgNew" data-i18n="code.new">Nieuw</button>
         <button class="btn sm" id="btnProgRename" data-i18n="code.rename">Naam</button>
         <button class="btn sm danger" id="btnProgDel" data-i18n="code.delete">Weg</button>
+        <button class="btn sm" id="btnAsPy" data-i18n="code.asPy">Python</button>
       </div>
       </div>
       <div class="small codestatus" id="codeStatus" aria-live="polite"></div>
@@ -172,10 +173,10 @@
     <div class="card">
       <h2 data-i18n="move.title">Bewegen</h2>
       <div class="funbtns" id="moveBtns">
-        <button class="btn fun" id="btnDance1"><span class="emo" aria-hidden="true">&#x1F483;</span><span data-i18n="move.dance1">Wiebeldans</span></button>
-        <button class="btn fun" id="btnDance2"><span class="emo" aria-hidden="true">&#x1F300;</span><span data-i18n="move.dance2">Rondjesdans</span></button>
-        <button class="btn fun" id="btnRec"><span class="emo" aria-hidden="true">&#x23FA;&#xFE0F;</span><span data-i18n="move.rec">Route opnemen</span></button>
-        <button class="btn fun" id="btnRoute"><span class="emo" aria-hidden="true">&#x25B6;&#xFE0F;</span><span data-i18n="move.play">Route afspelen</span></button>
+        <button class="btn fun" id="btnDance1" data-face="wiggle"><span data-i18n="move.dance1">Wiebeldans</span></button>
+        <button class="btn fun" id="btnDance2" data-face="spin"><span data-i18n="move.dance2">Rondjesdans</span></button>
+        <button class="btn fun" id="btnRec" data-face="rec"><span data-i18n="move.rec">Route opnemen</span></button>
+        <button class="btn fun" id="btnRoute" data-face="play"><span data-i18n="move.play">Route afspelen</span></button>
       </div>
       <p class="small" style="margin:12px 0 0" data-i18n="move.help"></p>
     </div>
@@ -193,6 +194,20 @@
       <div class="funbtns moods" id="moodBtns"></div>
       <label class="check" style="margin-top:12px"><input type="checkbox" id="chkReact"><span></span><em data-i18n="talk.react" style="font-style:normal">Robot reageert met geluidjes</em></label>
       <p class="small" style="margin:8px 0 0" data-i18n="talk.help"></p>
+    </div>
+
+    <!-- Animatie: plaatjes voor het 5x5-lichtscherm die na elkaar worden getoond. -->
+    <div class="card" id="animCard">
+      <h2 data-i18n="anim.title">Animatie</h2>
+      <p class="small" style="margin:0 0 10px" data-i18n="anim.help"></p>
+      <div class="frames" id="animFrames"></div>
+      <label class="f" style="margin-top:12px"><span data-i18n="anim.speed">Tijd per plaatje</span>
+        <div class="range"><input type="range" id="rngAnim" min="100" max="1000" step="50"><output id="outAnim"></output></div></label>
+      <div class="rowbtns" style="margin-top:12px">
+        <button class="btn primary" id="btnAnimPlay" data-i18n="anim.play">Afspelen</button>
+        <button class="btn sm" id="btnAnimAdd" data-i18n="anim.add">Plaatje erbij</button>
+        <button class="btn sm danger" id="btnAnimDel" data-i18n="anim.del">Plaatje weg</button>
+      </div>
     </div>
 
     <div class="card">
@@ -402,6 +417,20 @@
   <p class="small bcredit"><span data-i18n="build.credit"></span> <a href="https://www.ldraw.org/" target="_blank" rel="noopener noreferrer">www.ldraw.org</a> · <a href="LICENSE-NOTICES.txt" target="_blank" rel="noopener" data-i18n="build.licenses">Licenties</a></p>
 </div>
 
+<!-- Je blokken als Python: alleen lezen, met een knop om het in de Python-editor te openen. -->
+<div class="sheet" id="pySheet" aria-hidden="true">
+  <div class="card box wide">
+    <h2 data-i18n="pyv.title">Je blokken als Python</h2>
+    <p class="small" style="margin:0" data-i18n="pyv.help"></p>
+    <pre class="pyview" id="pyView"></pre>
+    <div class="rowbtns">
+      <button class="btn sm primary" id="btnPyOpen" data-i18n="pyv.open">Open in de Python-editor</button>
+      <button class="btn sm" id="btnPyCopy" data-i18n="pyv.copy">Kopieer</button>
+      <button class="btn sm" id="btnPyClose" data-i18n="share.close">Sluiten</button>
+    </div>
+  </div>
+</div>
+
 <div class="sheet" id="imgSheet" aria-hidden="true">
   <div class="card box">
     <h2 data-i18n="code.imgTitle">Kies of teken een plaatje</h2>
@@ -443,6 +472,10 @@
 <!-- Programmeerblokken: blokkenset, omzetting en uitvoerder (geen DOM). -->
 <script id="cards">
 {{CARDS}}</script>
+
+<!-- Blokken als Python tonen (geen DOM). -->
+<script id="topython">
+{{TOPY}}</script>
 
 <!-- LDraw-bestanden (bijv. uit BrickLink Studio) lezen: SPIKE-onderdelen tellen, poorten voorstellen (geen DOM). -->
 <script id="ldraw">

@@ -461,6 +461,9 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border:3px solid #fff
 .funbtns.moods{grid-template-columns:repeat(auto-fill,minmax(86px,1fr))}
 .btn.fun{flex-direction:column;gap:4px;padding:12px 8px;font-size:14px;line-height:1.2;white-space:normal;text-align:center;touch-action:manipulation}
 .btn.fun .face{padding:3px;border-radius:6px;background:#14161c}
+.frames{display:flex;flex-wrap:wrap;gap:8px}
+.framebtn{padding:6px;border-radius:10px;border:2px solid var(--line);background:#14161c;cursor:pointer}
+.framebtn.on{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
 .btn.fun.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .speakrow{display:flex;gap:8px}
 .speakrow input{flex:1}
@@ -541,9 +544,12 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border:3px solid #fff
 .codekind button{font:600 14px var(--head);padding:6px 18px;border:0;border-radius:999px;background:none;color:var(--muted);cursor:pointer;transition:background .2s var(--ease),color .2s var(--ease)}
 .codekind button.on{background:var(--accent);color:var(--accent-ink)}
 .pybox{display:flex;flex-direction:column;gap:10px;height:420px;min-height:0}
-.pyedit{--py-bg:#fcfefd;--py-k:#7b30d0;--py-s:#0f8a4a;--py-c:#7d8799;--py-n:#c2410c;--py-b:#1565c0;--py-f:#0e7490;
+.sheet .box.wide{width:min(780px,100%)}
+.pyview{margin:0;max-height:min(58vh,560px);overflow:auto;padding:12px 14px;border-radius:12px;border:2px solid var(--line);background:var(--py-bg);
+  font:13px/1.5 var(--mono);white-space:pre;tab-size:4;-webkit-user-select:text;user-select:text}
+.pyview,.pyedit{--py-bg:#fcfefd;--py-k:#7b30d0;--py-s:#0f8a4a;--py-c:#7d8799;--py-n:#c2410c;--py-b:#1565c0;--py-f:#0e7490;
   position:relative;flex:1 1 auto;min-height:150px;display:flex;border-radius:18px;overflow:hidden;border:2px solid var(--line);background:var(--py-bg)}
-html[data-theme="dark"] .pyedit{--py-bg:#11151b;--py-k:#c792ea;--py-s:#9ece6a;--py-c:#6b778a;--py-n:#ff9e64;--py-b:#7aa2f7;--py-f:#7dcfff}
+html[data-theme="dark"] .pyview,html[data-theme="dark"] .pyedit{--py-bg:#11151b;--py-k:#c792ea;--py-s:#9ece6a;--py-c:#6b778a;--py-n:#ff9e64;--py-b:#7aa2f7;--py-f:#7dcfff}
 .pyedit pre,.pyedit textarea{margin:0;font:14px/1.5 var(--mono);tab-size:4;white-space:pre;letter-spacing:0}
 .pynums{flex:none;padding:12px 8px 12px 10px;min-width:40px;text-align:right;color:var(--muted);opacity:.7;background:var(--panel2);border-right:1px solid var(--line);overflow:hidden}
 .pynums .err{color:#fff;background:var(--danger);border-radius:4px;opacity:1;padding:0 3px;margin-right:-3px}
