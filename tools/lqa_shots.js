@@ -22,7 +22,9 @@ function keysIn(seen, texts) {
 const visibleText = (page) => page.evaluate(() => {
   const svg = [...document.querySelectorAll('.blocklyText, .blocklyFlyoutLabelText')].filter((e) => e.getBoundingClientRect().width > 0).map((e) => e.textContent);
   const attrs = [...document.querySelectorAll('[placeholder],[aria-label],[title]')].filter((e) => e.getClientRects().length).map((e) => [e.placeholder, e.getAttribute('aria-label'), e.title].filter(Boolean).join('\n'));
-  return [document.body.innerText, ...svg, ...attrs].join('\n').replace(/ /g, ' ');
+  // Only what is on screen: closed sheets (transparent, still laid out) do not count.
+  const body = [...document.body.children].filter((e) => !(e.classList.contains('sheet') && !e.classList.contains('on'))).map((e) => e.innerText || '').join('\n');
+  return [body, ...svg, ...attrs].join('\n').replace(/\u00a0/g, ' ');
 });
 
 (async () => {
@@ -62,12 +64,13 @@ const visibleText = (page) => page.evaluate(() => {
     await tab('viewCode'); await page.waitForTimeout(600);
     await shot('code', 'Code: blocks');
     // Every toolbox category with its blocks.
-    const cats = await page.$$eval('.blocklyToolboxCategory, .blocklyTreeRow', (n) => n.length);
+    const rows = page.locator('.blocklyToolboxCategory');
+    const cats = await rows.count();
     for (let i = 0; i < cats; i++) {
-      await page.evaluate((i) => { const n = document.querySelectorAll('.blocklyToolboxCategory, .blocklyTreeRow')[i]; n && n.dispatchEvent(new MouseEvent('click', { bubbles: true })); n && n.click && n.click(); }, i);
-      await page.waitForTimeout(350);
-      const name = await page.evaluate((i) => { const n = document.querySelectorAll('.blocklyToolboxCategory, .blocklyTreeRow')[i]; return n ? n.textContent.trim() : ''; }, i);
-      await shot('blocks-' + (i + 1), 'Code: blocks, ' + (name || 'category ' + (i + 1)));
+      const name = (await rows.nth(i).textContent()).trim();
+      await rows.nth(i).click(); await page.waitForTimeout(450);
+      await shot('blocks-' + (i + 1), 'Code: blocks, ' + name);
+      await rows.nth(i).click(); await page.waitForTimeout(200);   // closes the flyout again
     }
     await page.keyboard.press('Escape');
     await sheet('btnAsPy', 'aspy', 'Code: blocks as Python', 'btnPyClose');

@@ -493,8 +493,8 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border:3px solid #fff
 @media (max-width:400px){.tab{font-size:10.5px;padding-left:2px;padding-right:2px}}
 #viewCode{min-height:0}
 .codebar{position:sticky;top:0;z-index:6;display:flex;flex-direction:column;gap:10px}
-.codetop{display:flex;gap:8px;align-items:center}
-.codetop select{flex:1;min-width:0}
+.codetop{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.codetop select{flex:1 1 130px;min-width:0}
 .codestatus{min-height:0;margin:-4px 2px 0}
 .codestatus:empty{display:none}
 .blockly{position:relative;height:420px;border-radius:18px;overflow:hidden;border:2px solid var(--line);background:var(--panel2);touch-action:none}

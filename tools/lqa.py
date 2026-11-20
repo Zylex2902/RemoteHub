@@ -22,7 +22,7 @@ SHOTS = ROOT / "dist" / "lqa" / "shots"
 rd = lambda p: json.loads(p.read_text(encoding="utf8"))
 
 PROTECTED = ["BrickHubRemote", "LEGO", "SPIKE", "LDraw", "BrickLink", "Studio", "MicroPython", "Python", "Blockly",
-             "Bluetooth", "Bluefy", "Chrome", "Android", "iPhone", "iPad", "WASD", "Shift"]
+             "Bluetooth", "Bluefy", "Chrome", "Android", "iPhone", "iPad"]
 MARKS = ["®", "™"]
 PH = re.compile(r"\{[A-Za-z0-9]+\}")
 

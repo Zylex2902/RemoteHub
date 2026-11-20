@@ -5,7 +5,7 @@
     "Say what the app does. No marketing language, no exclamation marks unless the English has one.",
     "Keep every placeholder exactly as written, including its case: {0}, {1}, {k}, {S}, {OP} and so on. You may move a placeholder within the sentence when your grammar needs it.",
     "Keep LEGO®, SPIKE™, LDraw™ and their symbols exactly. Never translate or shorten BrickHubRemote, LEGO, SPIKE, Prime, Essential, BrickLink Studio, LDraw, Python, MicroPython, Blockly, Bluetooth, Bluefy, Chrome, Android, iPhone, iPad.",
-    "Port letters (A to F), units (cm, mm, ms, %) and key names in the keyboard help (WASD, Shift, H) stay as they are.",
+    "Port letters (A to F) and units (cm, mm, ms, %) stay as they are.",
     "Use the words that LEGO® Education uses in your language for the hub, light matrix, motors and sensors where you know them, but not their trademarks or product names beyond the ones listed above.",
     "Button texts must stay short: they sit on small round buttons on a phone. Prefer a short verb over a full sentence."
   ],
@@ -75,7 +75,7 @@
   },
   "keys": {
     "code.stop": "Label of the stop button. In capitals in English on purpose: it must stand out.",
-    "keys.note": "Keyboard help on the Drive screen. Three lines; keep the line breaks and the key names (WASD, Shift, H, Space may be translated if your keyboards say so).",
+    "keys.note": "Keyboard help on the Drive screen. Three lines; keep the line breaks. The app reads key positions, not letters: the WASD keys are the four keys at that place, so on a French AZERTY keyboard they are Z Q S D. Name Shift and Space as they are printed on keyboards in your country. H is the letter H.",
     "stop.space": "Name of the space bar on a keyboard, shown on the STOP button as a hint.",
     "app.tagline": "Short subtitle of the app.",
     "py.hi": "A very short greeting that scrolls over the hub's 5x5 lights. Keep it to 2 to 4 plain Latin letters, because the hub's font only has A-Z.",
