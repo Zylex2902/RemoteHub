@@ -132,7 +132,10 @@ no App Store or Google Play badges before then.
 - To confirm on devices: Android Chrome, Bluefy on iPhone and iPad, tilt steering (the sign of
   the axes in landscape is a guess), a real foldable.
 - Not started: update notice when a new version is online; native iOS wrapper (needs a native
-  Bluetooth layer, a plain web view has no Web Bluetooth); donation link on the website only.
+  Bluetooth layer, a plain web view has no Web Bluetooth).
+- Donation link (website only, never in the app): set `donate` in `src/site.json` to the owner's
+  Buy Me a Coffee address and rebuild; empty leaves the section and footer link out. The owner has
+  not made the page yet, so it is off. Wording ties it to the developer, no LEGO marks, no perks.
 
 ## Intellectual property guardrails
 

@@ -65,7 +65,8 @@ Pybricks, describe their compatibility the same way. This is a working checklist
 - Paid features or licences (as Pybricks does for block coding) do not change the rules above,
   but make the project more visible: have a trademark lawyer look at it before charging.
 - Put a donation link on the website. Apple requires in-app purchase for tips inside an app,
-  and Google Play has removed apps for external donation links.
+  and Google Play has removed apps for external donation links. The address lives in
+  `src/site.json` (`donate`); the website shows the section only when it is set.
 
 ## Technical caveat (not a trademark issue)
 

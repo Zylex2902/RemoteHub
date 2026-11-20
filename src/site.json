@@ -1,0 +1,4 @@
+{
+  "_comment": "Settings for the website (site/index.html). donate: full https address of the donation page, e.g. https://buymeacoffee.com/yourname. Empty = no donation section on the site. Run npm run build after changing it.",
+  "donate": ""
+}

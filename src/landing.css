@@ -85,6 +85,7 @@ figcaption{color:var(--muted);font-size:15px;margin-top:10px}
 
 .status p{margin:0;max-width:44em;padding:16px 18px;border-left:4px solid var(--mid);background:var(--mid-soft);border-radius:0 10px 10px 0}
 
+.support p{margin:0 0 16px;max-width:44em}
 .faq details{border-bottom:1px solid var(--line)}
 .faq details:first-of-type{border-top:1px solid var(--line)}
 .faq summary{cursor:pointer;font-weight:700;padding:14px 0}

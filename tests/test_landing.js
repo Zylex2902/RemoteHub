@@ -2,6 +2,8 @@
 const { chromium } = require('playwright');
 const assert = require('assert');
 const { serve, launchOptions } = require('./helpers');
+// The donation link appears only when src/site.json has an address (and then exactly that one).
+const DONATE = JSON.parse(require('fs').readFileSync(require('path').join(__dirname, '..', 'src', 'site.json'), 'utf8')).donate || '';
 
 (async () => {
   const server = await serve();
@@ -22,7 +24,11 @@ const { serve, launchOptions } = require('./helpers');
       app: [...document.querySelectorAll('a[href="app/"]')].length,
       disclaimer: /(trademarks of the LEGO Group|handelsmerken van de LEGO Group)/.test(document.querySelector('.disclaimer').innerText),
       h1: document.querySelector('h1').innerText,
+      donate: [...document.querySelectorAll('#steunen a, .foot a')].map((a) => a.getAttribute('href')).filter((h) => !/github\.com|LICENSE/.test(h)),
+      section: !!document.getElementById('steunen'),
     }));
+    if (DONATE) { assert.ok(r.section, 'donation section'); assert.deepStrictEqual(r.donate, [DONATE, DONATE]); }
+    else { assert.ok(!r.section && r.donate.length === 0, 'no donation link without an address: ' + r.donate); }
     assert.strictEqual(r.lang, locale.startsWith('nl') ? 'nl' : 'en', w + ' language from the browser');
     assert.ok(r.scrollX <= 0, w + ': page scrolls sideways by ' + r.scrollX);
     assert.deepStrictEqual(r.broken, [], w + ' broken images');

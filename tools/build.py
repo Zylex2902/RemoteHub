@@ -7,7 +7,7 @@
   python3 tools/build.py --standalone FILE  -> also writes FILE with the fonts embedded,
                                                a single file that works on its own
 """
-import base64, pathlib, subprocess, sys
+import base64, html as htmlmod, json, pathlib, re, subprocess, sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SRC, SITE = ROOT / "src", ROOT / "site" / "app"
@@ -55,7 +55,16 @@ def landing():
     # De website rond de app: src/landing.html met src/landing.css erin.
     html, css = rd(SRC / "landing.html"), rd(SRC / "landing.css")
     assert html.count("{{CSS}}") == 1 and "</style>" not in css
-    return html.replace("{{CSS}}", css)
+    html = html.replace("{{CSS}}", css)
+    # Donatielink uit src/site.json; leeg = de stukken tussen <!--donate--> en <!--/donate--> weglaten.
+    donate = json.loads(rd(SRC / "site.json")).get("donate", "").strip()
+    if donate:
+        assert re.match(r"^https://[\w.-]+/[\w./-]+$", donate), "site.json: donate must be a plain https address"
+        html = html.replace("<!--donate-->", "").replace("<!--/donate-->", "").replace("{{DONATE}}", htmlmod.escape(donate))
+    else:
+        html = re.sub(r"[ ]*<!--donate-->.*?<!--/donate-->\n?", "", html, flags=re.S)
+    assert "{{DONATE}}" not in html and "<!--donate-->" not in html
+    return html
 
 
 def embed_fonts(html):
