@@ -637,7 +637,7 @@
   "blk.color": "Farbe {p} ist {col}",
   "blk.force": "Kraftsensor {st}",
   "blk.tilt": "Hub kippt {dir}",
-  "blk.face": "Hub liegt mit {f} nach oben",
+  "blk.face": "Hub liegt mit {f} oben",
   "blk.btn": "Hub-Taste {b} gedrückt",
   "cat.op": "Operatoren",
   "code.makeVar": "Variable erstellen",
