@@ -71,11 +71,13 @@
     "tilt.": "Drive screen: steering by tilting the phone.",
     "voice.": "Settings for robot language: the kind of robot voice.",
     "wire.": "Labels in a wiring diagram (which motor or sensor goes into which port). Very short.",
-    "lang.": "Settings, language picker and the note about how far a translation is reviewed."
+    "lang.": "Settings, language picker and the note about how far a translation is reviewed.",
+    "keys.": "Settings, 'Keyboard' card: choosing which key does what (shown only on devices with a keyboard).",
+    "key.": "Names of keys on a keyboard."
   },
   "keys": {
     "code.stop": "Label of the stop button. In capitals in English on purpose: it must stand out.",
-    "keys.note": "Keyboard help on the Drive screen. Three lines; keep the line breaks. The app reads key positions, not letters: the WASD keys are the four keys at that place, so on a French AZERTY keyboard they are Z Q S D. Name Shift and Space as they are printed on keyboards in your country. H is the letter H.",
+    "keys.note": "Keyboard help on the Drive screen. Three lines; keep the line breaks. {0} = the four drive keys (for example WASD, or ZQSD on a French keyboard), {1} = the turbo key, {2} = the horn key, {3} = the stop key; the app fills in the names.",
     "stop.space": "Name of the space bar on a keyboard, shown on the STOP button as a hint.",
     "app.tagline": "Short subtitle of the app.",
     "py.hi": "A very short greeting that scrolls over the hub's 5x5 lights. Keep it to 2 to 4 plain Latin letters, because the hub's font only has A-Z.",
@@ -84,6 +86,10 @@
     "profile.default": "Name of the first robot profile.",
     "draw.info": "{0} = number of straight parts of the route, {1} = total length in cm.",
     "port": "{0} is a port letter, A to F.",
-    "slot": "{0} is a program slot number on the hub, 0 to 19."
+    "slot": "{0} is a program slot number on the hub, 0 to 19.",
+    "key.space": "Name of the space bar, as printed on keyboards in your country (shown in the keyboard help and in the key settings).",
+    "key.shift": "Name of the Shift key, as printed on keyboards in your country.",
+    "horn.title": "Tooltip of the horn button; {0} is its key.",
+    "keys.swapped": "Shown after choosing a key that was already in use: the two actions swapped keys. {0} = a key name, {1} = the action it now does."
   }
 }

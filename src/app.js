@@ -29,7 +29,22 @@
   const G = { lang: 'auto', theme: 'light', sound: true, haptic: true, slot: 19, mode: 'joy', active: '', profiles: [],
     hubVol: 60, voice: 'normal', react: true, song: [], path: [], programs: [], progActive: '', hubKind: 'auto',
     codeMode: 'blocks', py: [], pyActive: '',
-    anim: { frames: ['0000009090000009000909990', '0000009099000009000909990'], ms: 300 } };
+    anim: { frames: ['0000009090000009000909990', '0000009099000009000909990'], ms: 300 },
+    keys: null };
+  // Toetsen per actie, als plaats op het toetsenbord (KeyboardEvent.code): op AZERTY is KeyW de Z.
+  const KEY_DEF = { up: 'KeyW', down: 'KeyS', left: 'KeyA', right: 'KeyD', turbo: 'ShiftLeft', horn: 'KeyH', stop: 'Space', a0m: 'KeyQ', a0p: 'KeyE', a1m: 'KeyF', a1p: 'KeyR' };
+  const KEY_BAD = /^(Escape|Tab|Arrow\w+|Meta\w*|OS\w*|ContextMenu|CapsLock|NumLock|F\d+|Unidentified)$/;
+  function cleanKeys(raw) {
+    const out = Object.assign({}, KEY_DEF), used = new Set();
+    if (raw && typeof raw === 'object') for (const a of Object.keys(KEY_DEF)) {
+      const c = raw[a];
+      if (typeof c === 'string' && /^[A-Za-z0-9]{2,24}$/.test(c) && !KEY_BAD.test(c) && !used.has(c)) { out[a] = c; used.add(c); }
+    }
+    // Dubbele toetsen (bijv. na een half gelukte wijziging): terug naar de standaard.
+    const seen = new Set();
+    for (const a of Object.keys(out)) { if (seen.has(out[a])) return Object.assign({}, KEY_DEF); seen.add(out[a]); }
+    return out;
+  }
   const PY_MAX = 30000;   // tekens Python per programma
   // Talen uit src/i18n/languages.json (de build zet ze als LANGS in de pagina). 'auto' volgt de browser.
   const LANG_CODES = LANGS.map((l) => l.code);
@@ -83,6 +98,7 @@
       G.py = (Array.isArray(raw.py) ? raw.py : []).slice(0, 30).filter((x) => x && typeof x === 'object' && typeof x.src === 'string').map((x) => ({
         id: typeof x.id === 'string' && x.id ? x.id.slice(0, 12) : uid(), name: String(x.name || 'Python').slice(0, 30), src: x.src.slice(0, PY_MAX) }));
       G.pyActive = typeof raw.pyActive === 'string' ? raw.pyActive : '';
+      G.keys = cleanKeys(raw.keys);
       if (raw.anim && Array.isArray(raw.anim.frames)) {
         const fr = raw.anim.frames.filter((f) => typeof f === 'string' && /^[0-9]{25}$/.test(f)).slice(0, 8);
         if (fr.length) G.anim = { frames: fr, ms: num(raw.anim.ms, 100, 1000, 300) };
@@ -606,8 +622,77 @@
   };
 
   /* ---------- besturing ---------- */
-  const KEYMAP = { KeyW: 'up', ArrowUp: 'up', KeyS: 'down', ArrowDown: 'down', KeyA: 'left', ArrowLeft: 'left', KeyD: 'right', ArrowRight: 'right' };
-  const AUXKEYS = { KeyQ: [0, -1], KeyE: [0, 1], KeyF: [1, -1], KeyR: [1, 1] };
+  // Toets (code) -> actie. De pijltjes rijden altijd; rechter Shift is ook turbo als links Shift dat is.
+  const DRIVE_ACT = { up: 1, down: 1, left: 1, right: 1 }, AUX_ACT = { a0m: [0, -1], a0p: [0, 1], a1m: [1, -1], a1p: [1, 1] };
+  let keyOf = {};
+  function buildKeys() {
+    if (!G.keys) G.keys = cleanKeys(null);
+    keyOf = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right' };
+    for (const a of Object.keys(KEY_DEF)) keyOf[G.keys[a]] = a;
+    if (G.keys.turbo === 'ShiftLeft' && !keyOf.ShiftRight) keyOf.ShiftRight = 'turbo';
+  }
+  buildKeys();
+  const KEYMAP = new Proxy({}, { get: (_, c) => (DRIVE_ACT[keyOf[c]] ? keyOf[c] : undefined) });
+  const AUXKEYS = new Proxy({}, { get: (_, c) => AUX_ACT[keyOf[c]] });
+  // Wat er op de toets staat: de browser weet het (Chrome, Edge); anders een gok op basis van de taal.
+  let keyLayout = null;
+  const LAYOUT_GUESS = { azerty: { KeyQ: 'A', KeyW: 'Z', KeyA: 'Q', KeyZ: 'W', Semicolon: 'M', KeyM: ',' }, qwertz: { KeyY: 'Z', KeyZ: 'Y' } };
+  const guessLayout = () => {
+    const l = String(navigator.language || '').toLowerCase();
+    return /^fr|^nl-be|^br/.test(l) || curLang() === 'fr' ? 'azerty' : /^de|^cs|^sk|^hu|^sl|^hr/.test(l) || curLang() === 'de' ? 'qwertz' : '';
+  };
+  function keyName(code) {
+    if (code === 'Space') return t('key.space');
+    if (/^Shift/.test(code)) return t('key.shift');
+    if (/^Control/.test(code)) return 'Ctrl';
+    if (/^Alt/.test(code)) return 'Alt';
+    if (code === 'Enter') return 'Enter';
+    if (code === 'Backspace') return '⌫';
+    const ch = keyLayout && keyLayout.get(code);
+    if (ch && ch.trim()) return ch.toUpperCase();
+    const g = !keyLayout && (LAYOUT_GUESS[guessLayout()] || {})[code];
+    if (g) return g;
+    return code.replace(/^Key/, '').replace(/^Digit/, '').replace(/^Numpad/, 'Num ');
+  }
+  // Alle plekken die een toets noemen: de vier rijtoetsen, de uitleg, STOP, de toeter, de extra motoren.
+  function showKeys() {
+    const k = G.keys, names = ['up', 'left', 'down', 'right'].map((a) => keyName(k[a]));
+    qsa('.keys .key[data-k]').forEach((n) => { n.textContent = keyName(k[n.dataset.k]); });
+    $('keyNote').textContent = t('keys.note', names.every((n) => n.length === 1) ? names.join('') : names.join(' '), keyName(k.turbo), keyName(k.horn), keyName(k.stop));
+    $('stopKey').textContent = k.stop === 'Space' ? t('stop.space') : keyName(k.stop);
+    $('btnHorn').title = t('horn.title', keyName(k.horn));
+    renderAux(); renderKeyBinds();
+  }
+  if (navigator.keyboard && navigator.keyboard.getLayoutMap) navigator.keyboard.getLayoutMap().then((m) => { keyLayout = m; showKeys(); }).catch(() => {});
+  /* Toetsen kiezen in Instellingen: tik op een actie en druk de nieuwe toets. Al in gebruik: de twee ruilen. */
+  const KEY_LABEL = { up: () => t('keys.fw'), down: () => t('keys.bw'), left: () => t('keys.left'), right: () => t('keys.right'), turbo: () => t('keys.turbo'),
+    horn: () => t('horn.aria'), stop: () => t('keys.stop'), a0m: () => t('aux.n', 1) + ' ' + t('aux.minus'), a0p: () => t('aux.n', 1) + ' ' + t('aux.plus'),
+    a1m: () => t('aux.n', 2) + ' ' + t('aux.minus'), a1p: () => t('aux.n', 2) + ' ' + t('aux.plus') };
+  let keyCap = null;
+  function renderKeyBinds() {
+    const box = $('keyBinds');
+    box.textContent = '';
+    for (const a of Object.keys(KEY_DEF)) {
+      const row = el('div', 'keybind'), lab = el('span'), b = el('button', 'btn sm kbtn' + (keyCap === a ? ' wait' : ''));
+      lab.textContent = KEY_LABEL[a]();
+      b.type = 'button'; b.dataset.act = a;
+      b.textContent = keyCap === a ? t('keys.press') : keyName(G.keys[a]);
+      b.setAttribute('aria-label', KEY_LABEL[a]() + ': ' + b.textContent);
+      b.addEventListener('click', () => { keyCap = keyCap === a ? null : a; renderKeyBinds(); sfx.tick(); });
+      row.append(lab, b); box.appendChild(row);
+    }
+  }
+  function captureKey(e) {
+    e.preventDefault(); e.stopPropagation();
+    const a = keyCap;
+    if (e.code === 'Escape') { keyCap = null; renderKeyBinds(); return; }
+    if (KEY_BAD.test(e.code) || !/^[A-Za-z0-9]{2,24}$/.test(e.code)) { toast(t('keys.bad'), 'warn'); sfx.err(); return; }
+    const other = Object.keys(G.keys).find((x) => x !== a && G.keys[x] === e.code);
+    if (other) { G.keys[other] = G.keys[a]; toast(t('keys.swapped', keyName(G.keys[other]), KEY_LABEL[other]()), 'ok'); }
+    G.keys[a] = e.code; keyCap = null;
+    save(); buildKeys(); showKeys(); sfx.ready();
+  }
+  $('btnKeysReset').addEventListener('click', () => { G.keys = cleanKeys(null); keyCap = null; save(); buildKeys(); showKeys(); sfx.tick(); toast(t('keys.resetDone'), 'ok'); });
   const STEP = 20; // maximale verandering per tik van 50 ms: zachte aanloop
   const TILT_FULL = 25; // graden kantelen voor volle uitslag
   const needReady = () => { if (st.phase === 'ready') return true; toast(t('msg.needConnect'), 'warn'); sfx.err(); return false; };
@@ -819,6 +904,7 @@
 
   const typing = (e) => e.target && /^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName) && e.target.type !== 'range' && e.target.type !== 'checkbox';
   window.addEventListener('keydown', (e) => {
+    if (keyCap) { captureKey(e); return; }
     if (bv.open) {
       if (e.code === 'Escape') closeBuild();
       else if ((e.code === 'ArrowRight' || e.code === 'ArrowLeft') && !typing(e)) { e.preventDefault(); buildGo(e.code === 'ArrowRight' ? 1 : -1); }
@@ -826,11 +912,11 @@
     }
     if (e.code === 'Escape') { closeShare(); return; }
     if (e.ctrlKey || e.metaKey || e.altKey || typing(e)) return;
-    if (e.code === 'Space') { e.preventDefault(); if (!e.repeat) emergencyStop(); return; }
+    if (keyOf[e.code] === 'stop') { e.preventDefault(); if (!e.repeat) emergencyStop(); return; }
     // Tijdens het programmeren sturen toetsen de robot niet (pijltjes en letters zijn voor de editor).
     if (st.view === 'viewCode') return;
-    if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') { if (!st.turbo) setTurbo(true); return; }
-    if (e.code === 'KeyH') { if (!e.repeat) { $('btnHorn').classList.add('on'); beep(); } return; }
+    if (keyOf[e.code] === 'turbo') { if (!st.turbo) setTurbo(true); return; }
+    if (keyOf[e.code] === 'horn') { if (!e.repeat) { $('btnHorn').classList.add('on'); beep(); } return; }
     const k = KEYMAP[e.code], a = AUXKEYS[e.code];
     if (k) {
       e.preventDefault();
@@ -844,8 +930,8 @@
     }
   });
   window.addEventListener('keyup', (e) => {
-    if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') { setTurbo(false); return; }
-    if (e.code === 'KeyH') { $('btnHorn').classList.remove('on'); return; }
+    if (keyOf[e.code] === 'turbo') { setTurbo(false); return; }
+    if (keyOf[e.code] === 'horn') { $('btnHorn').classList.remove('on'); return; }
     const k = KEYMAP[e.code], a = AUXKEYS[e.code];
     if (k) {
       // Laat de richting pas los als geen van beide toetsen (letter of pijl) nog ingedrukt is.
@@ -855,6 +941,7 @@
     } else if (a) { if (S.aux[a[0]].mode === 'toggle') return; if (st.aux[a[0]] === a[1]) st.aux[a[0]] = 0; holdBtn(a[0], a[1], false); }
   });
   window.addEventListener('blur', halt);
+  window.addEventListener('blur', () => { if (keyCap) { keyCap = null; renderKeyBinds(); } });
   document.addEventListener('visibilitychange', () => { if (document.hidden) halt(); else keepAwake(st.phase === 'ready'); });
 
   // Aan/uit-stand: één tik start de motor (of keert hem om), nog een tik in dezelfde richting stopt hem.
@@ -890,7 +977,7 @@
     auxPorts().forEach((port, i) => {
       if (!port) return;
       any = true;
-      const a = S.aux[i], row = el('div', 'auxrow on'), label = el('span'), b = el('b'), keys = i === 0 ? ['Q', 'E'] : ['F', 'R'];
+      const a = S.aux[i], row = el('div', 'auxrow on'), label = el('span'), b = el('b'), keys = [keyName(G.keys['a' + i + 'm']), keyName(G.keys['a' + i + 'p'])];
       label.textContent = auxName(i) + ' '; b.textContent = '(' + port + ')'; label.appendChild(b); row.appendChild(label);
       [-1, 1].forEach((dir, j) => {
         const btn = el('button', 'btn hold'), k = el('kbd');
@@ -2654,7 +2741,7 @@
     phaseTexts(); setText($('hint'), t(...st.hint));
     fillStatic(); fillProfiles(); renderAuxSettings(); syncSettings(); showChips(); rebuildEditor(); showCodeMode(); renderModels();
     showSensors(st.sensors);
-    showBle();
+    showBle(); showKeys();
     // Vertalingen die een taalexpert nog niet (helemaal) heeft nagekeken: dat eerlijk zeggen (zie tools/lqa.py).
     const info = langInfo(), note = $('langNote');
     const msg = !I18N[curLang()] ? t('lang.loadFail') : info.reviewed < 1 ? t('lang.unreviewed', Math.floor((info.reviewed || 0) * 100)) : '';

@@ -59,6 +59,10 @@ no light matrix) sounds play on the phone and pictures are skipped.
 - Light animation: draw up to eight 5x5 pictures and play them on the hub's light matrix; also a block
 - Draw a route: draw a line with your finger on a 1, 2 or 4 m square; it becomes turns and straight
   stretches (the turns use the hub's gyro sensor), to drive at once or save as a block program
+- Keyboard: drive keys go by position, so QWERTY, AZERTY and QWERTZ all work; the labels show the
+  letters of your own keyboard (where the browser tells the app, otherwise a guess from the language).
+  Settings > Keyboard lets you choose the key for every action (drive, turbo, horn, STOP, extra
+  motors); a key already in use swaps. The arrow keys always drive
 - Game controller (Gamepad API): left stick drives (tank mode: one stick per side), the D-pad works
   like the arrow keys, A is the horn, B or Start is STOP, RB is turbo. After STOP the stick must go
   back to the middle before it drives again; unplugging the controller stops the robot

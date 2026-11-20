@@ -650,3 +650,10 @@ html[data-theme="dark"] #pyCheat code{color:var(--accent-hi)}
 .drawbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin-top:10px}
 .drawbar select{width:auto}
 .langnote{margin:12px 0 0;padding:8px 12px;border-left:4px solid var(--warn,#c97a00);border-radius:0 10px 10px 0;background:rgba(201,122,0,.1)}
+/* Toetsen kiezen */
+.keybinds{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px 18px;margin:12px 0}
+.keybind{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.keybind span{font-weight:600}
+.kbtn{min-width:76px}
+.kbtn.wait{border-color:var(--accent);color:var(--accent)}
+@media (hover:none) and (pointer:coarse){.keycard{display:none}}

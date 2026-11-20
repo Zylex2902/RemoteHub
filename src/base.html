@@ -92,14 +92,14 @@
             <div class="key k-s" data-k="down">S</div>
             <div class="key k-d" data-k="right">D</div>
           </div>
-          <div class="keynote" data-i18n="keys.note"></div>
+          <div class="keynote" id="keyNote"></div>
         </div>
         <div class="ctltop">
           <div class="meters">
             <div class="meter"><span>L</span><div class="track"><div class="fill" id="fillL"></div></div><output id="outL">0</output></div>
             <div class="meter"><span>R</span><div class="track"><div class="fill" id="fillR"></div></div><output id="outR">0</output></div>
           </div>
-          <button class="btn horn" id="btnHorn" data-i18n-title="horn.title" data-i18n-aria="horn.aria">
+          <button class="btn horn" id="btnHorn" data-i18n-aria="horn.aria">
             <svg class="ico" viewBox="0 0 24 24"><path d="M3 10v4h3l6 4V6l-6 4z"/><path d="M16 9a4 4 0 0 1 0 6"/><path d="M19 6a8 8 0 0 1 0 12"/></svg>
           </button>
         </div>
@@ -110,7 +110,7 @@
         <div class="aux" id="aux"></div>
         <button class="stop" id="btnStop">
           <svg class="ico" viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="2" fill="currentColor"/></svg>
-          STOP <small data-i18n="stop.space">spatie</small>
+          STOP <small id="stopKey">spatie</small>
         </button>
       </div>
     </div>
@@ -339,6 +339,13 @@
       </div>
       <p class="small langnote hide2" id="langNote"></p>
       <p class="small" style="margin:12px 0 0" data-i18n="app.slotHelp"></p>
+    </div>
+
+    <div class="card keycard">
+      <h2 data-i18n="keys.title">Toetsenbord</h2>
+      <p class="small" style="margin:0" data-i18n="keys.help"></p>
+      <div class="keybinds" id="keyBinds"></div>
+      <div class="rowbtns"><button class="btn sm" id="btnKeysReset" data-i18n="keys.reset">Standaardtoetsen</button></div>
     </div>
 
     <div class="card">

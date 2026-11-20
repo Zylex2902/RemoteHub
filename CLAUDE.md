@@ -126,6 +126,10 @@ no App Store or Google Play badges before then.
   modules): one `async def stackN()` per stack, helpers only for what is used; comments come from `pyg.*`.
 - Draw a route: `Cards.fromPath` simplifies the finger line (Ramer-Douglas-Peucker) into turn + moveFor
   cards; it runs with `runCards()` in the Drive view (any steering input stops it) or is saved as a program.
+- Keyboard: actions are bound to `KeyboardEvent.code` (position), stored in `G.keys` (`KEY_DEF` defaults,
+  `cleanKeys()` validates). Labels via `keyName()`: `navigator.keyboard.getLayoutMap()` where it exists,
+  else an AZERTY/QWERTZ guess from the language. Arrows always drive; Escape, Tab, arrows and F-keys
+  cannot be bound. Every place that names a key goes through `showKeys()`.
 - Game controller: `pollPad()` in the 50 ms tick, standard mapping only. Ignored in Code and the building
   guide; B/Start = STOP; after any `halt()` the stick must return to centre (`st.pad.lock`) before it
   drives again; disconnect calls `halt()`.

@@ -1,5 +1,5 @@
 // End-to-end test: runs the built page in headless Chrome against a simulated hub.
-// ONLY=AB node tests/test_page.js runs just those sections (A-O).
+// ONLY=AB node tests/test_page.js runs just those sections (A-P).
 const { chromium } = require('playwright');
 const jsQR = require('jsqr');
 const assert = require('assert');
@@ -1133,6 +1133,59 @@ let HTTP = '';
   assert.strictEqual(await note(page), L('en')['lang.loadFail']);
   await page.context().close();
   console.log('O ok: German detected and loaded on demand, French at runtime, Japanese stored, offline falls back to English with a note');
+  }
+  // ---------- P. keyboard: labels from the real layout (AZERTY), keys by position, choosing keys, swap, reset ----------
+  if (RUN('P')) {
+  page = await open({ viewport: { width: 1280, height: 860 }, locale: 'fr-FR' }, {}, FILE, () => {
+    const az = { KeyQ: 'a', KeyW: 'z', KeyA: 'q', KeyZ: 'w', KeyS: 's', KeyD: 'd', KeyE: 'e', KeyR: 'r', KeyF: 'f', KeyH: 'h', KeyI: 'i', KeyX: 'x', KeyK: 'k' };
+    Object.defineProperty(navigator, 'keyboard', { value: { getLayoutMap: async () => new Map(Object.entries(az)) } });
+  });
+  await page.waitForTimeout(400);
+  const F = require('../src/i18n/fr.json');
+  let r = await page.evaluate(() => ({ keys: [...document.querySelectorAll('.keys .key')].map((k) => k.textContent).join(''), note: document.getElementById('keyNote').textContent }));
+  assert.strictEqual(r.keys, 'ZQSD', 'labels of an AZERTY keyboard');
+  assert.ok(r.note.startsWith('ZQSD') && r.note.includes(F['key.shift']) && r.note.includes(F['key.space']), r.note);
+  await page.click('#btnConnect'); await waitPhase(page, 'ready');
+  await page.keyboard.down('KeyW'); await page.waitForTimeout(400);   // the key labelled Z on AZERTY
+  assert.ok(/^C:-\d+ D:\d+$/.test(await last(page)), 'Z (position W) drives forward');
+  await page.keyboard.up('KeyW'); await page.waitForTimeout(500);
+  // choose a new key for forward: I
+  await page.click('.tab2[data-view="viewDrive"]').catch(() => {});
+  await page.click('.kbtn[data-act="up"]');
+  assert.strictEqual(await page.$eval('.kbtn[data-act="up"]', (b) => b.textContent), F['keys.press']);
+  await page.keyboard.press('KeyI'); await page.waitForTimeout(100);
+  assert.strictEqual(await page.$eval('.kbtn[data-act="up"]', (b) => b.textContent), 'I');
+  assert.ok((await last(page)) === 'C:0 D:0', 'pressing the new key while choosing it does not drive');
+  await page.keyboard.down('KeyI'); await page.waitForTimeout(400);
+  assert.ok(/^C:-\d+ D:\d+$/.test(await last(page)), 'I drives forward now');
+  await page.keyboard.up('KeyI'); await page.waitForTimeout(500);
+  await page.keyboard.down('KeyW'); await page.waitForTimeout(400);
+  assert.strictEqual(await last(page), 'C:0 D:0', 'the old key does nothing'); await page.keyboard.up('KeyW');
+  // a key that is in use: the two swap
+  await page.click('.kbtn[data-act="left"]'); await page.keyboard.press('KeyI'); await page.waitForTimeout(100);
+  r = await page.evaluate(() => { const g = JSON.parse(localStorage.getItem('hubremote3')).keys; return [g.up, g.left]; });
+  assert.deepStrictEqual(r, ['KeyA', 'KeyI'], 'forward got the old left key');
+  assert.ok((await page.$eval('#toasts', (e) => e.textContent)).includes('Q'), 'swap message names the key as printed (Q)');
+  // Escape cancels; Tab and arrows are refused
+  await page.click('.kbtn[data-act="horn"]'); await page.keyboard.press('Tab'); await page.waitForTimeout(100);
+  assert.strictEqual(await page.$eval('.kbtn[data-act="horn"]', (b) => b.textContent), F['keys.press'], 'Tab refused, still waiting');
+  await page.keyboard.press('Escape'); await page.waitForTimeout(100);
+  assert.strictEqual(await page.$eval('.kbtn[data-act="horn"]', (b) => b.textContent), 'H');
+  // STOP on another key, kept after a reload
+  await page.click('.kbtn[data-act="stop"]'); await page.keyboard.press('KeyX'); await page.waitForTimeout(100);
+  assert.strictEqual(await page.$eval('#stopKey', (e) => e.textContent), 'X');
+  await page.reload(); await page.waitForTimeout(500);
+  await page.click('#btnConnect'); await waitPhase(page, 'ready');
+  await page.keyboard.down('KeyA'); await page.waitForTimeout(400);
+  assert.ok(/^C:-\d+ D:\d+$/.test(await last(page)), 'kept after reload: Q (position A) drives forward');
+  await page.keyboard.press('KeyX'); await page.waitForTimeout(300);
+  assert.strictEqual(await last(page), 'C:0 D:0', 'X is STOP'); assert.ok((await cmds(page)).includes('halt'));
+  await page.keyboard.up('KeyA');
+  await page.click('#btnKeysReset'); await page.waitForTimeout(100);
+  assert.strictEqual(await page.evaluate(() => [...document.querySelectorAll('.keys .key')].map((k) => k.textContent).join('')), 'ZQSD');
+  assert.strictEqual(await page.$eval('#stopKey', (e) => e.textContent), F['stop.space']);
+  await page.context().close();
+  console.log('P ok: AZERTY labels, keys by position, choosing a key, swap, refused keys, STOP on another key, kept after reload, reset');
   }
   await browser.close(); server.close();
   assert.deepStrictEqual(errors, [], 'page errors: ' + errors.join('\n'));
