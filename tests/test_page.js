@@ -310,7 +310,28 @@ let HTTP = '';
   assert.ok(/poging 2/.test(lg) && !/poging 3/.test(lg), lg);
   assert.strictEqual(await page.$eval('#pill', (e) => e.dataset.phase), 'idle');
   await page.context().close();
-  console.log('D ok: fallback, 20-byte hub, migration, link drops while connecting');
+  // a real Prime reports 4096-byte chunks (and went off on an iPhone): pieces stay within two BLE packets
+  page = await open({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true }, { maxChunk: 4096, maxMessage: 4096, maxPacket: 509 });
+  await page.click('#btnConnect'); await waitPhase(page, 'ready', 20000);
+  let chunks = (await page.evaluate(() => window.__hub.events)).filter((x) => /^chunk:/.test(x)).map((x) => +x.split(':')[1]);
+  assert.ok(chunks.length > 10 && Math.max(...chunks) <= 2 * 180 - 16, 'small pieces: ' + chunks.slice(0, 5).join(','));
+  assert.ok(/blok 344 B \(max 509\/4096\/4096\)/.test(await page.$eval('#log', (e) => e.textContent)), 'limits logged');
+  await page.context().close();
+  // a drop while talking to the hub: careful mode from then on (kept, shown in Settings), last message logged
+  page = await open({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true }, { dropAfterInfo: 1, maxChunk: 4096, maxMessage: 4096, maxPacket: 509 });
+  await page.click('#btnConnect'); await waitPhase(page, 'ready', 30000);
+  lg = await page.$eval('#log', (e) => e.textContent);
+  assert.ok(/laatste bericht 0x[0-9a-f]{2}, \d+ B/.test(lg) && /voorzichtiger/.test(lg) && /Stap: hubgegevens opvragen/.test(lg) && /Stap: programma naar de hub sturen/.test(lg), lg.slice(-900));
+  const ev = await page.evaluate(() => window.__hub.events);
+  chunks = ev.slice(ev.lastIndexOf(ev.find((x) => /^upload:program\.py/.test(x)))).filter((x) => /^chunk:/.test(x)).map((x) => +x.split(':')[1]);
+  assert.ok(chunks.length && Math.max(...chunks) <= 180 - 16, 'careful: one packet per piece: ' + Math.max(...chunks));
+  const asks = (await page.evaluate(() => window.__hub.tunnel.map((x) => x.text))).filter((x) => x === '?').length;
+  assert.strictEqual(asks, 1, 'careful: only the first attempt asked; the careful retry uploads without asking');
+  assert.ok(await page.evaluate(() => JSON.parse(localStorage.getItem('hubremote3')).careful === true));
+  await page.click('.tab[data-view="viewSettings"]'); await page.waitForTimeout(300);
+  assert.ok(await page.$eval('#chkCareful', (e) => e.checked));
+  await page.context().close();
+  console.log('D ok: fallback, 20-byte hub, migration, link drops while connecting, small upload pieces, careful mode');
 
   }
   // ---------- E. layouts with sensors and an extra motor showing ----------

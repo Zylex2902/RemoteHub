@@ -30,7 +30,7 @@
     hubVol: 60, voice: 'normal', react: true, song: [], path: [], programs: [], progActive: '', hubKind: 'auto',
     codeMode: 'blocks', py: [], pyActive: '',
     anim: { frames: ['0000009090000009000909990', '0000009099000009000909990'], ms: 300 },
-    keys: null };
+    keys: null, careful: false };
   // Toetsen per actie, als plaats op het toetsenbord (KeyboardEvent.code): op AZERTY is KeyW de Z.
   const KEY_DEF = { up: 'KeyW', down: 'KeyS', left: 'KeyA', right: 'KeyD', turbo: 'ShiftLeft', horn: 'KeyH', stop: 'Space', a0m: 'KeyQ', a0p: 'KeyE', a1m: 'KeyF', a1p: 'KeyR' };
   const KEY_BAD = /^(Escape|Tab|Arrow\w+|Meta\w*|OS\w*|ContextMenu|CapsLock|NumLock|F\d+|Unidentified)$/;
@@ -99,6 +99,7 @@
         id: typeof x.id === 'string' && x.id ? x.id.slice(0, 12) : uid(), name: String(x.name || 'Python').slice(0, 30), src: x.src.slice(0, PY_MAX) }));
       G.pyActive = typeof raw.pyActive === 'string' ? raw.pyActive : '';
       G.keys = cleanKeys(raw.keys);
+      G.careful = raw.careful === true;
       if (raw.anim && Array.isArray(raw.anim.frames)) {
         const fr = raw.anim.frames.filter((f) => typeof f === 'string' && /^[0-9]{25}$/.test(f)).slice(0, 8);
         if (fr.length) G.anim = { frames: fr, ms: num(raw.anim.ms, 100, 1000, 300) };
@@ -211,7 +212,8 @@
           if (this.onMessage) { try { this.onMessage(msg); } catch (e) { console.error(e); } }
         }
       };
-      this._lost = () => { this.lostStep = this.step; this.cleanup(); if (this.onLost) this.onLost(); };
+      this._lost = () => { this.lostStep = this.step; this.lostMsg = this.lastMsg; this.cleanup(); if (this.onLost) this.onLost(); };
+      this.lastMsg = '';
     }
     get connected() { return !!(this.device && this.device.gatt && this.device.gatt.connected); }
     async open() {
@@ -256,7 +258,11 @@
       if (this.rx.writeValueWithoutResponse) await this.rx.writeValueWithoutResponse(part);
       else await this.rx.writeValue(part);
     }
-    send(payload) { return this.raw(Proto.pack(payload)); }
+    send(payload) {
+      // Wat het laatst verstuurd is (type en grootte): staat in het logboek als de hub de verbinding verbreekt.
+      this.lastMsg = '0x' + payload[0].toString(16).padStart(2, '0') + ', ' + payload.length + ' B';
+      return this.raw(Proto.pack(payload));
+    }
     text(s) { return this.send(Proto.tunnel(enc.encode(s))); }
     raw(frame) {
       const job = this.queue.then(async () => {
@@ -493,7 +499,7 @@
   async function uploadSafe(text, slot, progress) {
     const sizes = hub.packet > 20 ? [hub.packet, 20] : [20];
     for (let i = 0; i < sizes.length; i++) {
-      hub.packet = sizes[i];
+      hub.packet = sizes[i]; hub.chunk = chunkFor(hub.packet);
       try { await upload(text, slot, progress); break; }
       catch (e) {
         if (i === sizes.length - 1 || !hub.connected) throw e;
@@ -505,22 +511,37 @@
   }
   async function install() {
     setPhase('uploading'); setHint('hint.upload', G.slot);
+    hub.note('upload');
     await uploadSafe();
+    hub.note('start');
     await startProgram();
   }
 
   // Kennismaken na (her)verbinden: limieten opvragen, programma controleren of laden, batterij/poorten/sensoren volgen.
+  // Grootte van één uploadstuk. De hub meldt tot 4096 B, maar zo'n bericht gaat als ~23 BLE-pakketten zonder
+  // bevestiging achter elkaar; op een iPhone kunnen die wegvallen (een echte hub ging daarbij uit). Daarom een
+  // stuk dat in twee pakketten past (voorzichtig: één), en nooit groter dan het grootste bericht van de hub.
+  function chunkFor(packet) {
+    const lim = hub.limits || {}, perMsg = (G.careful ? 1 : 2) * packet - 16;
+    return Math.max(16, Math.floor(Math.min(lim.chunk || 64, (lim.message || 512) - 16, perMsg) / 4) * 4);
+  }
   async function handshake() {
+    hub.note('info');
     const reply = await hub.request(Proto.infoRequest(), 0x01);
     let info;
     try { info = Proto.parseInfo(reply); } catch (e) { throw new Error(t('err.badReply')); }
     hub.packet = Math.max(20, Math.min(info.maxPacketSize || 20, 180));
-    hub.chunk = Math.max(4, Math.floor((info.maxChunkSize || 64) / 4) * 4);
+    hub.limits = { chunk: info.maxChunkSize, message: info.maxMessageSize };
+    hub.chunk = chunkFor(hub.packet);
     $('infoName').textContent = hub.device.name || 'hub'; $('infoFw').textContent = info.firmware;
-    log(t('msg.fw', info.firmware, hub.packet, hub.chunk));
+    log(t('msg.fw', info.firmware, hub.packet, hub.chunk).replace(/[.。]$/, '') + ' (max ' + info.maxPacketSize + '/' + info.maxMessageSize + '/' + info.maxChunkSize + (G.careful ? ', ' + t('msg.carefulOn') : '') + ')');
     st.product = info.product;
-    if (await ping(700)) { log(t('msg.running')); resetDrive(); }
+    // Voorzichtig verbinden: even wachten en geen tunnelbericht naar een hub waarop misschien nog niets draait.
+    if (G.careful) await sleep(400);
+    hub.note('ping');
+    if (!G.careful && (await ping(700))) { log(t('msg.running')); resetDrive(); }
     else await install();
+    hub.note('status');
     await hub.request(Proto.deviceNotificationRequest(200), 0x29, 2000).catch(() => log(t('msg.noStatus'), 'warn'));
   }
 
@@ -553,6 +574,8 @@
           if (my !== st.session) return;
           if (hub.connected || !hub.device || attempt > 2) throw e;
           log(t('dbg.retry', attempt), 'warn');
+          // Viel de verbinding weg terwijl we met de hub praatten: voortaan voorzichtig verbinden (in Instellingen uit te zetten).
+          if (!G.careful && hub.lostStep && hub.lostStep !== 'gatt') { G.careful = true; save(); syncSettings(); log(t('msg.carefulAuto'), 'warn'); }
           hub.cleanup(); await sleep(800 * attempt);
           if (my !== st.session) return;
           await hub.attach();
@@ -619,7 +642,7 @@
     if (st.py && !st.closing) { const m = t('py.lost'); pyPrint(m + '\n', 'err'); log(m, 'err'); toast(m, 'err'); pyClear(); setPhase('ready'); }
     halt();
     if (st.closing) return;
-    if (st.phase === 'connecting' || st.phase === 'uploading') log(t('dbg.lost', t('dbg.' + (hub.lostStep || 'linked'))), 'warn');
+    if (st.phase === 'connecting' || st.phase === 'uploading') log(t('dbg.lost', t('dbg.' + (hub.lostStep || 'linked'))) + (hub.lostMsg ? ' [' + t('dbg.lastMsg', hub.lostMsg) + ']' : ''), 'warn');
     if (st.phase === 'ready' || st.phase === 'stopped') reconnect();
     // Tijdens verbinden of herstellen vangt de lopende poging de fout zelf af.
   };
@@ -2685,7 +2708,7 @@
     $('rngTrim').value = S.trim; $('outTrim').textContent = S.trim === 0 ? '0' : (S.trim < 0 ? 'L ' : 'R ') + Math.abs(S.trim) + '%';
     $('chkGuard').checked = S.guard; $('rngGuard').value = S.guardCm; $('outGuard').textContent = S.guardCm + ' cm';
     $('selSlot').value = String(G.slot); $('selLang').value = LANG_CODES.includes(G.lang) ? G.lang : 'auto';
-    $('chkSound').checked = G.sound; $('chkHaptic').checked = G.haptic; $('selTheme').value = G.theme;
+    $('chkSound').checked = G.sound; $('chkHaptic').checked = G.haptic; $('chkCareful').checked = G.careful; $('selTheme').value = G.theme;
     $('selHubKind').value = G.hubKind;
     $('rngVol').value = G.hubVol; $('outVol').textContent = G.hubVol + '%'; $('chkReact').checked = G.react; $('selVoice').value = G.voice;
     $('btnRoute').disabled = !G.path.length; $('btnSongPlay').disabled = !G.song.length;
@@ -2705,6 +2728,7 @@
   bind('selSlot', 'change', (n) => { G.slot = +n.value; sfx.tick(); if (st.phase !== 'idle') log(t('msg.slotLater'), 'warn'); });
   bind('chkSound', 'change', (n) => { G.sound = n.checked; sfx.tick(); });
   bind('chkHaptic', 'change', (n) => { G.haptic = n.checked; sfx.tick(); buzz(20); });
+  bind('chkCareful', 'change', (n) => { G.careful = n.checked; sfx.tick(); });
   bind('rngVol', 'input', (n) => { G.hubVol = +n.value; if (st.phase === 'ready') hub.text('vol ' + G.hubVol).catch(() => {}); });
   bind('chkReact', 'change', (n) => { G.react = n.checked; sfx.tick(); buzz(10); });
   bind('selVoice', 'change', (n) => { G.voice = n.value; sfx.tick(); });

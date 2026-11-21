@@ -56,7 +56,7 @@ const fakeHub = (opts) => {
     const v = new DataView(m.buffer, m.byteOffset, m.byteLength);
     switch (m[0]) {
       case 0x00: { const r = new Uint8Array(17); const d = new DataView(r.buffer); r[0] = 1; r[1] = 1; r[2] = 4; d.setUint16(3, 9, true); r[5] = 3; r[6] = 4; d.setUint16(7, 2, true);
-        d.setUint16(9, opts.maxPacket, true); d.setUint16(11, 2048, true); d.setUint16(13, 102, true); d.setUint16(15, opts.product !== undefined ? opts.product : opts.small ? 1 : 0, true); notify(r);
+        d.setUint16(9, opts.maxPacket, true); d.setUint16(11, opts.maxMessage || 2048, true); d.setUint16(13, opts.maxChunk || 102, true); d.setUint16(15, opts.product !== undefined ? opts.product : opts.small ? 1 : 0, true); notify(r);
         if (opts.dropAfterInfo > 0) { opts.dropAfterInfo--; setTimeout(() => H.drop(), 20); }   // seen in Bluefy on iPhone
         break; }
       case 0x1e: if (m[1] === 1) { H.events.push('stop'); clearTimeout(H.pyTimer); status(0x1f, H.started); if (H.started) notify(Uint8Array.of(0x20, 1)); H.started = false; H.running = null; }
@@ -80,7 +80,7 @@ const fakeHub = (opts) => {
         H.events.push('upload:' + H.announced.name + ':' + H.announced.slot); H.file = []; H.files[H.announced.slot] = { bytes: H.file, crc: H.announced.crc }; running = 0; status(0x0d, true); break; }
       case 0x10: { if (m.length < 7) { status(0x11, false); break; }
         const crc = v.getUint32(1, true), size = v.getUint16(5, true), chunk = m.subarray(7, 7 + size);
-        const next = Proto.crc(chunk, running); const ok = next === crc && size === m.length - 7 && size <= 102;
+        const next = Proto.crc(chunk, running); const ok = next === crc && size === m.length - 7 && size <= (opts.maxChunk || 102);
         if (ok) { running = next; H.file.push(...chunk); } H.events.push('chunk:' + size + ':' + ok); status(0x11, ok); break; }
       case 0x28: { status(0x29, true); const iv = v.getUint16(1, true); H.events.push('devnot:' + iv);
         clearInterval(timer); timer = setInterval(() => {

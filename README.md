@@ -74,7 +74,9 @@ no light matrix) sounds play on the phone and pictures are skipped.
 - Two dances and a route you record with the joystick and drive again; STOP, the space bar or the
   joystick takes over at once
 - Without a hub, songs, moods and the piano play on the phone itself
-- Reconnects by itself; the robot stops within about a second if the link drops
+- Reconnects by itself; the robot stops within about a second if the link drops. If the link drops while
+  the app is setting up the hub, it switches to careful connecting (slower, in Settings) and the Log
+  shows the step and the last message sent
 - Feedback: Settings > Feedback, or "Report a problem" in the Log. The message goes to the developer as a
   Netlify Forms submission (form `feedback`, no own server); technical details (version, browser, screen,
   hub state, the last 40 log lines with the hub's name replaced) only when the box is ticked, and shown

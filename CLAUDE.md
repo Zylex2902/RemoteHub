@@ -35,7 +35,13 @@ no App Store or Google Play badges before then.
   it never blocks driving; faces use `light_matrix.set_pixel`.
   Wrap anything new in try/except so a missing API cannot stop the drive loop.
 - Upload packets start at min(hub limit, 180) bytes and fall back to 20 if the upload fails;
-  phones often allow less than the hub reports.
+  phones often allow less than the hub reports. Upload pieces (`chunkFor()`) fit in two BLE packets (one in
+  careful mode) and never exceed the hub's max message size: a real Prime reports 4096-byte chunks, and ~23
+  unconfirmed writes in a row is a likely way to lose packets on an iPhone. The RX characteristic of a real
+  hub offers only write-without-response, so there is no flow control except waiting for each piece's reply.
+- Careful connecting (`G.careful`, Settings): 400 ms pause after the info reply, no `?` tunnel message before
+  the program is known to run (it uploads instead), one packet per piece. Turned on by itself when the link
+  drops while talking to the hub. The log names each handshake step and the last message sent before a drop.
 - Every user-facing string lives in `src/i18n/<code>.json`, one file per language, all with the same keys in
   the same order (`en.json` is the source, `nl.json` the owner's original). A new or changed text goes into
   every language file; changing English expires earlier reviews of that key. `npm run lqa:check` fails on
@@ -154,10 +160,11 @@ no App Store or Google Play badges before then.
 - To confirm on hardware: horn, gripper moves, sensors and obstacle guard, reconnect, battery,
   v4 songs and moods (does each short `sound.beep` play cleanly one after another?), faces,
   dances, recorded routes.
-- Bluefy on iPhone (owner, hub firmware 1.8.149): the hub answers the info request, then the link
-  drops at once ("Niet verbonden"); a first try failed with the bare message "2". Cause unknown.
-  The page now logs each connection step and the step where the link dropped, and retries twice
-  without the chooser. Ask for a log screenshot before changing more.
+- Bluefy on iPhone (owner, hub firmware 1.8.149, reports packet 180, chunk 4096): the hub answers the info
+  request, then drops the link within a second and seems to switch off; a first try failed with the bare
+  message "2". Cause still unknown: either the `?` tunnel message to a hub with no program running, or the
+  4 KB upload pieces. 5.7.2 sends small pieces, switches to careful connecting after a drop, and logs the
+  step and last message. Ask for a new log screenshot (lines 'Stap: ...' and 'laatste bericht 0x..').
 - To confirm on devices: Android Chrome, Bluefy on iPhone and iPad, tilt steering (the sign of
   the axes in landscape is a guess), a real foldable.
 - Not started: update notice when a new version is online; native iOS wrapper (needs a native
