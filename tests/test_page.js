@@ -199,7 +199,7 @@ let HTTP = '';
   await page.evaluate(() => { window.__hub.started = true; });
   await page.click('#btnConnect'); await waitPhase(page, 'ready');
   await page.click('#btnDisconnect'); await waitPhase(page, 'idle');
-  assert.deepStrictEqual(await page.evaluate(() => window.__hub.events.slice(-2)), ['stop', 'gatt-disconnect']);
+  assert.deepStrictEqual(await page.evaluate(() => window.__hub.events.slice(-2)), ['bye', 'gatt-disconnect'], 'the control program ends itself; never stopped from outside');
   await page.context().close();
   console.log('A ok: sensors, obstacle stop, motor test, extra motors, gripper, tank, profiles, language, regression');
 
@@ -325,13 +325,30 @@ let HTTP = '';
   const ev = await page.evaluate(() => window.__hub.events);
   chunks = ev.slice(ev.lastIndexOf(ev.find((x) => /^upload:program\.py/.test(x)))).filter((x) => /^chunk:/.test(x)).map((x) => +x.split(':')[1]);
   assert.ok(chunks.length && Math.max(...chunks) <= 180 - 16, 'careful: one packet per piece: ' + Math.max(...chunks));
-  const asks = (await page.evaluate(() => window.__hub.tunnel.map((x) => x.text))).filter((x) => x === '?').length;
-  assert.strictEqual(asks, 1, 'careful: only the first attempt asked; the careful retry uploads without asking');
+  assert.ok(!ev.some((x) => /^stop/.test(x)), 'careful: nothing stopped from outside: ' + ev.join(' '));
   assert.ok(await page.evaluate(() => JSON.parse(localStorage.getItem('hubremote3')).careful === true));
   await page.click('.tab[data-view="viewSettings"]'); await page.waitForTimeout(300);
   assert.ok(await page.$eval('#chkCareful', (e) => e.checked));
   await page.context().close();
-  console.log('D ok: fallback, 20-byte hub, migration, link drops while connecting, small upload pieces, careful mode');
+  // the hub still runs our control program from an earlier visit: it is used as it is, never stopped from outside
+  page = await open({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true }, { oldControl: '7' });
+  await page.click('#btnConnect'); await waitPhase(page, 'ready', 20000);
+  let evs = await page.evaluate(() => window.__hub.events);
+  assert.ok(!evs.some((x) => /^stop|^upload/.test(x)), 'no stop and no upload: ' + evs.join(' '));
+  await page.context().close();
+  // an older version still running: it does not know 'bye', so the app asks for a restart instead of stopping it
+  page = await open({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true }, { oldControl: '6' });
+  await page.click('#btnConnect');
+  await page.waitForFunction(() => /uit en weer aan/.test(document.getElementById('log').textContent), null, { timeout: 20000 });
+  evs = await page.evaluate(() => window.__hub.events);
+  assert.ok(!evs.some((x) => /^stop/.test(x)) && !(await page.evaluate(() => window.__hub.crashed)), 'old program not stopped from outside: ' + evs.join(' '));
+  // after turning the hub off and on, nothing runs: the new program is uploaded and started
+  await page.evaluate(() => { window.__hub.started = false; window.__hub.running = null; window.__hub.program = ''; });
+  await page.click('#btnConnect'); await waitPhase(page, 'ready', 20000);
+  evs = await page.evaluate(() => window.__hub.events);
+  assert.ok(evs.includes('upload:program.py:19') && evs.includes('start:19') && !evs.some((x) => /^stop/.test(x)), evs.join(' '));
+  await page.context().close();
+  console.log('D ok: fallback, 20-byte hub, migration, link drops while connecting, small upload pieces, careful mode, running program reused, old program not stopped');
 
   }
   // ---------- E. layouts with sensors and an extra motor showing ----------

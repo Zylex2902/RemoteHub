@@ -26,7 +26,7 @@ try:
 except Exception:
     distance_sensor = None
 
-VERSION = '6'
+VERSION = '7'
 PORTS = {}
 for _n in 'ABCDEF':
     try:
@@ -49,6 +49,9 @@ notes = []
 # Muziek: [start van de huidige noot, lengte in ms, volume]
 tune = [0, 0, 80]
 MAX_NOTES = 400
+# 'bye' van de pagina: netjes stoppen en het programma laten eindigen. Een stopverzoek van buitenaf terwijl
+# dit programma draait (en de tunnel gebruikt) liet een echte hub de verbinding verbreken en uitgaan.
+alive = [True]
 
 
 def say(text):
@@ -258,6 +261,12 @@ def hw():
 
 
 def handle(text):
+    if text == 'bye':
+        stop_all()
+        hush()
+        say('bye')
+        alive[0] = False
+        return
     if text == '?':
         say('rdy ' + VERSION)
         hw()
@@ -358,7 +367,7 @@ async def main():
         pass
     say('rdy ' + VERSION)
     hw()
-    while True:
+    while alive[0]:
         if inbox:
             while inbox:
                 handle(inbox.pop(0))
@@ -373,5 +382,9 @@ async def main():
             poll_inputs()
         await runloop.sleep_ms(10)
 
+    try:
+        light_matrix.clear()
+    except Exception:
+        pass
 
 runloop.run(main())

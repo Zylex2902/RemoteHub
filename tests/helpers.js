@@ -35,7 +35,10 @@ const launchOptions = (extraArgs) => ({
 const fakeHub = (opts) => {
   const H = (window.__hub = { tunnel: [], file: [], files: {}, running: null, announced: null, started: false, events: [], writes: 0, maxWrite: 0, battery: 87, connects: 0, dist: 350, color: 9, force: 40,
     imu: { face: 0, yaw: 0, pitch: 0, roll: 0 }, m: {} });
-  // the big hub has its motors on C and D; the small hub (2 ports) on A and B
+
+  const ver = () => (/VERSION = '(\d+)'/.exec(H.program || '') || [0, '0'])[1];
+  // a hub that still runs an older control program from an earlier visit
+  if (opts.oldControl) { H.started = true; H.running = 'control'; H.program = "import hub, motor, runloop, time\nVERSION = '" + opts.oldControl + "'"; }  // the big hub has its motors on C and D; the small hub (2 ports) on A and B
   const MP = opts.small ? [['A', 0], ['B', 1]] : [['C', 2], ['D', 3]];
   MP.forEach(([k]) => { H.m[k] = { pos: 0, spd: 0, last: 0, goal: null, rate: 0 }; });
   const hwLine = opts.small ? 'hw 0 0 2' : 'hw 1 1 6';
@@ -59,14 +62,17 @@ const fakeHub = (opts) => {
         d.setUint16(9, opts.maxPacket, true); d.setUint16(11, opts.maxMessage || 2048, true); d.setUint16(13, opts.maxChunk || 102, true); d.setUint16(15, opts.product !== undefined ? opts.product : opts.small ? 1 : 0, true); notify(r);
         if (opts.dropAfterInfo > 0) { opts.dropAfterInfo--; setTimeout(() => H.drop(), 20); }   // seen in Bluefy on iPhone
         break; }
-      case 0x1e: if (m[1] === 1) { H.events.push('stop'); clearTimeout(H.pyTimer); status(0x1f, H.started); if (H.started) notify(Uint8Array.of(0x20, 1)); H.started = false; H.running = null; }
+      case 0x1e: if (m[1] === 1) {
+          // a real hub dropped the link and went off when its running control program was stopped from outside
+          if (H.started && H.running === 'control') { H.events.push('stop-control'); H.crashed = true; setTimeout(() => H.drop(), 10); break; }
+          H.events.push('stop'); clearTimeout(H.pyTimer); status(0x1f, H.started); if (H.started) notify(Uint8Array.of(0x20, 1)); H.started = false; H.running = null; }
         else { H.events.push('start:' + m[2]);
           // every slot keeps its own file; the control program answers on the tunnel, anything else is a user's Python program
           const f = H.files[m[2]] || { bytes: [], crc: -1 }, all = Uint8Array.from(f.bytes);
           H.fileOk = Proto.crc(all) === f.crc; H.program = new TextDecoder().decode(all);
           status(0x1f, H.fileOk); H.started = H.fileOk; notify(Uint8Array.of(0x20, 0));
           if (!H.fileOk) break;
-          if (H.program.startsWith('import hub, motor, runloop, time')) { H.running = 'control'; setTimeout(() => { tun('rdy 6'); tun(hwLine); }, 30); break; }
+          if (H.program.startsWith('import hub, motor, runloop, time')) { H.running = 'control'; setTimeout(() => { tun('rdy ' + ver()); tun(hwLine); }, 30); break; }
           // Python: print('...') lines come back as console output, 1/0 gives a traceback, while True keeps running
           H.running = 'python'; H.pyRuns = (H.pyRuns || 0) + 1;
           const prints = [...H.program.matchAll(/print\('([^']*)'\)/g)].map((x) => x[1]);
@@ -103,7 +109,12 @@ const fakeHub = (opts) => {
         if (parts[0] === 'deg') parts.slice(1).forEach((tok) => { const [p, d, sp] = tok.split(':'); const mo = H.m[p]; if (mo) { mo.last = 0; mo.spd = 0; mo.goal = mo.pos + +d; mo.rate = +sp * 10; } });
         else if (parts[0] === 'halt') Object.values(H.m).forEach((mo) => { mo.spd = 0; mo.last = 0; mo.goal = null; });
         else if (/^[A-F]:-?\d+$/.test(parts[0])) parts.forEach((tok) => { const [p, v] = tok.split(':'); const mo = H.m[p]; if (mo && mo.last !== +v) { mo.last = +v; mo.spd = +v; mo.goal = null; } });
-        if (H.started && H.running === 'control' && text === '?') { tun('rdy 6'); tun(hwLine); } break; }
+        if (H.started && H.running === 'control' && text === '?') { tun('rdy ' + ver()); tun(hwLine); }
+        // 'bye': the control program (version 7 and later) ends itself; older versions do not know it
+        if (H.started && H.running === 'control' && text === 'bye' && +ver() >= 7) {
+          H.events.push('bye'); tun('bye'); setTimeout(() => { H.started = false; H.running = null; notify(Uint8Array.of(0x20, 1)); }, 50);
+        }
+        break; }
     }
   };
   const ch = (name) => ({

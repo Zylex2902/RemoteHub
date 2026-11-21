@@ -3,7 +3,7 @@
   const qsa = (sel, root) => Array.from((root || document).querySelectorAll(sel));
   const el = (tag, cls) => { const e = document.createElement(tag); if (cls) e.className = cls; return e; };
   const PORTS = ['A', 'B', 'C', 'D', 'E', 'F'];
-  const HUB_VERSION = '6';
+  const HUB_VERSION = '7';
   const enc = new TextEncoder(), dec = new TextDecoder();
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
@@ -415,6 +415,7 @@
     if (id === 0x32 || id === 0x33) {
       const text = dec.decode(Proto.parseTunnel(msg)).trim();
       if (text.startsWith('rdy')) { if (st.readyWait) { const r = st.readyWait; st.readyWait = null; r(text); } return; }
+      if (text === 'bye') { if (st.byeWait) { const r = st.byeWait; st.byeWait = null; r(true); } return; }
       // Hubknoppen en gebaren (voor de programmeerkaartjes).
       if (/^btn [LR] [01]$/.test(text)) { st.btn[text[4]] = +text[6]; return; }
       // Wat de hub heeft (lichtscherm, geluid, aantal poorten): bepaalt of het de grote of kleine hub is.
@@ -458,11 +459,20 @@
       setTimeout(() => { if (st.readyWait === resolve) st.readyWait = null; resolve(null); }, ms);
     });
   }
-  // Vraagt het hubprogramma of het (in de juiste versie) al draait.
+  // Vraagt het hubprogramma of het al draait: geeft 'rdy <versie>' terug, of null.
   async function ping(ms) {
     const w = waitReady(ms);
     await hub.text('?');
-    return (await w) === 'rdy ' + HUB_VERSION;
+    return w;
+  }
+  // Het eigen besturingsprogramma laten stoppen met 'bye': het eindigt dan zelf. NOOIT van buitenaf stoppen
+  // (ProgramFlow stop) terwijl het draait: daarbij verbrak een echte hub de verbinding en ging hij uit.
+  async function byeControl() {
+    const w = new Promise((resolve) => { st.byeWait = resolve; setTimeout(() => { if (st.byeWait === resolve) st.byeWait = null; resolve(false); }, 1200); });
+    await hub.text('bye').catch(() => {});
+    const ok = await w;
+    await sleep(300);   // het programma de tijd geven om af te sluiten
+    return ok;
   }
   function resetDrive() { st.lastSent = {}; st.lastText = ''; st.cur.l = 0; st.cur.r = 0; }
 
@@ -480,7 +490,7 @@
     const src = enc.encode(text !== undefined ? text : $('hub-program').textContent.replace(/^\s*\n/, ''));
     const show = progress || ((pct) => { $('barFill').style.width = pct + '%'; });
     show(0);
-    await hub.request(Proto.programFlow(true, slot), 0x1f, 1500).catch(() => {});
+    // Geen stopverzoek hier: het eigen programma is al met 'bye' gestopt, een Python-programma met sendPyStop.
     await hub.request(Proto.clearSlot(slot), 0x47, 3000).catch(() => {});
     let r = await hub.request(Proto.startFileUpload('program.py', slot, Proto.crc(src)), 0x0d);
     if (r[1] !== 0) throw new Error(t('err.refuse'));
@@ -536,11 +546,20 @@
     $('infoName').textContent = hub.device.name || 'hub'; $('infoFw').textContent = info.firmware;
     log(t('msg.fw', info.firmware, hub.packet, hub.chunk).replace(/[.。]$/, '') + ' (max ' + info.maxPacketSize + '/' + info.maxMessageSize + '/' + info.maxChunkSize + (G.careful ? ', ' + t('msg.carefulOn') : '') + ')');
     st.product = info.product;
-    // Voorzichtig verbinden: even wachten en geen tunnelbericht naar een hub waarop misschien nog niets draait.
+    // Voorzichtig verbinden: even wachten en langer op antwoord wachten.
     if (G.careful) await sleep(400);
     hub.note('ping');
-    if (!G.careful && (await ping(700))) { log(t('msg.running')); resetDrive(); }
-    else await install();
+    const rdy = await ping(G.careful ? 1500 : 700);
+    if (rdy === 'rdy ' + HUB_VERSION) { log(t('msg.running')); resetDrive(); }
+    else {
+      if (rdy) {
+        // Een oudere versie draait nog: eerst netjes laten stoppen. Kent die 'bye' niet, dan niet van buitenaf stoppen
+        // (dat liet de hub uitgaan), maar vragen de hub even uit en aan te zetten.
+        hub.note('bye');
+        if (!(await byeControl())) throw new Error(t('err.oldProgram'));
+      }
+      await install();
+    }
     hub.note('status');
     await hub.request(Proto.deviceNotificationRequest(200), 0x29, 2000).catch(() => log(t('msg.noStatus'), 'warn'));
   }
@@ -629,7 +648,7 @@
     try {
       if (hub.connected && was === 'ready') {
         await hub.text(zeroText()).catch(() => {});
-        await hub.request(Proto.programFlow(true, G.slot), 0x1f, 1000).catch(() => {});
+        await byeControl();
       } else if (hub.connected && was === 'python') await hub.request(Proto.programFlow(true, pySlot()), 0x1f, 1000).catch(() => {});
     } finally {
       pyClear(); hub.close(); st.closing = false; setPhase('idle'); setHint('hint.disconnected'); log(t('msg.disconnected')); sfx.lost();
@@ -2095,7 +2114,7 @@
     try {
       // Eerst de afstandsbediening stoppen; zijn motoren staan dan stil.
       await hub.text(zeroText()).catch(() => {});
-      await hub.request(Proto.programFlow(true, G.slot), 0x1f, 1500).catch(() => {});
+      await byeControl();
       if (alive() && !p.stopped) await uploadSafe(src, slot, (pct) => { if (!p.stopped) pyStatus(t('py.loading', pct)); });
       if (!alive()) return;
       if (p.stopped) { pyEnded(); return; }   // STOP tijdens het laden: niet meer starten

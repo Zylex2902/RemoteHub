@@ -39,8 +39,15 @@ no App Store or Google Play badges before then.
   careful mode) and never exceed the hub's max message size: a real Prime reports 4096-byte chunks, and ~23
   unconfirmed writes in a row is a likely way to lose packets on an iPhone. The RX characteristic of a real
   hub offers only write-without-response, so there is no flow control except waiting for each piece's reply.
-- Careful connecting (`G.careful`, Settings): 400 ms pause after the info reply, no `?` tunnel message before
-  the program is known to run (it uploads instead), one packet per piece. Turned on by itself when the link
+- NEVER stop the control program from outside (ProgramFlow stop, 0x1e) while it runs: on a real Prime that
+  made the hub drop the link and switch off (owner's log: last message 0x1e right before the drop). The page
+  sends `bye` instead; the hub program (v7+) stops its motors, answers `bye` and ends itself (`byeControl()`).
+  Used by disconnect, before Python runs, and when an older version answers the ping. An older program that
+  does not know `bye` is never stopped: the app asks the owner to switch the hub off and on. ProgramFlow
+  stop is only for the user's own Python programs. The simulated hub drops the link if the control program is
+  stopped from outside, so tests catch this.
+- Careful connecting (`G.careful`, Settings): 400 ms pause after the info reply, a longer wait for the `?`
+  answer, one packet per piece. Turned on by itself when the link
   drops while talking to the hub. The log names each handshake step and the last message sent before a drop.
 - Every user-facing string lives in `src/i18n/<code>.json`, one file per language, all with the same keys in
   the same order (`en.json` is the source, `nl.json` the owner's original). A new or changed text goes into
@@ -162,9 +169,9 @@ no App Store or Google Play badges before then.
   dances, recorded routes.
 - Bluefy on iPhone (owner, hub firmware 1.8.149, reports packet 180, chunk 4096): the hub answers the info
   request, then drops the link within a second and seems to switch off; a first try failed with the bare
-  message "2". Cause still unknown: either the `?` tunnel message to a hub with no program running, or the
-  4 KB upload pieces. 5.7.2 sends small pieces, switches to careful connecting after a drop, and logs the
-  step and last message. Ask for a new log screenshot (lines 'Stap: ...' and 'laatste bericht 0x..').
+  message "2". The 5.7.2 log showed the last message before the drop: ProgramFlow stop (0x1e) while our
+  control program still ran from an earlier visit. 5.7.3 never stops it from outside (see `bye` above).
+  Still to confirm on the owner's iPhone; ask for a log screenshot if it drops again.
 - To confirm on devices: Android Chrome, Bluefy on iPhone and iPad, tilt steering (the sign of
   the axes in landscape is a guess), a real foldable.
 - Not started: update notice when a new version is online; native iOS wrapper (needs a native
