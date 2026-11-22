@@ -7,7 +7,7 @@ src = re.search(r'<script type="text/plain" id="hub-program">(.*?)</script>', ht
 src = re.sub(r'^\s*\n', '', src)
 ast.parse(src)
 assert all(ord(c) < 128 for c in src), "non-ascii in hub program"
-assert "VERSION = '7'" in src and "HUB_VERSION = '7'" in html
+assert "VERSION = '8'" in src and "HUB_VERSION = '8'" in html
 print("program:", len(src.encode()), "bytes,", src.count("\n"), "lines")
 
 clock = [0]; calls = []; sent = []; script = []; pixels = []; beeps = []; hushes = []
@@ -87,8 +87,8 @@ script[:] = [
 ]
 exec(compile(src, "program.py", "exec"), {"__name__": "__main__"})
 def at(t0, t1): return [(k, p, v) for (t, k, p, v) in calls if t0 <= t < t1]
-assert sent[0] == b"rdy 7" and sent.count(b"rdy 7") == 2, sent
-assert sent[1] == b"hw 1 1 6" and sent.count(b"hw 1 1 6") == 2, sent   # what the big hub has, after each rdy
+assert sent[0] == b"rdy 8" and sent[1] == b"hw 1 1 6", sent   # what the big hub has, after each rdy
+assert sent.count(b"rdy 8") == sent.count(b"hw 1 1 6") >= 4, sent   # also announced while the page is quiet (no need to ask)
 early = [b for b in beeps if b[0] < 4000]
 assert len(early) == 1 and early[0][1:] == (440, 250, 100), beeps
 assert len(pixels) == 7 + 25 and pixels[7] == (0, 0, 100) and pixels[-1] == (4, 4, 55) and pixels[8] == (1, 0, 0), pixels[7:]
@@ -138,7 +138,7 @@ calls.clear(); sent.clear(); beeps.clear(); pixels.clear(); clock[0] = 0; END = 
 script[:] = [(100, b"A:40 B:-40"), (200, b"?"), (300, b"beep"), (310, b"tune 440:100"), (320, b"img 9000000000000000000000009"),
              (330, b"C:50 E:20"), (400, b"deg A:90:50"), (500, b"halt"), (600, b"A:30")]
 exec(compile(src, "program.py", "exec"), {"__name__": "__main__"})
-assert sent[:2] == [b"rdy 7", b"hw 0 0 2"] and sent.count(b"hw 0 0 2") == 2, sent
+assert sent[:2] == [b"rdy 8", b"hw 0 0 2"] and sent.count(b"hw 0 0 2") >= 2, sent
 assert at(100, 200) == [("run", 0, 400), ("run", 1, -400)], at(100, 200)
 assert at(300, 400) == [], 'no speaker, no screen, no ports C and E: nothing happens and nothing breaks'
 assert at(400, 500) == [("deg", 0, (90, 500))]
@@ -152,4 +152,4 @@ exec(compile(src, "program.py", "exec"), {"__name__": "__main__"})
 assert clock[0] < 500, "the program ended right after bye (clock %d)" % clock[0]
 assert b"bye" in sent and sorted(p for (k, p, v) in at(300, 400) if k == "stop") == [0, 1], at(300, 400)
 assert not any(k == "run" and t >= 400 for (t, k, p, v) in calls), "nothing runs after bye"
-print("OK hub program v7: drive, failsafe, ping, horn, gripper, music, images, exact moves, positions, stop modes, buttons, gestures, lights, halt, bye; small hub")
+print("OK hub program v8: drive, failsafe, ping, announces itself when quiet, horn, gripper, music, images, exact moves, positions, stop modes, buttons, gestures, lights, halt, bye; small hub")

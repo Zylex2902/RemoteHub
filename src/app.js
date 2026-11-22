@@ -3,7 +3,7 @@
   const qsa = (sel, root) => Array.from((root || document).querySelectorAll(sel));
   const el = (tag, cls) => { const e = document.createElement(tag); if (cls) e.className = cls; return e; };
   const PORTS = ['A', 'B', 'C', 'D', 'E', 'F'];
-  const HUB_VERSION = '7';
+  const HUB_VERSION = '8';
   const enc = new TextEncoder(), dec = new TextDecoder();
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
@@ -241,7 +241,7 @@
         this.rx = rx; this.tx = tx;
         this.note('linked');
       } catch (e) { e.step = e.step || this.step; throw e; }
-      this.deframer = new Proto.Deframer(); this.queue = Promise.resolve();
+      this.deframer = new Proto.Deframer(); this.queue = Promise.resolve(); this.prog = false;
     }
     cleanup() {
       for (const q of this.waiters.values()) for (const w of q) w.reject(new Error(t('err.closed')));
@@ -263,7 +263,9 @@
       this.lastMsg = '0x' + payload[0].toString(16).padStart(2, '0') + ', ' + payload.length + ' B';
       return this.raw(Proto.pack(payload));
     }
-    text(s) { return this.send(Proto.tunnel(enc.encode(s))); }
+    // Berichten naar het hubprogramma alleen als het (volgens zijn eigen melding) draait. Een tunnelbericht naar
+    // een hub waarop niets draait liet een echte hub de verbinding verbreken en uitgaan; dan liever niets sturen.
+    text(s) { return this.prog ? this.send(Proto.tunnel(enc.encode(s))) : Promise.resolve(false); }
     raw(frame) {
       const job = this.queue.then(async () => {
         if (!this.rx) { const e = new Error(t('err.notConnected')); if (this.lostStep) e.step = 'dropped'; throw e; }
@@ -414,8 +416,8 @@
     const id = msg[0];
     if (id === 0x32 || id === 0x33) {
       const text = dec.decode(Proto.parseTunnel(msg)).trim();
-      if (text.startsWith('rdy')) { if (st.readyWait) { const r = st.readyWait; st.readyWait = null; r(text); } return; }
-      if (text === 'bye') { if (st.byeWait) { const r = st.byeWait; st.byeWait = null; r(true); } return; }
+      if (text.startsWith('rdy')) { hub.prog = true; if (st.readyWait) { const r = st.readyWait; st.readyWait = null; r(text); } return; }
+      if (text === 'bye') { hub.prog = false; if (st.byeWait) { const r = st.byeWait; st.byeWait = null; r(true); } return; }
       // Hubknoppen en gebaren (voor de programmeerkaartjes).
       if (/^btn [LR] [01]$/.test(text)) { st.btn[text[4]] = +text[6]; return; }
       // Wat de hub heeft (lichtscherm, geluid, aantal poorten): bepaalt of het de grote of kleine hub is.
@@ -433,6 +435,7 @@
       if (st.py) pyPrint(raw);
       if (text) log(t('msg.hub', text), /Error|Traceback/.test(text) ? 'err' : 'hub');
     } else if (id === 0x20) {
+      if (msg[1] === 1) hub.prog = false;   // een programma is gestopt: niet meer naar de tunnel sturen
       if (msg[1] === 1 && st.py && st.py.state === 'running') pyEnded();
       else if (msg[1] === 1 && st.phase === 'ready' && !st.closing) {
         halt(); setPhase('stopped'); setHint('hint.stopped');
@@ -459,17 +462,15 @@
       setTimeout(() => { if (st.readyWait === resolve) st.readyWait = null; resolve(null); }, ms);
     });
   }
-  // Vraagt het hubprogramma of het al draait: geeft 'rdy <versie>' terug, of null.
-  async function ping(ms) {
-    const w = waitReady(ms);
-    await hub.text('?');
-    return w;
-  }
+  // Luistert of het hubprogramma draait: het meldt zich zelf elke halve seconde ('rdy <versie>'), of null.
+  // NOOIT eerst iets vragen: een tunnelbericht naar een hub waarop niets draait liet een echte hub uitgaan.
+  const listenReady = (ms) => waitReady(ms);
   // Het eigen besturingsprogramma laten stoppen met 'bye': het eindigt dan zelf. NOOIT van buitenaf stoppen
   // (ProgramFlow stop) terwijl het draait: daarbij verbrak een echte hub de verbinding en ging hij uit.
   async function byeControl() {
     const w = new Promise((resolve) => { st.byeWait = resolve; setTimeout(() => { if (st.byeWait === resolve) st.byeWait = null; resolve(false); }, 1200); });
     await hub.text('bye').catch(() => {});
+    hub.prog = false;   // vanaf nu niets meer naar het programma
     const ok = await w;
     await sleep(300);   // het programma de tijd geven om af te sluiten
     return ok;
@@ -549,7 +550,7 @@
     // Voorzichtig verbinden: even wachten en langer op antwoord wachten.
     if (G.careful) await sleep(400);
     hub.note('ping');
-    const rdy = await ping(G.careful ? 1500 : 700);
+    const rdy = await listenReady(G.careful ? 2000 : 1300);
     if (rdy === 'rdy ' + HUB_VERSION) { log(t('msg.running')); resetDrive(); }
     else {
       if (rdy) {

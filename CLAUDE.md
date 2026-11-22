@@ -39,6 +39,13 @@ no App Store or Google Play badges before then.
   careful mode) and never exceed the hub's max message size: a real Prime reports 4096-byte chunks, and ~23
   unconfirmed writes in a row is a likely way to lose packets on an iPhone. The RX characteristic of a real
   hub offers only write-without-response, so there is no flow control except waiting for each piece's reply.
+- NEVER send a tunnel message (0x32) unless the control program is known to run: on a real Prime (firmware
+  1.8.149, iPhone/Bluefy) a `?` to a hub with nothing running made it drop the link and switch off. `hub.text()`
+  only sends while `hub.prog` is true (set by any `rdy` from the program; cleared by `bye`, a stop notification
+  and every new connection). The page never asks `?` any more: the hub program (v8+) announces `rdy <version>`
+  and `hw ...` every 500 ms while the page is quiet, and the handshake just listens (1.3 s, careful 2 s). No
+  announcement means nothing of ours runs: upload and start. The simulated hub drops the link on a tunnel
+  message while nothing runs, so tests catch this.
 - NEVER stop the control program from outside (ProgramFlow stop, 0x1e) while it runs: on a real Prime that
   made the hub drop the link and switch off (owner's log: last message 0x1e right before the drop). The page
   sends `bye` instead; the hub program (v7+) stops its motors, answers `bye` and ends itself (`byeControl()`).
@@ -170,7 +177,9 @@ no App Store or Google Play badges before then.
 - Bluefy on iPhone (owner, hub firmware 1.8.149, reports packet 180, chunk 4096): the hub answers the info
   request, then drops the link within a second and seems to switch off; a first try failed with the bare
   message "2". The 5.7.2 log showed the last message before the drop: ProgramFlow stop (0x1e) while our
-  control program still ran from an earlier visit. 5.7.3 never stops it from outside (see `bye` above).
+  control program still ran from an earlier visit. 5.7.3 never stops it from outside (see `bye` above). The
+  5.7.3 log then showed a drop right after the `?` tunnel message with nothing running (hub freshly switched
+  on). 5.7.4 never asks: the program announces itself, and tunnel messages are blocked unless it runs.
   Still to confirm on the owner's iPhone; ask for a log screenshot if it drops again.
 - To confirm on devices: Android Chrome, Bluefy on iPhone and iPad, tilt steering (the sign of
   the axes in landscape is a guess), a real foldable.

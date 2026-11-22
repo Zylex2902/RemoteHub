@@ -54,6 +54,10 @@ const fakeHub = (opts) => {
   };
   const status = (id, ok) => notify(Uint8Array.of(id, ok ? 0 : 1));
   const tun = (t) => notify(Proto.tunnel(new TextEncoder().encode(t)));
+  // the control program (v8+) announces itself every 500 ms while the page is quiet
+  setInterval(() => {
+    if (device.gatt.connected && H.started && H.running === 'control' && +ver() >= 8 && performance.now() - (H.lastTun || 0) > 800) { tun('rdy ' + ver()); tun(hwLine); }
+  }, 500);
   const con = (t) => notify(Uint8Array.from([0x21, ...new TextEncoder().encode(t), 0]));
   const onMsg = (m) => {
     const v = new DataView(m.buffer, m.byteOffset, m.byteLength);
@@ -104,7 +108,9 @@ const fakeHub = (opts) => {
           if (opts.sensors) pay.push(13, 0, d & 255, d >> 8, 12, 1, H.color, 0, 2, 16, 0, 32, 0, 11, 5, H.force, 1);
           notify(Uint8Array.from([0x3c, pay.length, 0, ...pay])); }, Math.max(50, iv)); break; }
       case 0x32: { const text = new TextDecoder().decode(Proto.parseTunnel(m));
-        H.tunnel.push({ t: performance.now(), text });
+        // a real hub dropped the link and went off on a tunnel message while no program was running
+        if (!H.started || !H.running) { H.events.push('tunnel-idle:' + text); H.crashed = true; setTimeout(() => H.drop(), 10); break; }
+        H.tunnel.push({ t: performance.now(), text }); H.lastTun = performance.now();
         const parts = text.split(' ');
         if (parts[0] === 'deg') parts.slice(1).forEach((tok) => { const [p, d, sp] = tok.split(':'); const mo = H.m[p]; if (mo) { mo.last = 0; mo.spd = 0; mo.goal = mo.pos + +d; mo.rate = +sp * 10; } });
         else if (parts[0] === 'halt') Object.values(H.m).forEach((mo) => { mo.spd = 0; mo.last = 0; mo.goal = null; });

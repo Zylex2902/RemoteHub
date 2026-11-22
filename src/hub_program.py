@@ -26,7 +26,7 @@ try:
 except Exception:
     distance_sensor = None
 
-VERSION = '7'
+VERSION = '8'
 PORTS = {}
 for _n in 'ABCDEF':
     try:
@@ -52,6 +52,10 @@ MAX_NOTES = 400
 # 'bye' van de pagina: netjes stoppen en het programma laten eindigen. Een stopverzoek van buitenaf terwijl
 # dit programma draait (en de tunnel gebruikt) liet een echte hub de verbinding verbreken en uitgaan.
 alive = [True]
+# Zonder bericht van de pagina meldt het programma zich elke halve seconde ('rdy <versie>'). Zo weet een nieuw
+# verbonden pagina dat het draait zonder het iets te hoeven vragen: een tunnelbericht naar een hub waarop
+# niets draait liet een echte hub de verbinding verbreken en uitgaan.
+announced = [0]
 
 
 def say(text):
@@ -375,6 +379,10 @@ async def main():
             stop_all()
             if notes:
                 hush()
+            if time.ticks_diff(time.ticks_ms(), announced[0]) >= 500:
+                announced[0] = time.ticks_ms()
+                say('rdy ' + VERSION)
+                hw()
         play_notes(time.ticks_ms())
         inputs['n'] += 1
         if inputs['n'] >= 5:
